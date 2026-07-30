@@ -1,0 +1,16 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies required for psycopg2 (PostgreSQL adapter)
+RUN apt-get update && apt-get install -y libpq-dev gcc
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire backend source code
+COPY . .
+
+# Run the FastAPI server
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
