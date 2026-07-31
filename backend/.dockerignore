@@ -1,0 +1,52 @@
+# ─── Python cache & compiled files ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# ─── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Environment & secrets ───────────────────────────────────────────────────
+.env
+.env.*
+*.env
+!.env.example
+
+# ─── Test artifacts ──────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# ─── Local development tools ─────────────────────────────────────────────────
+.git/
+.github/
+.gitignore
+.dockerignore
+
+# ─── Editor / IDE metadata ───────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Documentation ───────────────────────────────────────────────────────────
+docs/
+*.md
+LICENSE
+
+# ─── Docker Compose (not needed inside the image) ────────────────────────────
+docker-compose*.yml
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
