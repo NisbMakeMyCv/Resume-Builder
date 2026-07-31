@@ -25,10 +25,11 @@ wheels/
 venv/
 ENV/
 
-# Environment Variables (CRITICAL SECURITY)
-.env
+# Environment Variables
+# .env is intentionally tracked — it holds only non-sensitive defaults.
+# Put real local credentials in .env.local (never committed).
 .env.local
-.env.*
+.env.*.local
 
 # IDEs
 .idea/
