@@ -38,6 +38,7 @@ services:
   # Image is auto-published by GitHub Actions on every successful CI run.
   # ---------------------------------------------------------------------------
   api:
+    build: .
     image: makemycv/makemycv-backend:latest
     container_name: makemycv-api
     restart: always
