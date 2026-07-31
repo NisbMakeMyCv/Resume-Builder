@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
-from app.schemas.user import UserLoginRequest, UserRegisterRequest, GoogleLoginRequest, OTPRequest
+from app.schemas.user import UserLoginRequest, UserRegisterRequest, GoogleLoginRequest, OTPRequest, ResetPasswordRequest
 from app.core.database import get_db
 from app.models.user import User, UserAuthMethod, EmailOTP
 from app.core.security import get_password_hash, verify_password, create_access_token
@@ -61,6 +61,9 @@ def verify_and_delete_otp(db: Session, email: str, otp_code: str):
 
 @router.post("/request-otp")
 def request_otp(request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Invalidate any old OTPs for this email
+    db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
+    
     otp = str(random.randint(100000, 999999))
     expiration = datetime.utcnow() + timedelta(minutes=5)
     
@@ -177,3 +180,54 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "full_name": current_user.full_name
     }
+
+@router.post("/forgot-password")
+def forgot_password(request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        # We still return success to prevent email enumeration attacks
+        return {"message": f"If an account exists, a password reset code has been sent to {request.email}"}
+        
+    email_auth = next((auth for auth in user.auth_methods if auth.provider == "EMAIL"), None)
+    if not email_auth:
+        raise HTTPException(status_code=400, detail="This account uses Google Login. You cannot reset a password for it.")
+
+    # Invalidate any old OTPs for this email
+    db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
+
+    otp = str(random.randint(100000, 999999))
+    expiration = datetime.utcnow() + timedelta(minutes=10)
+    
+    new_otp = EmailOTP(email=request.email, otp_code=otp, expires_at=expiration)
+    db.add(new_otp)
+    db.commit()
+    
+    subject = "MakeMyCV Password Reset"
+    body = f"Hi {user.full_name},\n\nSomeone requested a password reset for your account. Your reset code is: {otp}\n\nThis code will expire in 10 minutes. If you did not request this, please ignore this email."
+    
+    background_tasks.add_task(send_email, request.email, subject, body)
+    
+    return {"message": f"If an account exists, a password reset code has been sent to {request.email}"}
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    verify_and_delete_otp(db, request.email, request.otp_code)
+    
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    email_auth = next((auth for auth in user.auth_methods if auth.provider == "EMAIL"), None)
+    if not email_auth:
+        raise HTTPException(status_code=400, detail="This account uses Google Login.")
+        
+    email_auth.hashed_password = get_password_hash(request.new_password)
+    db.commit()
+    
+    # Send confirmation email
+    time_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    subject = "Your MakeMyCV Password Has Been Reset"
+    body = f"Hi {user.full_name},\n\nYour password was successfully changed on {time_str}.\n\nIf you did not perform this action, please contact support immediately."
+    background_tasks.add_task(send_email, request.email, subject, body)
+    
+    return {"message": "Password has been successfully reset. You can now login."}

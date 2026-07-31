@@ -16,3 +16,8 @@ class UserRegisterRequest(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     token: str
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp_code: str
+    new_password: str
