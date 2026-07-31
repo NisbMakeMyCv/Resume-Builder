@@ -1,6 +1,6 @@
 import smtplib
 import os
-import random
+import secrets
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
@@ -64,7 +64,7 @@ def request_otp(request: OTPRequest, background_tasks: BackgroundTasks, db: Sess
     # Invalidate any old OTPs for this email
     db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
     
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     expiration = datetime.utcnow() + timedelta(minutes=5)
     
     new_otp = EmailOTP(email=request.email, otp_code=otp, expires_at=expiration)
@@ -195,7 +195,7 @@ def forgot_password(request: OTPRequest, background_tasks: BackgroundTasks, db: 
     # Invalidate any old OTPs for this email
     db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
 
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900000) + 100000)
     expiration = datetime.utcnow() + timedelta(minutes=10)
     
     new_otp = EmailOTP(email=request.email, otp_code=otp, expires_at=expiration)
