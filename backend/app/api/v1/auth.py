@@ -42,10 +42,12 @@ def request_otp(request: OTPRequest, db: Session = Depends(get_db)):
     db.add(new_otp)
     db.commit()
     
-    sender_email = os.getenv("SMTP_EMAIL")
+    sender_email = os.getenv("SMTP_USER")        # matches the key in .env
     sender_password = os.getenv("SMTP_PASSWORD")
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
 
-    if sender_email and sender_password and sender_email != "paste_your_team_gmail_here@gmail.com":
+    if sender_email and sender_password:
         msg = EmailMessage()
         msg.set_content(f"Your MakeMyCV Login Code is: {otp}\nThis code will expire in 5 minutes.")
         msg['Subject'] = 'MakeMyCV Verification Code'
@@ -53,10 +55,12 @@ def request_otp(request: OTPRequest, db: Session = Depends(get_db)):
         msg['To'] = request.email
 
         try:
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
-            server.quit()
+            # Port 587 requires STARTTLS (not SSL)
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.ehlo()
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to send email: {e}")
     else:
