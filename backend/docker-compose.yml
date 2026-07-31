@@ -50,7 +50,10 @@ services:
       # Connects to the database container using Docker's internal DNS name 'db'
       - DATABASE_URL=postgresql://makemycv_user:supersecretpassword@db:5432/makemycv_db
     env_file:
-      - .env   # Safely pulls SMTP secrets & other config without hardcoding them here
+      - path: .env        # committed — non-sensitive defaults
+        required: true
+      - path: .env.local  # gitignored — your real local secrets (optional, not needed in CI)
+        required: false
 
 volumes:
   postgres_data:
