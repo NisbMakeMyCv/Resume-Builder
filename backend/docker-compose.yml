@@ -1,4 +1,20 @@
+# =============================================================================
+# MakeMyCV — Docker Compose (Production)
+#
+# Pull & start the full stack (no local build required):
+#   docker login
+#   docker compose pull
+#   docker compose up -d
+#
+# The backend image is published to Docker Hub automatically by GitHub Actions
+# after every successful test run on the feature/backend-setup branch.
+# =============================================================================
+
 services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — persistent relational database
+  # ---------------------------------------------------------------------------
   db:
     image: postgres:15-alpine
     container_name: makemycv-postgres
@@ -11,20 +27,30 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U makemycv_user -d makemycv_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ---------------------------------------------------------------------------
+  # FastAPI backend — pulled from Docker Hub (no local build needed)
+  # Image is auto-published by GitHub Actions on every successful CI run.
+  # ---------------------------------------------------------------------------
   api:
-    build: .
+    image: ${DOCKER_HUB_USERNAME}/makemycv-backend:latest
     container_name: makemycv-api
     restart: always
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy   # wait for Postgres to pass its healthcheck
     environment:
       # Connects to the database container using Docker's internal DNS name 'db'
       - DATABASE_URL=postgresql://makemycv_user:supersecretpassword@db:5432/makemycv_db
     env_file:
-      - .env # Safely pulls SMTP secrets without hardcoding them here!
+      - .env   # Safely pulls SMTP secrets & other config without hardcoding them here
 
 volumes:
   postgres_data:
