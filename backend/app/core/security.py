@@ -5,7 +5,7 @@ from jose import jwt
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super_secret_jwt_key_for_mvp_only_do_not_use_in_prod")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 *3    # For 3 day token 
 
 def get_password_hash(password: str) -> str:
     pwd_bytes = password.encode('utf-8')
