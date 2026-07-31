@@ -123,15 +123,12 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         run: |
           # Overwrite placeholder values already in .env
           sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=${JWT_SECRET_KEY}|"         .env
           sed -i "s|SMTP_USER=.*|SMTP_USER=${SMTP_USER}|"                         .env
           sed -i "s|SMTP_PASSWORD=.*|SMTP_PASSWORD=${SMTP_PASSWORD}|"             .env
           sed -i "s|EMAILS_FROM_EMAIL=.*|EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}|" .env
-          # Append DOCKER_HUB_USERNAME so docker-compose.yml resolves ${DOCKER_HUB_USERNAME}
-          echo "DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME}" >> .env
           echo ".env secrets injection complete."
 
       # 4. Authenticate to Docker Hub using GitHub Secrets
