@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import MaterialIcon from "../components/MaterialIcon";
+import { apiRequest } from "../../lib/api";
 
-const API_URL = "http://localhost:8000/api/v1";
-
+/**
+ * Sign Up — coded from the `sign_up` stitch frame.
+ *
+ * Flow: submit name/email/password → request an OTP → redirect to
+ * /verify-email where the account is created with the code.
+ */
 export default function SignUp() {
   const router = useRouter();
 
@@ -14,72 +20,39 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
-    console.log("CREATE ACCOUNT BUTTON CLICKED");
-
     setError("");
 
-    // Basic validation
     if (!fullName.trim()) {
       setError("Please enter your full name.");
       return;
     }
-
     if (!email.trim()) {
       setError("Please enter your email address.");
       return;
     }
-
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
     }
-
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
     setLoading(true);
-
     try {
-      console.log("Requesting OTP for:", email);
+      // Send the verification code to the user's inbox.
+      await apiRequest("/auth/request-otp", {
+        method: "POST",
+        body: { email: email.trim() },
+      });
 
-      const response = await fetch(
-        `${API_URL}/auth/request-otp`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email.trim(),
-          }),
-        }
-      );
-
-      console.log("OTP API status:", response.status);
-
-      const data = await response.json();
-
-      console.log("OTP API response:", data);
-
-      if (!response.ok) {
-        throw new Error(
-          data?.detail || "Failed to send verification code."
-        );
-      }
-
-      // Store signup information temporarily.
-      // We will use this on the verify-email page.
+      // Stash details so the verify-email page can register the account.
       sessionStorage.setItem(
         "signupData",
         JSON.stringify({
@@ -89,339 +62,290 @@ export default function SignUp() {
         })
       );
 
-      console.log("Signup data saved.");
-      console.log("Navigating to verify-email...");
-
       router.push("/verify-email");
     } catch (err) {
-      console.error("SIGNUP ERROR:", err);
-
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
+      setError(err instanceof Error ? err.message : "Failed to send code.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7ff] text-[#10152b]">
-
-      {/* NAVBAR */}
-      <nav className="border-b border-[#e8e8f2] bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-xl font-bold tracking-tight"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#4f22df] to-[#8b24ed] text-sm text-white">
-              ▤
-            </span>
-
+    <main className="bg-background text-on-background min-h-screen flex flex-col">
+      {/* Top Nav Bar (transactional — brand only) */}
+      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center">
+        <div className="max-w-[1280px] mx-auto px-8 w-full flex justify-between items-center">
+          <div className="text-headline-md font-extrabold text-primary">
             MakeMyCV
-          </Link>
-
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="hidden sm:inline">
-              Already have an account?
-            </span>
-
-            <Link
-              href="/signin"
-              className="font-semibold text-[#5424e8] hover:text-[#7b20e8]"
-            >
-              Sign In
-            </Link>
           </div>
-
+          <Link
+            href="/signin"
+            className="text-label-md font-semibold text-primary hover:underline"
+          >
+            Log In
+          </Link>
         </div>
-      </nav>
+      </header>
 
-
-      {/* MAIN */}
-      <section className="mx-auto flex min-h-[calc(100vh-64px)] max-w-7xl items-center justify-center px-5 py-10 sm:px-8">
-
-        <div className="w-full max-w-md">
-
-          {/* CARD */}
-          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-[0_20px_70px_rgba(84,36,232,0.10)] sm:p-8">
-
-            {/* HEADER */}
-            <div className="text-center">
-
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#4f22df] to-[#8b24ed] text-2xl text-white shadow-lg shadow-purple-200">
-                ✦
+      <main className="flex-grow flex flex-col md:flex-row pt-16 h-screen overflow-hidden">
+        {/* ============ LEFT: ABSTRACT ILLUSTRATION (hidden on mobile) ============ */}
+        <section className="hidden md:flex flex-1 bg-primary relative items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 opacity-20 hero-gradient" />
+          <div className="relative z-10 w-full max-w-xl px-12 text-center text-on-primary">
+            <div className="mb-12 relative">
+              {/* Floating Resume Preview */}
+              <div className="animate-float bg-white rounded-lg w-72 mx-auto resume-shadow border border-outline-variant">
+                <div className="p-6 aspect-[3/4]">
+                  {/* Mock resume skeleton */}
+                  <div className="h-6 w-1/2 bg-surface-container rounded-md mx-auto mb-6" />
+                  <div className="space-y-2">
+                    <div className="h-2 w-full bg-surface-container rounded-sm" />
+                    <div className="h-2 w-5/6 bg-surface-container rounded-sm" />
+                    <div className="h-2 w-4/6 bg-surface-container rounded-sm" />
+                  </div>
+                  <div className="mt-6 space-y-3">
+                    <div className="h-2 w-full bg-surface-container rounded-sm" />
+                    <div className="h-2 w-full bg-surface-container rounded-sm" />
+                    <div className="h-2 w-3/4 bg-surface-container rounded-sm" />
+                  </div>
+                  <div className="mt-6 space-y-2">
+                    <div className="h-3 w-1/3 bg-primary/10 rounded-md" />
+                    <div className="h-2 w-full bg-surface-container rounded-sm" />
+                    <div className="h-2 w-2/3 bg-surface-container rounded-sm" />
+                  </div>
+                </div>
               </div>
 
-              <h1 className="mt-5 text-2xl font-bold">
-                Create Your Account
-              </h1>
+              {/* Decorative shapes */}
+              <div
+                className="absolute -top-10 -right-4 w-12 h-12 bg-secondary-container rounded-full opacity-30 animate-float"
+                style={{ animationDelay: "-1s" }}
+              />
+              <div
+                className="absolute top-20 -left-10 w-20 h-20 bg-primary-fixed-dim rounded-lg opacity-20 rotate-12 animate-float"
+                style={{ animationDelay: "-3s" }}
+              />
+            </div>
+          </div>
+        </section>
 
-              <p className="mt-2 text-sm text-gray-500">
-                Start building your career-ready resume today.
+        {/* ============ RIGHT: SIGN UP FORM ============ */}
+        <section className="flex-1 flex items-center justify-center bg-background p-6 md:p-12 overflow-y-auto">
+          <div className="w-full max-w-md bg-white border border-outline-variant rounded-2xl p-8 md:p-10 shadow-sm">
+            <div className="mb-8">
+              <h2 className="text-headline-md text-primary mb-2">
+                Create your account
+              </h2>
+              <p className="text-body-md text-on-surface-variant">
+                Build your career with confidence.
               </p>
-
             </div>
 
-
-            {/* GOOGLE */}
-            <button
-              type="button"
-              disabled
-              className="mt-7 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-500"
-            >
-              <span className="text-base font-bold">
-                G
-              </span>
-
-              Continue with Google
-            </button>
-
-            <p className="mt-2 text-center text-[10px] text-gray-400">
-              Google login will be connected separately.
-            </p>
-
-
-            {/* DIVIDER */}
-            <div className="my-6 flex items-center gap-3">
-
-              <div className="h-px flex-1 bg-gray-200" />
-
-              <span className="text-xs text-gray-400">
-                OR
-              </span>
-
-              <div className="h-px flex-1 bg-gray-200" />
-
-            </div>
-
-
-            {/* FORM */}
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
-
-              {/* FULL NAME */}
-              <div>
-
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Full Name */}
+              <div className="space-y-2">
                 <label
-                  htmlFor="fullName"
-                  className="mb-2 block text-xs font-semibold text-gray-700"
+                  className="text-label-md text-on-surface font-semibold block"
+                  htmlFor="full_name"
                 >
                   Full Name
                 </label>
-
-                <input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Enter your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-100 disabled:opacity-60"
-                />
-
+                <div className="relative">
+                  <input
+                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="full_name"
+                    placeholder="John Doe"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
               </div>
 
-
-              {/* EMAIL */}
-              <div>
-
+              {/* Email */}
+              <div className="space-y-2">
                 <label
+                  className="text-label-md text-on-surface font-semibold block"
                   htmlFor="email"
-                  className="mb-2 block text-xs font-semibold text-gray-700"
                 >
                   Email Address
                 </label>
-
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition placeholder:text-gray-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-100 disabled:opacity-60"
-                />
-
+                <div className="relative">
+                  <input
+                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="email"
+                    placeholder="name@company.com"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
               </div>
 
-
-              {/* PASSWORD */}
-              <div>
-
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-xs font-semibold text-gray-700"
-                >
-                  Password
-                </label>
-
-                <div className="relative">
-
+              {/* Password Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label
+                    className="text-label-md text-on-surface font-semibold block"
+                    htmlFor="password"
+                  >
+                    Password
+                  </label>
                   <input
+                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
                     id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    placeholder="Create a password"
+                    placeholder="••••••••"
+                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
                     disabled={loading}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-14 text-sm outline-none transition placeholder:text-gray-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-100 disabled:opacity-60"
                   />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    disabled={loading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400 hover:text-purple-600"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-
                 </div>
-
-                <p className="mt-2 text-[11px] text-gray-400">
-                  Use at least 8 characters.
-                </p>
-
-              </div>
-
-
-              {/* CONFIRM PASSWORD */}
-              <div>
-
-                <label
-                  htmlFor="confirmPassword"
-                  className="mb-2 block text-xs font-semibold text-gray-700"
-                >
-                  Confirm Password
-                </label>
-
-                <div className="relative">
-
+                <div className="space-y-2">
+                  <label
+                    className="text-label-md text-on-surface font-semibold block"
+                    htmlFor="confirm_password"
+                  >
+                    Confirm Password
+                  </label>
                   <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    placeholder="Confirm your password"
+                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="confirm_password"
+                    placeholder="••••••••"
+                    type="password"
                     value={confirmPassword}
-                    onChange={(e) =>
-                      setConfirmPassword(e.target.value)
-                    }
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     minLength={8}
                     disabled={loading}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-14 text-sm outline-none transition placeholder:text-gray-400 focus:border-purple-500 focus:bg-white focus:ring-4 focus:ring-purple-100 disabled:opacity-60"
                   />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(
-                        (prev) => !prev
-                      )
-                    }
-                    disabled={loading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400 hover:text-purple-600"
-                  >
-                    {showConfirmPassword ? "Hide" : "Show"}
-                  </button>
-
                 </div>
-
               </div>
 
-
-              {/* TERMS */}
-              <div className="flex items-start gap-2 pt-1">
-
-                <input
-                  id="terms"
-                  type="checkbox"
-                  required
-                  disabled={loading}
-                  className="mt-0.5 h-4 w-4 accent-[#5424e8]"
-                />
-
-                <label
-                  htmlFor="terms"
-                  className="text-[11px] leading-5 text-gray-500"
-                >
-                  I agree to the{" "}
-                  <span className="font-medium text-purple-600">
-                    Terms of Service
-                  </span>{" "}
-                  and{" "}
-                  <span className="font-medium text-purple-600">
-                    Privacy Policy
-                  </span>
-                  .
-                </label>
-
-              </div>
-
-
-              {/* ERROR */}
+              {/* Error */}
               {error && (
-                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
+                <div className="rounded-brand border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container">
                   {error}
                 </div>
               )}
 
+              {/* Action Buttons */}
+              <div className="space-y-4 pt-4">
+                <button
+                  className="btn-press w-full h-12 bg-primary-container text-white font-label-md rounded-2xl hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  type="submit"
+                  disabled={loading}
+                >
+                  <span>{loading ? "Sending Code..." : "Create Account"}</span>
+                  <MaterialIcon name="arrow_forward" className="text-[20px]" />
+                </button>
 
-              {/* SUBMIT */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-xl bg-gradient-to-r from-[#4f22df] to-[#8b20ed] py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-200 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Sending Verification Code..." : "Create My Account →"}
-              </button>
+                <div className="flex items-center gap-4 text-on-surface-variant my-4">
+                  <div className="h-px bg-outline-variant flex-1" />
+                  <span className="text-label-sm uppercase tracking-wider">
+                    or
+                  </span>
+                  <div className="h-px bg-outline-variant flex-1" />
+                </div>
 
+                <button
+                  className="btn-press w-full h-12 bg-white border border-primary text-primary font-label-md rounded-2xl hover:bg-surface-container-low transition-colors flex items-center justify-center gap-3"
+                  type="button"
+                >
+                  <GoogleIcon />
+                  Continue with Google
+                </button>
+
+                <div className="text-center mt-4">
+                  <span className="text-label-md text-on-surface-variant">
+                    Already have an account?{" "}
+                  </span>
+                  <Link
+                    className="text-label-md text-primary font-bold hover:underline"
+                    href="/signin"
+                  >
+                    Log In
+                  </Link>
+                </div>
+              </div>
+
+              <p className="text-center text-label-sm text-on-surface-variant mt-6 px-4">
+                By signing up, you agree to our{" "}
+                <a className="text-primary hover:underline" href="#">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a className="text-primary hover:underline" href="#">
+                  Privacy Policy
+                </a>
+                .
+              </p>
             </form>
-
-
-            {/* SIGN IN */}
-            <p className="mt-6 text-center text-xs text-gray-500">
-
-              Already have an account?{" "}
-
-              <Link
-                href="/signin"
-                className="font-semibold text-purple-600 hover:text-purple-800"
-              >
-                Sign In
-              </Link>
-
-            </p>
-
           </div>
+        </section>
+      </main>
 
-
-          {/* SECURITY */}
-          <div className="mt-6 text-center text-[11px] text-gray-400">
-            🔒 Your information is securely protected.
+      {/* Footer */}
+      <footer className="bg-surface-container py-8 border-t border-outline-variant">
+        <div className="max-w-[1280px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-label-sm text-on-surface-variant">
+            © 2026 MakeMyCV. Made by NISB.
           </div>
-
+          <div className="flex gap-6">
+            <a
+              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
+              Support
+            </a>
+            <a
+              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
+              Privacy
+            </a>
+            <a
+              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
+              Terms
+            </a>
+          </div>
         </div>
-
-      </section>
-
+      </footer>
     </main>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg
+      className="w-5 h-5"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </svg>
   );
 }

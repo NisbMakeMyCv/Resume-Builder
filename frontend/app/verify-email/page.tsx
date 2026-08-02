@@ -1,42 +1,111 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import MaterialIcon from "../components/MaterialIcon";
+import { apiRequest } from "../../lib/api";
 
+/**
+ * Verify Email / OTP — coded from the `otp_verification` stitch frame.
+ *
+ * This page both shows the 6-digit entry and — when reached from signup —
+ * registers the account with the backend using the stashed signup data.
+ * (Sign-in with an existing account verifies the code inline on /signin.)
+ */
 export default function VerifyEmail() {
+  const router = useRouter();
+
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<"signup" | "none">("none");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
     const storedData = sessionStorage.getItem("signupData");
-
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-
         if (data.email) {
           setEmail(data.email);
+          setMode("signup");
         }
       } catch {
-        console.log("Unable to read signup data.");
+        /* malformed storage — treat as no pending signup */
       }
     }
   }, []);
 
-  const handleChange = (value: string, index: number) => {
-    if (!/^\d?$/.test(value)) {
+  /** Register (signup flow) or simply proceed when the code is 6 digits. */
+  async function handleVerify() {
+    const code = otp.join("");
+    if (code.length !== 6) {
+      setError("Please enter all 6 digits of your verification code.");
       return;
     }
 
-    const updatedOtp = [...otp];
-    updatedOtp[index] = value;
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const storedData = sessionStorage.getItem("signupData");
+        if (!storedData) throw new Error("Signup session expired. Please try again.");
+        const data = JSON.parse(storedData);
 
-    setOtp(updatedOtp);
+        await apiRequest("/auth/register", {
+          method: "POST",
+          body: {
+            full_name: data.fullName,
+            email: data.email,
+            password: data.password,
+            otp_code: code,
+          },
+        });
+        sessionStorage.removeItem("signupData");
+        router.push("/signin");
+      } else {
+        // No pending signup — this page was reached directly. Nothing to do.
+        router.push("/signin");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed.");
+      setLoading(false);
+    }
+  }
 
+  /** Resend the code (and restart the cooldown timer). */
+  async function handleResend() {
+    if (!email || resendCooldown > 0) return;
+    try {
+      await apiRequest("/auth/request-otp", {
+        method: "POST",
+        body: { email },
+      });
+      setResendCooldown(30);
+      const timer = setInterval(() => {
+        setResendCooldown((s) => {
+          if (s <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resend code.");
+    }
+  }
+
+  const handleChange = (value: string, index: number) => {
+    if (!/^\d?$/.test(value)) return;
+    const updated = [...otp];
+    updated[index] = value;
+    setOtp(updated);
     if (value && index < 5) {
-      document
-        .getElementById(`otp-${index + 1}`)
-        ?.focus();
+      document.getElementById(`otp-${index + 1}`)?.focus();
     }
   };
 
@@ -44,205 +113,162 @@ export default function VerifyEmail() {
     e: React.KeyboardEvent<HTMLInputElement>,
     index: number
   ) => {
-    if (
-      e.key === "Backspace" &&
-      !otp[index] &&
-      index > 0
-    ) {
-      document
-        .getElementById(`otp-${index - 1}`)
-        ?.focus();
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      document.getElementById(`otp-${index - 1}`)?.focus();
     }
-  };
-
-  const handleVerify = () => {
-    const enteredOtp = otp.join("");
-
-    /*
-      FRONTEND TEST FLOW
-
-      We are not checking a real OTP yet.
-
-      Later:
-      1. Send OTP to backend
-      2. Backend verifies OTP
-      3. Backend creates account
-      4. Navigate to signin
-    */
-
-    if (enteredOtp.length !== 6) {
-      alert("Please enter the 6-digit verification code.");
-      return;
-    }
-
-    // Frontend-only navigation for now
-    window.location.href = "/signin";
-  };
-
-  const handleResend = () => {
-    alert("OTP resend will be connected to the backend later.");
   };
 
   return (
-    <main className="min-h-screen bg-[#f8f8ff] text-[#10152b]">
-
-      {/* NAVBAR */}
-      <nav className="border-b border-[#e8e8f2] bg-white/90 backdrop-blur-md">
-
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-10">
-
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight"
-          >
-            📄 MakeMyCV
-          </Link>
-
-          <Link
-            href="/signin"
-            className="text-sm font-medium text-gray-600 transition hover:text-[#5424e8]"
-          >
-            Back to Sign In
-          </Link>
-
+    <main className="bg-background font-body-md text-on-background min-h-screen flex flex-col">
+      {/* Top Nav Bar (transactional — brand only) */}
+      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant">
+        <div className="max-w-[1280px] mx-auto px-8 h-16 flex items-center justify-center md:justify-start">
+          <span className="text-headline-md font-bold text-primary">
+            MakeMyCV
+          </span>
         </div>
+      </header>
 
-      </nav>
-
-
-      {/* MAIN */}
-      <section className="flex min-h-[calc(100vh-64px)] items-center justify-center px-6 py-12">
-
-        <div className="w-full max-w-md">
-
-          {/* ICON */}
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ebe7ff] text-2xl shadow-sm">
-            ✉️
+      <main className="flex-grow flex items-center justify-center px-8 pt-20 pb-12">
+        <div className="max-w-md w-full bg-surface-container-lowest border border-outline-variant rounded-[20px] p-8 md:p-12 entrance-fade-up">
+          {/* Success Illustration */}
+          <div className="flex justify-center mb-8 entrance-fade-up">
+            <div className="w-24 h-24 bg-secondary-fixed rounded-full flex items-center justify-center">
+              <MaterialIcon
+                name="mark_email_read"
+                className="text-primary text-[48px]"
+                filled
+              />
+            </div>
           </div>
 
-
-          {/* HEADING */}
-          <div className="mt-6 text-center">
-
-            <h1 className="text-3xl font-bold tracking-tight">
-              Verify Your Email
+          {/* Content */}
+          <div className="text-center mb-10">
+            <h1 className="text-headline-md text-on-surface mb-2">
+              Verify your email
             </h1>
-
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-gray-500">
-              We've sent a 6-digit verification code to your
-              email address. Enter it below to continue.
+            <p className="text-body-md text-on-surface-variant">
+              We&apos;ve sent a 6-digit code to your inbox. Please enter it
+              below to secure your IEEE professional profile.
+              {email ? (
+                <>
+                  {" "}
+                  <span className="font-semibold text-primary">
+                    ({email})
+                  </span>
+                </>
+              ) : null}
             </p>
-
           </div>
 
+          {/* OTP Inputs */}
+          <div
+            className="flex justify-between gap-2 md:gap-3 mb-10"
+            id="otp-container"
+          >
+            {otp.map((digit, index) => (
+              <input
+                key={index}
+                id={`otp-${index}`}
+                className="otp-input w-12 h-14 md:w-14 md:h-16 text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
+                maxLength={1}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                type="text"
+                value={digit}
+                onChange={(e) => handleChange(e.target.value, index)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                disabled={loading}
+              />
+            ))}
+          </div>
 
-          {/* CARD */}
-          <div className="mt-8 rounded-2xl border border-[#e8e8f2] bg-white p-7 shadow-xl">
-
-            {/* EMAIL */}
-            <div className="rounded-lg bg-[#f7f6ff] px-4 py-3 text-center">
-
-              <p className="text-xs text-gray-500">
-                Verification code sent to
-              </p>
-
-              <p className="mt-1 break-all text-sm font-semibold text-[#5424e8]">
-                {email || "your-email@example.com"}
-              </p>
-
+          {/* Error */}
+          {error && (
+            <div className="mb-6 rounded-[20px] border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container">
+              {error}
             </div>
+          )}
 
-
-            {/* OTP */}
-            <div className="mt-7">
-
-              <label className="text-sm font-medium">
-                Enter verification code
-              </label>
-
-              <div className="mt-3 flex justify-center gap-2 sm:gap-3">
-
-                {otp.map((digit, index) => (
-
-                  <input
-                    key={index}
-                    id={`otp-${index}`}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) =>
-                      handleChange(
-                        e.target.value,
-                        index
-                      )
-                    }
-                    onKeyDown={(e) =>
-                      handleKeyDown(e, index)
-                    }
-                    className="h-12 w-11 rounded-lg border border-gray-200 bg-gray-50 text-center text-lg font-semibold outline-none transition focus:border-[#5424e8] focus:bg-white focus:ring-2 focus:ring-[#5424e8]/10 sm:h-14 sm:w-12"
-                  />
-
-                ))}
-
-              </div>
-
-            </div>
-
-
-            {/* VERIFY */}
+          {/* Actions */}
+          <div className="space-y-4">
             <button
+              className="w-full h-14 bg-primary-container text-on-tertiary font-label-md rounded-full hover:bg-[#006699] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              id="verify-btn"
               type="button"
               onClick={handleVerify}
-              className="interactive-button mt-7 w-full cursor-pointer rounded-lg bg-gradient-to-r from-[#4f22df] to-[#7b1fe8] px-6 py-3 text-sm font-semibold text-white shadow-lg"
+              disabled={loading}
             >
-              Verify Email →
+              <span>
+                {loading ? "Verifying..." : "Verify Account"}
+              </span>
+              {loading ? (
+                <MaterialIcon name="sync" className="animate-spin text-[20px]" />
+              ) : (
+                <MaterialIcon name="check_circle" className="text-[20px]" />
+              )}
             </button>
 
-
-            {/* RESEND */}
-            <div className="mt-6 text-center">
-
-              <p className="text-xs text-gray-500">
-                Didn't receive the code?
+            <div className="text-center">
+              <p className="text-label-md text-on-surface-variant">
+                Didn&apos;t receive the code?{" "}
+                <button
+                  className="text-primary font-bold hover:underline ml-1 disabled:opacity-50"
+                  id="resend-btn"
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0 || !email}
+                >
+                  {resendCooldown > 0 ? `Wait ${resendCooldown}s` : "Resend Code"}
+                </button>
               </p>
-
-              <button
-                type="button"
-                onClick={handleResend}
-                className="mt-2 text-sm font-semibold text-[#5424e8] transition hover:text-[#7b1fe8]"
-              >
-                Resend OTP
-              </button>
-
             </div>
+          </div>
 
+          {/* Security Trust */}
+          <div className="mt-12 pt-8 border-t border-outline-variant flex items-center justify-center gap-4 text-on-tertiary-container">
+            <div className="flex items-center gap-1">
+              <MaterialIcon name="lock" className="text-[16px]" />
+              <span className="text-label-sm">IEEE Encrypted</span>
+            </div>
+            <div className="w-1 h-1 bg-outline-variant rounded-full" />
+            <div className="flex items-center gap-1">
+              <MaterialIcon name="shield" className="text-[16px]" />
+              <span className="text-label-sm">Privacy Guaranteed</span>
+            </div>
+          </div>
 
-            {/* CHANGE EMAIL */}
-            <div className="mt-5 border-t border-gray-100 pt-5 text-center">
-
+          {/* Change email (only meaningful during signup) */}
+          {mode === "signup" && (
+            <div className="mt-8 text-center">
               <Link
                 href="/signup"
-                className="text-xs text-gray-500 transition hover:text-[#5424e8]"
+                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
               >
                 ← Change email address
               </Link>
-
             </div>
-
-          </div>
-
-
-          {/* SECURITY */}
-          <p className="mt-6 text-center text-xs text-gray-400">
-            🔒 Your information is securely protected.
-          </p>
-
+          )}
         </div>
+      </main>
 
-      </section>
-
+      {/* Footer */}
+      <footer className="w-full bg-surface-container border-t border-outline-variant mt-auto">
+        <div className="max-w-[1280px] mx-auto px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-6 text-on-surface-variant font-label-sm">
+          <span>© 2026 MakeMyCV. Made by NISB.</span>
+          <div className="flex gap-6">
+            <a className="hover:underline" href="#">
+              Support
+            </a>
+            <a className="hover:underline" href="#">
+              Terms of Service
+            </a>
+            <a className="hover:underline" href="#">
+              Privacy Policy
+            </a>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

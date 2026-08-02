@@ -1,973 +1,327 @@
-"use client";
-
 import Link from "next/link";
+import Container from "./components/Container";
+import MaterialIcon from "./components/MaterialIcon";
 
+/**
+ * Landing page — coded exactly from the `refined_landing_page` stitch frame.
+ * Interactive CTAs link to the real /signin and /signup routes.
+ */
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f8f8ff] text-[#10152b]">
-
-      {/* ================= NAVBAR ================= */}
-      <nav className="sticky top-0 z-50 border-b border-[#e8e8f2] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-10">
-
-          {/* Logo */}
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight text-[#10152b]"
-          >
-            📄 MakeMyCV
-          </Link>
-
-          {/* Navigation */}
-          <div className="hidden items-center gap-10 md:flex">
-            <a
-              href="#home"
-              className="text-sm transition hover:text-[#5424e8]"
-            >
-              Home
-            </a>
-
-            <a
-              href="#features"
-              className="text-sm transition hover:text-[#5424e8]"
-            >
-              Features
-            </a>
-
-            <a
-              href="#how-it-works"
-              className="text-sm transition hover:text-[#5424e8]"
-            >
-              How It Works
-            </a>
+    <main className="bg-background text-on-background font-body-md overflow-x-hidden">
+      {/* ================= TOP NAV BAR ================= */}
+      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant">
+        <Container className="h-16 flex justify-between items-center">
+          <div className="text-headline-md font-bold text-primary shrink-0">
+            MakeMyCV
           </div>
 
-          {/* Buttons */}
-          <div className="flex items-center gap-3">
+          <nav className="hidden md:flex gap-8 items-center h-full">
+            <NavLink active href="/#templates">
+              Templates
+            </NavLink>
+            <NavLink href="/#features">Examples</NavLink>
+            <NavLink href="/#how-it-works">Guides</NavLink>
+            <NavLink href="/#pricing">Pricing</NavLink>
+          </nav>
+
+          <div className="flex items-center gap-4">
             <Link
               href="/signin"
-              className="rounded-lg border border-[#5424e8] px-5 py-2 text-sm font-medium text-[#5424e8] transition hover:bg-[#5424e8] hover:text-white"
+              className="hidden sm:block text-label-md font-semibold text-primary px-4 py-2 rounded-full hover:bg-surface-container transition-all btn-press"
             >
               Log In
             </Link>
-
             <Link
               href="/signup"
-              className="interactive-button rounded-lg bg-gradient-to-r from-[#4f22df] to-[#7b1fe8] px-5 py-2 text-sm font-semibold text-white shadow-md"
+              className="bg-primary text-on-primary px-6 py-2.5 rounded-full text-label-md font-semibold shadow-md hover:shadow-lg hover:bg-primary/90 transition-all btn-press"
             >
-              Get Started
+              Build My CV
             </Link>
           </div>
-        </div>
-      </nav>
+        </Container>
+      </header>
 
-
-      {/* ================= HERO ================= */}
-      <section
-        id="home"
-        className="relative overflow-hidden"
-      >
-
-        {/* Background glow */}
-        <div className="pointer-events-none absolute left-[-180px] top-20 h-[500px] w-[500px] rounded-full bg-purple-300/20 blur-[120px]" />
-        <div className="pointer-events-none absolute right-[-150px] top-10 h-[500px] w-[500px] rounded-full bg-violet-300/20 blur-[120px]" />
-
-        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-center gap-10 px-6 py-20 lg:grid-cols-[0.95fr_1.05fr] lg:px-10">
-
-          {/* ================= HERO TEXT ================= */}
-          <div className="relative z-10">
-
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-purple-100 bg-[#ebe7ff] px-4 py-2 text-xs font-medium text-[#5424e8] shadow-sm">
-              ✨ AI-POWERED RESUME BUILDER
-            </div>
-
-            <h1 className="text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-[64px]">
-              Build Your Resume.
-              <br />
-              Land Your
-              <br />
-              <span className="bg-gradient-to-r from-[#4521d8] to-[#8b20ed] bg-clip-text text-transparent">
-                Next Opportunity.
-              </span>
-            </h1>
-
-            <p className="mt-7 max-w-xl text-base leading-7 text-gray-600 md:text-lg">
-              Create an ATS-friendly resume that showcases your technical
-              skills, projects, internships, certifications, and achievements —
-              with AI-powered assistance to help you stand out.
-            </p>
-
-            <div className="mt-9 flex flex-wrap items-center gap-5">
-
-              <Link
-                href="/signup"
-                className="interactive-button rounded-xl bg-gradient-to-r from-[#4f22df] to-[#7b1fe8] px-7 py-4 text-sm font-semibold text-white shadow-lg"
-              >
-                Build My Resume →
-              </Link>
-
-              {/* User avatars */}
-              <div className="flex items-center">
-                <div className="flex -space-x-2">
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-purple-200 text-sm shadow-sm">
-                    👩🏻‍💻
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-blue-200 text-sm shadow-sm">
-                    👨🏻‍💻
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-pink-200 text-sm shadow-sm">
-                    👩🏽‍💻
-                  </div>
-
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-purple-300 text-[9px] font-bold shadow-sm">
-                    12K+
-                  </div>
-
-                </div>
-
-                <span className="ml-3 text-xs text-gray-500">
-                  students building better resumes
-                </span>
-              </div>
-            </div>
-
-            {/* Small trust indicators */}
-            <div className="mt-8 flex flex-wrap gap-5 text-xs text-gray-500">
-              <span>✓ ATS Optimized</span>
-              <span>✓ AI Assisted</span>
-              <span>✓ Recruiter Friendly</span>
-            </div>
-          </div>
-
-
-          {/* =====================================================
-              HERO VISUAL
-          ====================================================== */}
-          <div className="relative flex min-h-[580px] items-center justify-center lg:min-h-[620px]">
-
-            {/* Large glow behind dashboard */}
-            <div className="absolute h-[430px] w-[430px] rounded-full bg-purple-400/20 blur-[90px]" />
-
-            {/* Decorative floating circle */}
-            <div className="float-slow absolute right-2 top-12 h-20 w-20 rounded-full bg-gradient-to-br from-purple-200 to-violet-100 opacity-70 blur-sm" />
-
-            {/* ================= MAIN RESUME WINDOW ================= */}
-            <div className="hero-dashboard relative z-10 w-full max-w-[590px] rounded-[24px] border border-white/80 bg-white/95 p-4 shadow-[0_30px_80px_rgba(70,40,160,0.16)] backdrop-blur-xl md:p-5">
-
-              {/* Browser-style top bar */}
-              <div className="mb-4 flex items-center justify-between px-2">
-
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-red-300" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-300" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-green-300" />
-                </div>
-
-                <div className="rounded-full bg-[#f5f3ff] px-4 py-1.5 text-[9px] font-medium text-purple-600">
-                  MakeMyCV Resume Builder
-                </div>
-
-                <div className="h-5 w-5 rounded-full bg-purple-100" />
+      <main className="pt-16">
+        {/* ================= HERO SECTION ================= */}
+        <section className="relative min-h-[85vh] flex items-center hero-gradient overflow-hidden">
+          <Container className="w-full grid grid-cols-12 gap-6 items-center">
+            {/* Left Column */}
+            <div className="col-span-12 lg:col-span-7 space-y-8 py-12 lg:py-20 z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-label-sm">
+                <MaterialIcon
+                  name="auto_awesome"
+                  className="text-[16px]"
+                />
+                AI-Powered IEEE Standards
               </div>
 
-
-              {/* Resume application layout */}
-              <div className="grid grid-cols-[0.72fr_1.55fr] gap-4 rounded-2xl bg-[#f7f7fc] p-4">
-
-                {/* ================= LEFT SIDEBAR ================= */}
-                <div className="rounded-xl bg-white p-4 shadow-sm">
-
-                  {/* Profile */}
-                  <div className="flex items-center gap-2.5">
-
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-violet-600 text-sm">
-                      👩🏻‍💻
-                    </div>
-
-                    <div>
-                      <div className="text-[11px] font-bold text-gray-800">
-                        Ananya Rao
-                      </div>
-
-                      <div className="mt-1 text-[8px] text-gray-400">
-                        Software Engineer
-                      </div>
-                    </div>
-                  </div>
-
-
-                  {/* Sidebar sections */}
-                  <div className="mt-6 space-y-5">
-
-                    <div>
-                      <div className="mb-2 text-[8px] font-bold uppercase tracking-wider text-purple-600">
-                        Profile
-                      </div>
-
-                      <div className="space-y-2">
-                        <MiniLine width="90%" />
-                        <MiniLine width="75%" />
-                        <MiniLine width="85%" />
-                      </div>
-                    </div>
-
-
-                    <div>
-                      <div className="mb-2 text-[8px] font-bold uppercase tracking-wider text-purple-600">
-                        Skills
-                      </div>
-
-                      <div className="flex flex-wrap gap-1.5">
-
-                        <SkillBadge text="Python" />
-                        <SkillBadge text="React" />
-                        <SkillBadge text="SQL" />
-                        <SkillBadge text="Java" />
-                        <SkillBadge text="Git" />
-
-                      </div>
-                    </div>
-
-
-                    <div>
-                      <div className="mb-2 text-[8px] font-bold uppercase tracking-wider text-purple-600">
-                        Education
-                      </div>
-
-                      <div className="text-[8px] font-semibold text-gray-700">
-                        B.E. Computer Science
-                      </div>
-
-                      <div className="mt-1 text-[7px] text-gray-400">
-                        NIE Mysore · 2024–2028
-                      </div>
-                    </div>
-
-
-                    <div>
-                      <div className="mb-2 text-[8px] font-bold uppercase tracking-wider text-purple-600">
-                        Certifications
-                      </div>
-
-                      <div className="rounded-md bg-purple-50 p-2 text-[7px] text-purple-700">
-                        Professional Ethical Hacking
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-
-                {/* ================= ACTUAL RESUME ================= */}
-                <div className="rounded-xl bg-white p-5 shadow-sm">
-
-                  {/* Resume Header */}
-                  <div className="flex items-start justify-between border-b border-gray-100 pb-4">
-
-                    <div>
-
-                      <div className="text-lg font-bold text-[#172033]">
-                        Ananya Rao
-                      </div>
-
-                      <div className="mt-1 text-[8px] font-medium text-purple-600">
-                        SOFTWARE ENGINEER · AI & FULL STACK
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap gap-2 text-[7px] text-gray-400">
-                        <span>ananya@email.com</span>
-                        <span>•</span>
-                        <span>LinkedIn</span>
-                        <span>•</span>
-                        <span>GitHub</span>
-                      </div>
-
-                    </div>
-
-
-                    {/* Resume score */}
-                    <div className="relative flex h-14 w-14 items-center justify-center rounded-full border-[5px] border-purple-300">
-
-                      <div className="text-center">
-                        <div className="text-[10px] font-bold text-purple-600">
-                          92%
-                        </div>
-
-                        <div className="text-[6px] text-gray-400">
-                          ATS
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  {/* Summary */}
-                  <ResumeSection title="PROFESSIONAL SUMMARY">
-
-                    <p className="text-[7px] leading-3 text-gray-500">
-                      Computer Science student focused on building scalable
-                      software applications and AI-powered solutions with
-                      strong foundations in Python, Java, SQL and modern
-                      web technologies.
-                    </p>
-
-                  </ResumeSection>
-
-
-                  {/* Experience */}
-                  <ResumeSection title="EXPERIENCE">
-
-                    <div className="flex justify-between">
-
-                      <div>
-                        <div className="text-[8px] font-bold text-gray-800">
-                          Software Engineering Intern
-                        </div>
-
-                        <div className="text-[7px] text-purple-600">
-                          Tech Solutions Pvt. Ltd.
-                        </div>
-                      </div>
-
-                      <div className="text-[6px] text-gray-400">
-                        2026
-                      </div>
-
-                    </div>
-
-                    <div className="mt-2 space-y-1.5">
-
-                      <ResumeBullet>
-                        Developed responsive web features using React and
-                        REST APIs.
-                      </ResumeBullet>
-
-                      <ResumeBullet>
-                        Improved API performance through optimized database
-                        queries.
-                      </ResumeBullet>
-
-                    </div>
-
-                  </ResumeSection>
-
-
-                  {/* Projects */}
-                  <ResumeSection title="PROJECTS">
-
-                    <div className="space-y-3">
-
-                      <div>
-                        <div className="text-[8px] font-bold text-gray-800">
-                          AI Resume Optimizer
-                        </div>
-
-                        <div className="mt-1 text-[7px] leading-3 text-gray-500">
-                          Built an AI-assisted resume optimization platform
-                          using React, FastAPI and NLP techniques.
-                        </div>
-
-                        <div className="mt-1 flex gap-1">
-                          <ProjectTag text="React" />
-                          <ProjectTag text="FastAPI" />
-                          <ProjectTag text="AI" />
-                        </div>
-                      </div>
-
-
-                      <div>
-                        <div className="text-[8px] font-bold text-gray-800">
-                          Disaster Relief Management
-                        </div>
-
-                        <div className="mt-1 text-[7px] leading-3 text-gray-500">
-                          Full-stack system for coordinating disaster resources
-                          and managing relief information.
-                        </div>
-
-                        <div className="mt-1 flex gap-1">
-                          <ProjectTag text="Node.js" />
-                          <ProjectTag text="MySQL" />
-                          <ProjectTag text="React" />
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </ResumeSection>
-
-
-                  {/* Achievements */}
-                  <ResumeSection title="ACHIEVEMENTS">
-
-                    <div className="grid grid-cols-2 gap-2">
-
-                      <div className="rounded-md bg-purple-50 p-2">
-                        <div className="text-[7px] font-bold text-purple-700">
-                          9.3+ CGPA
-                        </div>
-                        <div className="mt-1 text-[6px] text-gray-400">
-                          Academic Excellence
-                        </div>
-                      </div>
-
-                      <div className="rounded-md bg-purple-50 p-2">
-                        <div className="text-[7px] font-bold text-purple-700">
-                          12+ Projects
-                        </div>
-                        <div className="mt-1 text-[6px] text-gray-400">
-                          Technical Portfolio
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </ResumeSection>
-
-                </div>
-              </div>
-            </div>
-
-
-            {/* =================================================
-                FLOATING ATS CARD
-            ================================================== */}
-            <div className="float-animation absolute -right-1 top-10 z-20 rounded-2xl border border-purple-100 bg-white px-5 py-4 shadow-[0_20px_40px_rgba(84,36,232,0.16)] md:-right-5">
-
-              <div className="text-[10px] font-medium text-gray-400">
-                ATS Score
-              </div>
-
-              <div className="mt-1 flex items-end gap-1">
-
-                <span className="text-2xl font-bold text-purple-600">
-                  92%
-                </span>
-
-                <span className="mb-1 text-[8px] font-medium text-green-500">
-                  +18%
-                </span>
-
-              </div>
-
-              <div className="mt-2 h-1.5 w-24 overflow-hidden rounded-full bg-purple-100">
-                <div className="h-full w-[92%] rounded-full bg-gradient-to-r from-purple-500 to-violet-500" />
-              </div>
-
-            </div>
-
-
-            {/* =================================================
-                FLOATING AI CARD
-            ================================================== */}
-            <div className="float-slow absolute -bottom-3 left-0 z-20 w-[220px] rounded-2xl border border-purple-100 bg-white p-4 shadow-[0_20px_45px_rgba(84,36,232,0.16)] md:-left-8">
-
-              <div className="flex items-center gap-2">
-
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-sm">
-                  ✨
-                </div>
-
-                <div>
-                  <div className="text-xs font-bold text-purple-600">
-                    AI Writing Assistant
-                  </div>
-
-                  <div className="text-[8px] text-gray-400">
-                    Improved your project description
-                  </div>
-                </div>
-
-              </div>
-
-
-              <div className="mt-3 rounded-lg bg-[#f4f0ff] p-3">
-
-                <p className="text-[7px] leading-3 text-gray-500">
-                  "Built a web app and fixed bugs."
-                </p>
-
-              </div>
-
-
-              <div className="mt-2 rounded-lg bg-gradient-to-r from-[#5424e8] to-[#8b20ed] p-3">
-
-                <p className="text-[7px] font-medium leading-3 text-white">
-                  "Developed a scalable web application using React and
-                  REST APIs, improving user experience and application
-                  reliability."
-                </p>
-
-              </div>
-
-            </div>
-
-
-            {/* =================================================
-                FLOATING JOB MATCH CARD
-            ================================================== */}
-            <div className="float-animation absolute bottom-20 right-0 z-20 rounded-xl border border-purple-100 bg-white px-4 py-3 shadow-lg md:-right-8">
-
-              <div className="flex items-center gap-3">
-
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-green-600">
-                  ✓
-                </div>
-
-                <div>
-                  <div className="text-[9px] text-gray-400">
-                    Job Match
-                  </div>
-
-                  <div className="text-sm font-bold text-gray-800">
-                    94%
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* Small AI optimized badge */}
-            <div className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 rounded-full border border-purple-100 bg-white px-4 py-2 text-[9px] font-semibold text-purple-600 shadow-lg">
-              ✨ AI Optimized
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-
-      {/* ================= ATS SECTION ================= */}
-      <section
-        id="features"
-        className="bg-[#f3f3ff] px-6 py-24 lg:px-10"
-      >
-        <div className="mx-auto max-w-7xl">
-
-          <div className="text-center">
-
-            <h2 className="text-3xl font-bold md:text-4xl">
-              Beat the Bots. Impress the Humans.
-            </h2>
-
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-gray-600">
-              Our intelligent resume platform helps your resume pass through
-              screening filters while maintaining professional quality.
-            </p>
-
-          </div>
-
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-
-            <FeatureCard
-              icon="▣"
-              title="ATS Deep-Logic"
-              text="We optimize your resume for Applicant Tracking Systems to ensure strong visibility."
-            />
-
-            <FeatureCard
-              icon="⌕"
-              title="Smart Keywords"
-              text="Our AI analyzes job descriptions and recommends relevant industry keywords for your resume."
-            />
-
-            <FeatureCard
-              icon="●"
-              title="Human-Centric"
-              text="Your resume stays recruiter-friendly, impactful and professional while remaining ATS compatible."
-            />
-
-          </div>
-        </div>
-      </section>
-
-
-      {/* ================= AI SECTION ================= */}
-      <section className="bg-[#eef0ff] px-6 py-24 lg:px-10">
-
-        <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-2">
-
-          <div className="interactive-card rounded-2xl bg-white p-5 shadow-xl">
-
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-purple-600">
-              ✨ AI Writing Assistant
-            </div>
-
-            <div className="rounded-lg bg-[#f1efff] p-4 text-xs text-gray-600">
-              "I wrote some Python code for a web app and fixed bugs."
-            </div>
-
-            <div className="my-4 text-center text-purple-500">
-              ↓
-            </div>
-
-            <div className="rounded-lg bg-gradient-to-r from-[#5424e8] to-[#7b20e8] p-5 text-sm text-white shadow-lg">
-
-              <p className="font-medium">
-                "Architected a scalable REST API using FastAPI and
-                PostgreSQL, reducing database latency by 40% through
-                optimized indexing and asynchronous query handling."
+              <h1 className="font-headline-lg text-[44px] md:text-[60px] lg:text-[72px] leading-[1.1] text-primary">
+                Build Your Dream Resume.
+                <br />
+                <span className="text-secondary">Land Your Career.</span>
+              </h1>
+
+              <p className="text-body-lg text-on-surface-variant max-w-xl leading-relaxed">
+                Elevate your professional profile with our IEEE-standard CV
+                builder. Powered by AI to beat the bots and impress human
+                recruiters.
               </p>
 
+              <div className="flex flex-wrap gap-4 pt-4">
+                <Link
+                  href="/signup"
+                  className="bg-primary text-white px-8 py-4 rounded-full font-semibold text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all btn-press"
+                >
+                  Start Building For Free
+                </Link>
+                <Link
+                  href="#templates"
+                  className="bg-surface-container-highest text-primary px-8 py-4 rounded-full font-semibold text-lg hover:bg-surface-container-high transition-all"
+                >
+                  View Templates
+                </Link>
+              </div>
+
+              <div className="flex items-center gap-4 text-on-surface-variant">
+                <div className="flex -space-x-3">
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-surface-dim" />
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-surface-container" />
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-secondary-fixed" />
+                </div>
+                <p className="text-label-md">
+                  <span className="font-bold text-on-surface">10,000+</span>{" "}
+                  professionals hired this month
+                </p>
+              </div>
             </div>
-          </div>
 
+            {/* Right Column: Resume mockup */}
+            <div className="col-span-12 lg:col-span-5 relative flex justify-center lg:justify-end py-12 lg:py-0">
+              <div className="glass-card p-4 rounded-[32px] border border-outline-variant shadow-2xl animate-float relative z-10 w-full max-w-[480px]">
+                <div className="bg-white rounded-[24px] overflow-hidden border border-outline-variant aspect-[3/4] flex flex-col">
+                  {/* Mockup Top Bar */}
+                  <div className="h-12 bg-surface-container/50 border-b border-outline-variant flex items-center px-4 gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-error/30" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-secondary/30" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary/30" />
+                  </div>
 
-          <div>
+                  {/* Mockup Content */}
+                  <div className="flex-1 p-8 flex gap-8">
+                    <div className="w-1/3 space-y-6 border-r border-outline-variant pr-8">
+                      <div className="h-4 w-full bg-surface-container rounded-sm" />
+                      <div className="space-y-3">
+                        <div className="h-2 w-full bg-surface-container-low rounded-sm" />
+                        <div className="h-2 w-5/6 bg-surface-container-low rounded-sm" />
+                        <div className="h-2 w-4/6 bg-surface-container-low rounded-sm" />
+                      </div>
+                      <div className="pt-6 space-y-3">
+                        <div className="h-6 w-full bg-primary/5 rounded-md" />
+                        <div className="h-6 w-full bg-surface-container-low rounded-md" />
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-8">
+                      <div className="h-8 w-2/3 bg-primary/10 rounded-sm" />
+                      <div className="flex gap-4">
+                        <div className="w-20 h-20 bg-surface-container rounded-full shrink-0" />
+                        <div className="flex-1 space-y-3 py-2">
+                          <div className="h-4 w-full bg-surface-container rounded-sm" />
+                          <div className="h-3 w-1/2 bg-surface-container-low rounded-sm" />
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="h-2 w-full bg-surface-container-low rounded-sm" />
+                        <div className="h-2 w-full bg-surface-container-low rounded-sm" />
+                        <div className="h-2 w-5/6 bg-surface-container-low rounded-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <div className="mb-5 inline-flex rounded-full bg-white px-4 py-2 text-xs font-medium text-purple-600">
-              ✨ AI Writing Assistant
+              {/* Decorative Elements */}
+              <div className="absolute -top-10 -right-10 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl -z-10" />
+              <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl -z-10" />
+            </div>
+          </Container>
+        </section>
+
+        {/* ================= FEATURES BENTO GRID ================= */}
+        <section id="features" className="py-24 md:py-32 bg-white">
+          <Container>
+            <div className="text-center mb-20 space-y-6">
+              <h2 className="font-headline-lg text-[36px] md:text-[48px] text-primary">
+                Everything You Need to Get Hired
+              </h2>
+              <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                Modern tools for modern job seekers. We handle the formatting
+                and technicalities so you can focus on your achievements.
+              </p>
             </div>
 
-            <h2 className="text-3xl font-bold md:text-4xl">
-              Write Like a Pro,
-              <br />
-              Even If You Aren't One.
-            </h2>
+            <div className="grid grid-cols-12 gap-6">
+              <FeatureCard
+                icon="psychology"
+                iconClass="bg-primary-container"
+                title="AI Resume Assistant"
+                text="Our intelligent AI analyzes job descriptions and suggests powerful action verbs and skills to highlight your expertise."
+              />
+              <FeatureCard
+                icon="fact_check"
+                iconClass="bg-secondary"
+                title="ATS Resume Checker"
+                text="Instant feedback on how well your CV ranks against Applicant Tracking Systems used by top Fortune 500 companies."
+              />
+              <FeatureCard
+                icon="web_stories"
+                iconClass="bg-primary"
+                title="Beautiful Templates"
+                text="Professionally designed IEEE-standard templates that are aesthetically pleasing and recruiter-approved."
+              />
+            </div>
+          </Container>
+        </section>
 
-            <p className="mt-5 leading-7 text-gray-600">
-              Don't let weak descriptions hold your career back. Our AI
-              Editor suggests action-oriented verbs and quantifiable
-              achievements based on your specific industry.
-            </p>
+        {/* ================= HOW IT WORKS ================= */}
+        <section id="how-it-works" className="py-24 md:py-32 bg-surface-container-low overflow-hidden">
+          <Container>
+            <div className="text-center mb-24">
+              <h2 className="font-headline-lg text-[36px] md:text-[48px] text-primary">
+                Your Path to Employment
+              </h2>
+              <p className="text-body-lg text-on-surface-variant mt-4">
+                Three simple steps to a professional CV.
+              </p>
+            </div>
 
-            <ul className="mt-6 space-y-4 text-sm text-gray-700">
-              <li>✓ Tone optimization for your industry</li>
-              <li>✓ Grammar and syntax polishing</li>
-              <li>✓ Quantifiable impact suggestions</li>
-            </ul>
+            <div className="grid grid-cols-12 gap-6">
+              <Step
+                number="1"
+                title="Pick a Template"
+                text="Select from our curated list of professional, ATS-friendly designs."
+              />
+              <Step
+                number="2"
+                title="Input Your Content"
+                text="Follow our prompts and use AI suggestions to describe your experience."
+              />
+              <Step
+                number="3"
+                title="Download & Apply"
+                text="Get your CV in PDF or DOCX format and start landing interviews."
+              />
+            </div>
+          </Container>
+        </section>
 
-          </div>
-        </div>
-      </section>
+        {/* ================= CTA ================= */}
+        <section id="pricing" className="py-24 md:py-32">
+          <Container>
+            <div className="bg-primary-container rounded-[48px] p-12 md:p-24 text-center relative overflow-hidden shadow-2xl">
+              <div className="relative z-10 space-y-10">
+                <h2 className="text-white font-headline-lg text-[40px] md:text-[56px] leading-tight">
+                  Ready to Build Your Resume?
+                </h2>
+                <p className="text-on-primary-container/90 text-body-lg max-w-2xl mx-auto leading-relaxed">
+                  Join thousands of job seekers who landed their dream jobs
+                  using MakeMyCV&apos;s professional tools.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-6 justify-center pt-4">
+                  <Link
+                    href="/signup"
+                    className="bg-white text-primary px-12 py-5 rounded-full font-bold text-xl hover:bg-secondary-fixed transition-all btn-press shadow-lg"
+                  >
+                    Get Started Now
+                  </Link>
+                  <Link
+                    href="#features"
+                    className="bg-transparent text-white border-2 border-white/30 px-12 py-5 rounded-full font-bold text-xl hover:bg-white/10 transition-all btn-press"
+                  >
+                    View Examples
+                  </Link>
+                </div>
+              </div>
 
-
-      {/* ================= ENGINEERING SECTION ================= */}
-      <section className="bg-[#f8f8ff] px-6 py-24 lg:px-10">
-
-        <div className="mx-auto max-w-7xl text-center">
-
-          <h2 className="text-3xl font-bold md:text-4xl">
-            Standardized for Engineering Excellence
-          </h2>
-
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-gray-600">
-            Stop worrying about design and start focusing on your tech stack.
-            We use industry-standard formats that recruiters expect.
-          </p>
-
-
-          <div className="mt-12 grid gap-5 md:grid-cols-4">
-
-            <EngineeringCard
-              icon="&lt;/&gt;"
-              title="Technical Skills"
-              text="Optimized sections for languages, frameworks and developer tools."
-            />
-
-            <EngineeringCard
-              icon="▣"
-              title="Project Focus"
-              text="Describe projects with clear impact and technical depth."
-            />
-
-            <EngineeringCard
-              icon="□"
-              title="Internships"
-              text="Highlight real-world experience using quantifiable achievements."
-            />
-
-            <EngineeringCard
-              icon="◉"
-              title="Certifications"
-              text="Showcase verified technical certifications clearly."
-            />
-
-          </div>
-
-          <p className="mt-8 text-xs font-medium text-purple-600">
-            One profile, one perfect ATS-ready PDF.
-          </p>
-
-        </div>
-      </section>
-
-
-      {/* ================= HOW IT WORKS ================= */}
-      <section
-        id="how-it-works"
-        className="bg-[#eef0ff] px-6 py-24 lg:px-10"
-      >
-
-        <div className="mx-auto max-w-7xl text-center">
-
-          <h2 className="text-3xl font-bold md:text-4xl">
-            Your Path to Employment.
-          </h2>
-
-          <p className="mt-3 text-sm text-gray-500">
-            Simple, streamlined, and effective.
-          </p>
-
-
-          <div className="relative mt-16 grid gap-12 md:grid-cols-3">
-
-            <Step
-              number="1"
-              title="Build Your Profile"
-              text="Add your education, technical skills, projects, certifications, internships, and achievements in one place."
-            />
-
-            <Step
-              number="2"
-              title="Improve with AI"
-              text="Turn your basic project and experience descriptions into clear, impactful resume content with AI assistance."
-            />
-
-            <Step
-              number="3"
-              title="Generate & Apply"
-              text="Generate recruiter-ready resumes for different roles and quickly download them for your internship or placement applications."
-            />
-
-          </div>
-        </div>
-      </section>
-
-
-      {/* ================= CTA ================= */}
-      <section className="px-6 py-20 lg:px-10">
-
-        <div className="mx-auto max-w-6xl rounded-3xl bg-[#f0efff] px-6 py-16 text-center shadow-sm">
-
-          <h2 className="text-4xl font-bold md:text-5xl">
-            Ready to Land Your Dream Job?
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-gray-600">
-            Join MakeMyCV to build your technical profile and land your next
-            Software Engineering internship or Full Stack Developer role.
-          </p>
-
-          <Link
-            href="/signup"
-            className="interactive-button mt-8 inline-block rounded-lg bg-gradient-to-r from-[#4f22df] to-[#7b1fe8] px-7 py-3 text-sm font-semibold text-white shadow-lg"
-          >
-            Build Your Free Resume
-          </Link>
-
-          <p className="mt-4 text-xs text-gray-400">
-            No credit card required. Start for free.
-          </p>
-
-        </div>
-      </section>
-
+              {/* Abstract Background Shapes */}
+              <div className="absolute -bottom-20 -right-20 w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[100px]" />
+              <div className="absolute -top-20 -left-20 w-[400px] h-[400px] bg-on-primary-container/10 rounded-full blur-[100px]" />
+            </div>
+          </Container>
+        </section>
+      </main>
 
       {/* ================= FOOTER ================= */}
-      <footer className="bg-[#f0f0ff] px-6 py-12 lg:px-10">
-
-        <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-4">
-
-          <div>
-
-            <h3 className="text-lg font-bold text-purple-600">
-              📄 MakeMyCV
-            </h3>
-
-            <p className="mt-4 max-w-xs text-xs leading-6 text-gray-500">
-              The ultimate career companion for the modern workforce.
-              Precision, automation, and clarity in every document.
-            </p>
-
-          </div>
-
-
-          <FooterColumn
-            title="Product"
-            links={[
-              "Resume Builder",
-              "Cover Letter",
-              "AI Content Optimizer",
-              "Pricing",
-            ]}
-          />
-
-          <FooterColumn
-            title="Resources"
-            links={[
-              "Resume Guide",
-              "ATS Tips",
-              "Job Search Strategy",
-              "Career Blog",
-            ]}
-          />
-
-          <FooterColumn
-            title="Company"
-            links={[
-              "About Us",
-              "Privacy Policy",
-              "Terms of Service",
-              "Contact Support",
-            ]}
-          />
-
-        </div>
-
-        <div className="mx-auto mt-10 max-w-7xl border-t border-gray-200 pt-6 text-xs text-gray-400">
-          © 2026 MakeMyCV. Empowering the next generation.
-        </div>
-
-      </footer>
-
+      <Footer />
     </main>
   );
 }
 
-
 /* =========================================================
-   HERO VISUAL COMPONENTS
-========================================================= */
+   LOCAL COMPONENTS
+   ========================================================= */
 
-function MiniLine({ width }: { width: string }) {
-  return (
-    <div
-      className="h-1.5 rounded-full bg-gray-200"
-      style={{ width }}
-    />
-  );
-}
-
-
-function SkillBadge({ text }: { text: string }) {
-  return (
-    <span className="rounded-md bg-purple-50 px-2 py-1 text-[6px] font-medium text-purple-600">
-      {text}
-    </span>
-  );
-}
-
-
-function ResumeSection({
-  title,
+function NavLink({
+  href,
+  active = false,
   children,
 }: {
-  title: string;
+  href: string;
+  active?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-4">
-
-      <div className="mb-2 text-[7px] font-bold tracking-wider text-purple-600">
-        {title}
-      </div>
-
+    <a
+      href={href}
+      className={`text-label-md hover:text-primary transition-colors h-full flex items-center border-b-2 ${
+        active
+          ? "border-primary text-primary font-bold"
+          : "border-transparent text-on-surface-variant"
+      }`}
+    >
       {children}
-
-    </div>
+    </a>
   );
 }
-
-
-function ResumeBullet({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-1.5">
-
-      <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-purple-500" />
-
-      <p className="text-[7px] leading-3 text-gray-500">
-        {children}
-      </p>
-
-    </div>
-  );
-}
-
-
-function ProjectTag({ text }: { text: string }) {
-  return (
-    <span className="rounded bg-purple-50 px-1.5 py-0.5 text-[6px] font-medium text-purple-600">
-      {text}
-    </span>
-  );
-}
-
-
-/* =========================================================
-   OTHER COMPONENTS
-========================================================= */
 
 function FeatureCard({
   icon,
+  iconClass,
   title,
   text,
 }: {
   icon: string;
+  iconClass: string;
   title: string;
   text: string;
 }) {
   return (
-    <div className="interactive-card rounded-xl bg-white p-6 shadow-sm">
-
-      <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
-        {icon}
+    <div className="col-span-12 md:col-span-4 tilt-card p-8 bg-surface-bright border border-outline-variant rounded-[24px] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+      <div className="space-y-6">
+        <div
+          className={`w-14 h-14 ${iconClass} rounded-2xl flex items-center justify-center`}
+        >
+          <MaterialIcon
+            name={icon}
+            className="text-white text-3xl"
+            filled
+          />
+        </div>
+        <h3 className="font-headline-md text-primary text-2xl">{title}</h3>
+        <p className="text-on-surface-variant leading-relaxed">{text}</p>
       </div>
-
-      <h3 className="font-semibold">
-        {title}
-      </h3>
-
-      <p className="mt-3 text-sm leading-6 text-gray-500">
-        {text}
-      </p>
-
+      <div className="pt-8">
+        <span className="text-primary font-bold flex items-center gap-2 group cursor-pointer">
+          Learn More{" "}
+          <MaterialIcon
+            name="arrow_forward"
+            className="group-hover:translate-x-1 transition-transform"
+          />
+        </span>
+      </div>
     </div>
   );
 }
-
-
-function EngineeringCard({
-  icon,
-  title,
-  text,
-}: {
-  icon: string;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="interactive-card rounded-xl bg-white p-6 text-left shadow-sm">
-
-      <div className="mb-4 text-sm font-bold text-purple-600">
-        {icon}
-      </div>
-
-      <h3 className="font-semibold">
-        {title}
-      </h3>
-
-      <p className="mt-3 text-xs leading-5 text-gray-500">
-        {text}
-      </p>
-
-    </div>
-  );
-}
-
 
 function Step({
   number,
@@ -979,53 +333,106 @@ function Step({
   text: string;
 }) {
   return (
-    <div className="relative">
-
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-white text-sm font-bold text-purple-600 shadow-md">
+    <div className="col-span-12 md:col-span-4 flex flex-col items-center text-center space-y-8">
+      <div className="w-20 h-20 rounded-full bg-white border-4 border-primary-fixed text-primary font-bold text-2xl flex items-center justify-center shadow-xl">
         {number}
       </div>
-
-      <h3 className="mt-5 font-semibold">
-        {title}
-      </h3>
-
-      <p className="mx-auto mt-3 max-w-xs text-xs leading-5 text-gray-500">
-        {text}
-      </p>
-
+      <div className="space-y-4">
+        <h4 className="font-bold text-xl text-primary">{title}</h4>
+        <p className="text-on-surface-variant max-w-xs mx-auto leading-relaxed">
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
 
-
-function FooterColumn({
-  title,
-  links,
-}: {
-  title: string;
-  links: string[];
-}) {
+function Footer() {
   return (
-    <div>
+    <footer className="bg-surface-container border-t border-outline-variant">
+      <Container className="py-20">
+        <div className="grid grid-cols-12 gap-6 mb-16">
+          <div className="col-span-12 md:col-span-4 space-y-6">
+            <div className="text-headline-md font-bold text-primary">
+              MakeMyCV
+            </div>
+            <p className="text-on-surface-variant max-w-xs leading-relaxed">
+              The ultimate IEEE-standard CV builder for ambitious professionals
+              worldwide.
+            </p>
+          </div>
 
-      <h4 className="text-sm font-semibold">
-        {title}
-      </h4>
+          <div className="col-span-6 md:col-span-2 space-y-6">
+            <h5 className="font-bold text-on-surface">Product</h5>
+            <ul className="space-y-4 text-on-surface-variant">
+              <FooterLink>Templates</FooterLink>
+              <FooterLink>AI Writer</FooterLink>
+              <FooterLink>ATS Scan</FooterLink>
+            </ul>
+          </div>
 
-      <ul className="mt-4 space-y-3">
+          <div className="col-span-6 md:col-span-2 space-y-6">
+            <h5 className="font-bold text-on-surface">Resources</h5>
+            <ul className="space-y-4 text-on-surface-variant">
+              <FooterLink>Career Blog</FooterLink>
+              <FooterLink>Guides</FooterLink>
+              <FooterLink>FAQ</FooterLink>
+            </ul>
+          </div>
 
-        {links.map((link) => (
-          <li key={link}>
+          <div className="col-span-12 md:col-span-4 space-y-6">
+            <h5 className="font-bold text-on-surface">Newsletter</h5>
+            <p className="text-on-surface-variant">
+              Get the latest career tips delivered to your inbox.
+            </p>
+            {/* Newsletter has no backend endpoint yet — rendered as a static field */}
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Email address"
+                aria-label="Email address"
+                readOnly
+                className="bg-surface-container-lowest border border-outline-variant rounded-full px-6 py-3 flex-1 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-not-allowed"
+              />
+              <button
+                type="button"
+                aria-label="Subscribe"
+                disabled
+                className="bg-primary text-white p-3 rounded-full opacity-60 cursor-not-allowed"
+              >
+                <MaterialIcon name="send" className="block" />
+              </button>
+            </div>
+          </div>
+        </div>
 
-            <span className="cursor-pointer text-xs text-gray-500 transition hover:text-purple-600">
-              {link}
-            </span>
+        <div className="pt-10 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-label-sm text-on-surface-variant">
+            © 2026 MakeMyCV. Made by NISB.
+          </p>
+          <div className="flex gap-8 text-label-sm font-semibold text-on-surface-variant">
+            <a className="hover:underline" href="#">
+              Privacy Policy
+            </a>
+            <a className="hover:underline" href="#">
+              Terms of Service
+            </a>
+            <a className="hover:underline" href="#">
+              Contact Us
+            </a>
+          </div>
+        </div>
+      </Container>
+    </footer>
+  );
+}
 
-          </li>
-        ))}
-
-      </ul>
-
-    </div>
+function FooterLink({ children }: { children: React.ReactNode }) {
+  return (
+    <li>
+      <a className="hover:text-primary transition-colors cursor-pointer">
+        {children}
+      </a>
+    </li>
   );
 }
