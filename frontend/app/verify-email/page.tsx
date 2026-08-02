@@ -149,7 +149,7 @@ export default function VerifyEmail() {
             </h1>
             <p className="text-body-md text-on-surface-variant">
               We&apos;ve sent a 6-digit code to your inbox. Please enter it
-              below to secure your IEEE professional profile.
+              below to secure your MakeMyCV account.
               {email ? (
                 <>
                   {" "}
@@ -161,16 +161,16 @@ export default function VerifyEmail() {
             </p>
           </div>
 
-          {/* OTP Inputs */}
+          {/* OTP Inputs — grid keeps 6 boxes inside the card on any width */}
           <div
-            className="flex justify-between gap-2 md:gap-3 mb-10"
+            className="grid grid-cols-6 gap-2 md:gap-3 mb-10"
             id="otp-container"
           >
             {otp.map((digit, index) => (
               <input
                 key={index}
                 id={`otp-${index}`}
-                className="otp-input w-12 h-14 md:w-14 md:h-16 text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
+                className="otp-input w-full aspect-square text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
                 maxLength={1}
                 inputMode="numeric"
                 autoComplete="one-time-code"
@@ -193,7 +193,7 @@ export default function VerifyEmail() {
           {/* Actions */}
           <div className="space-y-4">
             <button
-              className="w-full h-14 bg-primary-container text-on-tertiary font-label-md rounded-full hover:bg-[#006699] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-shine w-full h-14 bg-primary-container text-on-tertiary font-label-md rounded-full hover:bg-[#006699] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               id="verify-btn"
               type="button"
               onClick={handleVerify}
@@ -229,7 +229,7 @@ export default function VerifyEmail() {
           <div className="mt-12 pt-8 border-t border-outline-variant flex items-center justify-center gap-4 text-on-tertiary-container">
             <div className="flex items-center gap-1">
               <MaterialIcon name="lock" className="text-[16px]" />
-              <span className="text-label-sm">IEEE Encrypted</span>
+              <span className="text-label-sm">Secured</span>
             </div>
             <div className="w-1 h-1 bg-outline-variant rounded-full" />
             <div className="flex items-center gap-1">

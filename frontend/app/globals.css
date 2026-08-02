@@ -129,6 +129,31 @@ body {
   transform: scale(0.95);
 }
 
+/* Shine sweep across a button on hover (primary CTAs) */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+}
+.btn-shine:hover::after {
+  left: 130%;
+}
+
 /* Floating hero elements */
 @keyframes float {
   0%,

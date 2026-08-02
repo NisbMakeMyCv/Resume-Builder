@@ -122,8 +122,8 @@ export default function SignIn() {
               MakeMyCV
             </h1>
             <p className="mt-4 text-body-lg text-on-primary-container opacity-80 max-w-md">
-              The gold standard for professional career documentation.
-              Compliance with IEEE standards ensured.
+              One clean, recruiter-approved template. Write your story, let the
+              AI polish the details, and get hired.
             </p>
           </div>
 
@@ -136,10 +136,10 @@ export default function SignIn() {
               />
               <div>
                 <p className="text-label-md text-on-primary-container">
-                  Enterprise Validated
+                  ATS-Friendly
                 </p>
                 <p className="text-body-md text-on-primary-container opacity-70">
-                  Trusted by over 500,000 professionals worldwide.
+                  Your resume reads perfectly for both machines and recruiters.
                 </p>
               </div>
             </div>
@@ -252,12 +252,12 @@ export default function SignIn() {
                     Change email
                   </button>
                 </div>
-                <div className="flex justify-between gap-2">
+                <div className="grid grid-cols-6 gap-2">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
                       id={`otp-${index}`}
-                      className="otp-input w-12 h-14 text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
+                      className="otp-input w-full aspect-square text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
                       maxLength={1}
                       inputMode="numeric"
                       autoComplete="one-time-code"
@@ -284,7 +284,7 @@ export default function SignIn() {
             <div className="space-y-4 pt-2">
               {otpSent ? (
                 <button
-                  className="btn-press w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="btn-press btn-shine w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   type="button"
                   onClick={handleVerify}
                   disabled={loading}
@@ -295,7 +295,7 @@ export default function SignIn() {
               ) : (
                 <form onSubmit={handleRequestOtp}>
                   <button
-                    className="btn-press w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="btn-press btn-shine w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                     type="submit"
                     disabled={otpLoading}
                   >
@@ -333,7 +333,7 @@ export default function SignIn() {
                 className="text-primary font-semibold hover:underline"
                 href="/signup"
               >
-                Build My CV
+                Sign Up
               </Link>
             </p>
             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 pt-4">
@@ -353,7 +353,7 @@ export default function SignIn() {
                 className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
                 href="#"
               >
-                Help Center
+                Contact
               </a>
             </div>
           </div>

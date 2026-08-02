@@ -238,7 +238,7 @@ export default function SignUp() {
               {/* Action Buttons */}
               <div className="space-y-4 pt-4">
                 <button
-                  className="btn-press w-full h-12 bg-primary-container text-white font-label-md rounded-2xl hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="btn-press btn-shine w-full h-12 bg-primary-container text-white font-label-md rounded-2xl hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   type="submit"
                   disabled={loading}
                 >

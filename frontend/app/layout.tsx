@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: "%s | MakeMyCV",
   },
   description:
-    "The IEEE-standard CV builder. Powered by AI to beat the bots and impress human recruiters.",
+    "The clean, AI-assisted resume builder. Pick the Jake template, tell your story, and get hired.",
 };
 
 export default function RootLayout({
