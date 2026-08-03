@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 
 /**
- * Max-width container — 1280px with 32px page margins (container-max / margin tokens).
+ * Full-width container — spans the viewport with 32px page margins so the
+ * landing content reaches the screen edges on wide laptop displays.
  */
 export default function Container({
   children,
@@ -11,7 +12,7 @@ export default function Container({
   className?: string;
 }) {
   return (
-    <div className={`mx-auto w-full max-w-[1280px] px-8 ${className}`}>
+    <div className={`mx-auto w-full px-8 ${className}`}>
       {children}
     </div>
   );

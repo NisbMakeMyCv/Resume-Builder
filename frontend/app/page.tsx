@@ -296,21 +296,23 @@ function Step({
 function Footer() {
   return (
     <footer className="bg-surface-container border-t border-outline-variant mt-auto">
-      <Container className="py-20">
-        <div className="grid grid-cols-12 gap-6 mb-16">
-          <div className="col-span-12 md:col-span-4 space-y-6">
+      <Container className="py-16">
+        <div className="flex flex-col md:flex-row justify-between gap-10 mb-12">
+          {/* Brand */}
+          <div className="space-y-5 max-w-xs">
             <div className="text-headline-md font-bold text-primary">
               MakeMyCV
             </div>
-            <p className="text-on-surface-variant max-w-xs leading-relaxed">
+            <p className="text-on-surface-variant leading-relaxed">
               The clean, AI-assisted resume builder for ambitious professionals
               worldwide.
             </p>
           </div>
 
-          <div className="col-span-6 md:col-span-2 space-y-6">
+          {/* Product — anchored to the right, options laid out in a row */}
+          <div className="flex flex-col gap-5 md:items-end">
             <h5 className="font-bold text-on-surface">Product</h5>
-            <ul className="space-y-4 text-on-surface-variant">
+            <ul className="flex flex-col sm:flex-row gap-3 sm:gap-8 text-on-surface-variant">
               <FooterLink>Resume</FooterLink>
               <FooterLink>AI Writer</FooterLink>
               <FooterLink>ATS Scan</FooterLink>
