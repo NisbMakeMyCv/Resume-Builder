@@ -136,7 +136,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-6 items-stretch">
               <FeatureCard
                 icon="psychology"
                 iconClass="bg-primary-container"
@@ -171,7 +171,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-6 items-stretch">
               <Step
                 number="1"
                 title="Pick a Template"
@@ -249,12 +249,12 @@ function FeatureCard({
   text: string;
 }) {
   return (
-    <div className="group col-span-12 md:col-span-4 tilt-card p-8 bg-surface-bright border border-outline-variant rounded-[24px] flex flex-col justify-between hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 hover:border-primary/40 relative overflow-hidden">
+    <div className="group col-span-12 md:col-span-4 tilt-card h-full p-8 bg-surface-bright border border-outline-variant rounded-[24px] flex flex-col items-center text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 hover:border-primary/40 relative overflow-hidden">
       {/* Hover glow accent */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 group-hover:scale-125 transition-all duration-500" />
       <div className="space-y-6 relative">
         <div
-          className={`w-14 h-14 ${iconClass} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}
+          className={`w-14 h-14 mx-auto ${iconClass} rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}
         >
           <MaterialIcon
             name={icon}
@@ -264,15 +264,6 @@ function FeatureCard({
         </div>
         <h3 className="font-headline-md text-primary text-2xl">{title}</h3>
         <p className="text-on-surface-variant leading-relaxed">{text}</p>
-      </div>
-      <div className="pt-8 relative">
-        <span className="text-primary font-bold flex items-center gap-2 group cursor-pointer">
-          Learn More{" "}
-          <MaterialIcon
-            name="arrow_forward"
-            className="group-hover:translate-x-1.5 transition-transform duration-200"
-          />
-        </span>
       </div>
     </div>
   );
