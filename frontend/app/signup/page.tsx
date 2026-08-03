@@ -75,7 +75,7 @@ export default function SignUp() {
     <main className="bg-background text-on-background min-h-screen flex flex-col">
       {/* Top Nav Bar (transactional — brand only) */}
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center">
-        <div className="max-w-[1280px] mx-auto px-8 w-full flex justify-between items-center">
+        <div className="w-full px-8 flex justify-between items-center">
           <div className="text-headline-md font-extrabold text-primary">
             MakeMyCV
           </div>
@@ -288,7 +288,7 @@ export default function SignUp() {
 
       {/* Footer */}
       <footer className="bg-surface-container py-8 border-t border-outline-variant">
-        <div className="max-w-[1280px] mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="w-full px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-label-sm text-on-surface-variant">
             © 2026 MakeMyCV. Made by NISB.
           </div>

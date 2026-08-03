@@ -122,7 +122,7 @@ export default function VerifyEmail() {
     <main className="bg-background font-body-md text-on-background min-h-screen flex flex-col">
       {/* Top Nav Bar (transactional — brand only) */}
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant">
-        <div className="max-w-[1280px] mx-auto px-8 h-16 flex items-center justify-center md:justify-start">
+        <div className="w-full px-8 h-16 flex items-center">
           <span className="text-headline-md font-bold text-primary">
             MakeMyCV
           </span>
@@ -254,7 +254,7 @@ export default function VerifyEmail() {
 
       {/* Footer */}
       <footer className="w-full bg-surface-container border-t border-outline-variant mt-auto">
-        <div className="max-w-[1280px] mx-auto px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-6 text-on-surface-variant font-label-sm">
+        <div className="w-full px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-6 text-on-surface-variant font-label-sm">
           <span>© 2026 MakeMyCV. Made by NISB.</span>
           <div className="flex gap-6">
             <a className="hover:underline" href="#">
