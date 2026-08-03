@@ -30,6 +30,9 @@ ENV/
 # Put real local credentials in .env.local (never committed).
 .env.local
 .env.*.local
+env.local
+# Local secret snapshot downloaded for reference — never commit (contains real GOOGLE_CLIENT_ID + SMTP creds).
+backend/env.download
 
 # IDEs
 .idea/
@@ -44,3 +47,13 @@ docker-compose.override.yml
 # OS Files
 .DS_Store
 Thumbs.db
+
+# AI coding tooling / harness session data
+.claude/
+frontend/.claude/
+.opencode/
+.aider/
+.cursor/
+.windsurf/
+.continue/
+.frontmatter/

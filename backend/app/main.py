@@ -10,6 +10,12 @@ from app.models import user
 
 user.Base.metadata.create_all(bind=engine)
 
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    # Add the production frontend URL here when deployed.
+]
+
 app = FastAPI(
     title="MakeMyCV Backend API",
     description="RESTful API for the Resume Builder MVP",
