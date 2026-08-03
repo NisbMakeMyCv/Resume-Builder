@@ -30,6 +30,8 @@ ENV/
 # Put real local credentials in .env.local (never committed).
 .env.local
 .env.*.local
+# Local secret snapshot downloaded for reference — never commit (contains real GOOGLE_CLIENT_ID + SMTP creds).
+backend/env.download
 
 # IDEs
 .idea/
