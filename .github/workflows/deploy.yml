@@ -155,20 +155,31 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Provision AWS EC2 Instance via Terraform
-        working-directory: terraform
+      - name: Discover or Provision EC2 Instance IP
+        id: ec2-ip
         env:
           TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
           TF_VAR_allowed_ssh_cidr: "0.0.0.0/0"
         run: |
+          # 1. Check if a running EC2 instance with matching tags already exists
+          INSTANCE_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text 2>/dev/null || echo "None")
+
+          if [ "$INSTANCE_IP" != "None" ] && [ -n "$INSTANCE_IP" ]; then
+            echo "Existing EC2 Instance found: $INSTANCE_IP ✅"
+            echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "No running EC2 instance found. Provisioning via Terraform..."
+          cd terraform
           terraform init
           terraform apply -auto-approve
 
-      - name: Discover EC2 Instance IP
-        id: ec2-ip
-        run: |
-          # Query AWS for the EC2 instance with matching tags
+          # Query AWS again for the newly created instance IP
           for i in {1..10}; do
             INSTANCE_IP=$(aws ec2 describe-instances \
               --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
@@ -176,14 +187,14 @@ jobs:
               --output text)
             
             if [ "$INSTANCE_IP" != "None" ] && [ -n "$INSTANCE_IP" ]; then
-              echo "Found EC2 Instance IP: $INSTANCE_IP"
+              echo "Newly provisioned EC2 Instance IP: $INSTANCE_IP ✅"
               echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
               exit 0
             fi
             sleep 3
           done
 
-          echo "Error: Could not find a running EC2 instance after provisioning."
+          echo "Error: Could not find or provision a running EC2 instance."
           exit 1
 
   # -------------------------------------------------------------------------
@@ -213,12 +224,12 @@ jobs:
       - name: Wait for EC2 & Docker Bootstrap Readiness
         run: |
           echo "Waiting for EC2 SSH and Docker to finish bootstrapping..."
-          for i in {1..30}; do
+          for i in {1..60}; do
             if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "docker --version" >/dev/null 2>&1; then
               echo "EC2 Server and Docker Engine are ready! 🚀"
               exit 0
             fi
-            echo "Waiting for Docker bootstrap to complete... ($i/30)"
+            echo "Waiting for Docker bootstrap to complete... ($i/60)"
             sleep 5
           done
           echo "Error: Timed out waiting for Docker engine on EC2."
@@ -274,13 +285,39 @@ jobs:
             docker image prune -af
           EOF
 
-      - name: Verify Deployment
+      - name: Verify Deployment & Output Live Links
         run: |
           echo "Waiting for services to become healthy..."
           sleep 15
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ needs.provision.outputs.ec2_ip }})
+          IP="${{ needs.provision.outputs.ec2_ip }}"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${IP})
+          
           if [ "$HTTP_STATUS" != "200" ]; then
-            echo "Health check failed! Status: $HTTP_STATUS"
+            echo "❌ Health check failed! Status code: $HTTP_STATUS"
             exit 1
           fi
-          echo "Deployment verified ✅ — HTTP $HTTP_STATUS — Application is LIVE at http://${{ needs.provision.outputs.ec2_ip }}"
+
+          echo ""
+          echo "=========================================================================="
+          echo "🎉 APPLICATION IS LIVE AND HEALTHY! (HTTP $HTTP_STATUS)"
+          echo "=========================================================================="
+          echo "🌐 App URL:     http://${IP}"
+          echo "⚙️ API URL:     http://${IP}/api/v1"
+          echo "📚 Swagger Docs: http://${IP}/docs"
+          echo "🔑 SSH Command:  ssh ubuntu@${IP}"
+          echo "=========================================================================="
+          echo ""
+
+          # Populate GitHub Actions Job Summary (renders at top of GitHub Actions UI)
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ### 🚀 Deployment Successful & Verified!
+
+          | Resource | URL / Command |
+          |---|---|
+          | **🌐 Frontend App** | [http://${IP}](http://${IP}) |
+          | **⚙️ Backend API** | [http://${IP}/api/v1](http://${IP}/api/v1) |
+          | **📚 Swagger Docs** | [http://${IP}/docs](http://${IP}/docs) |
+          | **🔑 SSH Access** | \`ssh ubuntu@${IP}\` |
+
+          *Deployed successfully at $(date)*
+          EOF
