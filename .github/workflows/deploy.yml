@@ -9,6 +9,7 @@ on:
       - 'backend/**'
       - 'deployment/**'
       - 'nginx/**'
+      - 'terraform/**'
       - '.github/workflows/**'
   workflow_dispatch: # Allow manual triggering
 
