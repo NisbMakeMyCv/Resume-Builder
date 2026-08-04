@@ -130,12 +130,14 @@ jobs:
           cache-to: type=gha,mode=max
 
   # -------------------------------------------------------------------------
-  # JOB 4: Deploy to EC2
+  # JOB 4: Auto-Provision Infrastructure (Terraform)
   # -------------------------------------------------------------------------
-  deploy:
-    name: Deploy to EC2
+  provision:
+    name: Provision EC2 Infrastructure
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
+    outputs:
+      ec2_ip: ${{ steps.ec2-ip.outputs.ip }}
     
     steps:
       - name: Checkout repository
@@ -148,22 +150,53 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Discover EC2 Instance IP
-        id: ec2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Provision AWS EC2 Instance via Terraform
+        working-directory: terraform
+        env:
+          TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+          TF_VAR_allowed_ssh_cidr: "0.0.0.0/0"
         run: |
-          # Find the instance with Tag Role=AppServer and Project=MakeMyCV that is running
-          INSTANCE_IP=$(aws ec2 describe-instances \
-            --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
-            --output text)
-          
-          if [ "$INSTANCE_IP" == "None" ] || [ -z "$INSTANCE_IP" ]; then
-            echo "Error: Could not find a running EC2 instance with the specified tags."
-            exit 1
-          fi
-          
-          echo "Found EC2 Instance IP: $INSTANCE_IP"
-          echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Discover EC2 Instance IP
+        id: ec2-ip
+        run: |
+          # Query AWS for the EC2 instance with matching tags
+          for i in {1..10}; do
+            INSTANCE_IP=$(aws ec2 describe-instances \
+              --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
+              --query "Reservations[0].Instances[0].PublicIpAddress" \
+              --output text)
+            
+            if [ "$INSTANCE_IP" != "None" ] && [ -n "$INSTANCE_IP" ]; then
+              echo "Found EC2 Instance IP: $INSTANCE_IP"
+              echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            sleep 3
+          done
+
+          echo "Error: Could not find a running EC2 instance after provisioning."
+          exit 1
+
+  # -------------------------------------------------------------------------
+  # JOB 5: Deploy Application to EC2
+  # -------------------------------------------------------------------------
+  deploy:
+    name: Deploy Application to EC2
+    runs-on: ubuntu-latest
+    needs: [provision]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup SSH Key
         run: |
@@ -174,22 +207,37 @@ jobs:
           if [ -n "${{ secrets.EC2_HOST_KEY }}" ]; then
             echo "${{ secrets.EC2_HOST_KEY }}" >> ~/.ssh/known_hosts
           else
-            ssh-keyscan -H ${{ steps.ec2.outputs.ip }} >> ~/.ssh/known_hosts
+            ssh-keyscan -H ${{ needs.provision.outputs.ec2_ip }} >> ~/.ssh/known_hosts
           fi
+
+      - name: Wait for EC2 & Docker Bootstrap Readiness
+        run: |
+          echo "Waiting for EC2 SSH and Docker to finish bootstrapping..."
+          for i in {1..30}; do
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "docker --version" >/dev/null 2>&1; then
+              echo "EC2 Server and Docker Engine are ready! 🚀"
+              exit 0
+            fi
+            echo "Waiting for Docker bootstrap to complete... ($i/30)"
+            sleep 5
+          done
+          echo "Error: Timed out waiting for Docker engine on EC2."
+          exit 1
 
       - name: Copy Deployment Files
         run: |
           # Create deployment directory on server
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ steps.ec2.outputs.ip }} "mkdir -p ~/deployment/nginx"
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "mkdir -p ~/deployment/nginx"
           
           # Copy docker-compose and nginx config
-          scp -i ~/.ssh/id_rsa deployment/docker-compose.yml ubuntu@${{ steps.ec2.outputs.ip }}:~/deployment/
-          scp -i ~/.ssh/id_rsa nginx/nginx.conf ubuntu@${{ steps.ec2.outputs.ip }}:~/deployment/nginx/
+          scp -i ~/.ssh/id_rsa deployment/docker-compose.yml ubuntu@${{ needs.provision.outputs.ec2_ip }}:~/deployment/
+          scp -i ~/.ssh/id_rsa nginx/nginx.conf ubuntu@${{ needs.provision.outputs.ec2_ip }}:~/deployment/nginx/
 
       - name: Create .env on Server
         run: |
           cat > .env.prod << 'EOF'
           DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
           SMTP_USER=${{ secrets.SMTP_USER }}
@@ -201,12 +249,20 @@ jobs:
           # Remove leading whitespace caused by heredoc indentation
           sed -i 's/^[ \t]*//' .env.prod
           
-          scp -i ~/.ssh/id_rsa .env.prod ubuntu@${{ steps.ec2.outputs.ip }}:~/deployment/.env
+          scp -i ~/.ssh/id_rsa .env.prod ubuntu@${{ needs.provision.outputs.ec2_ip }}:~/deployment/.env
 
       - name: Deploy Containers
         run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ steps.ec2.outputs.ip }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
             cd ~/deployment
+            # Source environment variables
+            set -a
+            source .env
+            set +a
+            # Log in to Docker Hub to allow pulling private repositories
+            if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
+              echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin 2>/dev/null || true
+            fi
             # Pull latest images
             docker compose pull
             # Restart containers (recreates only if image changed)
@@ -222,9 +278,9 @@ jobs:
         run: |
           echo "Waiting for services to become healthy..."
           sleep 15
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ steps.ec2.outputs.ip }})
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ needs.provision.outputs.ec2_ip }})
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "Health check failed! Status: $HTTP_STATUS"
             exit 1
           fi
-          echo "Deployment verified ✅ — HTTP $HTTP_STATUS"
+          echo "Deployment verified ✅ — HTTP $HTTP_STATUS — Application is LIVE at http://${{ needs.provision.outputs.ec2_ip }}"

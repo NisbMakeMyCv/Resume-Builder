@@ -19,9 +19,17 @@ variable "instance_type" {
 variable "key_name" {
   description = "Name of the SSH key pair deployed in AWS"
   type        = string
+  default     = "makemycv-deployer-key"
+}
+
+variable "ssh_public_key" {
+  description = "Public SSH key for EC2 instance access"
+  type        = string
+  default     = ""
 }
 
 variable "allowed_ssh_cidr" {
-  description = "CIDR block allowed to SSH into the instance. Restrict to your IP, e.g. 1.2.3.4/32"
+  description = "CIDR block allowed to SSH into the instance"
   type        = string
+  default     = "0.0.0.0/0"
 }
