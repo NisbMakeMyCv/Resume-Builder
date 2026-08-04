@@ -8,8 +8,16 @@
  *   import { apiRequest, saveSession, getToken, getStoredUser, clearSession } from "@/lib/api";
  */
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  // In the browser, default to relative path /api/v1 (routed via Nginx)
+  if (typeof window !== "undefined") {
+    return "/api/v1";
+  }
+  return "http://localhost:8000/api/v1";
+}
 
 // ---------------------------------------------------------------------------
 // Core fetch wrapper
@@ -45,7 +53,8 @@ export async function apiRequest<T = unknown>(
   }
 
   // Normalize base URL and path to avoid double-slash or missing-slash issues
-  const baseUrlClean = BASE_URL.replace(/\/+$/, "");
+  const baseUrl = getBaseUrl();
+  const baseUrlClean = baseUrl.replace(/\/+$/, "");
   const pathClean = path.startsWith("/") ? path : `/${path}`;
   const url = `${baseUrlClean}${pathClean}`;
 

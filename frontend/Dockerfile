@@ -17,6 +17,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Accept build arguments for Next.js NEXT_PUBLIC_ env vars
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
 # Set environment variables for build time (e.g., telemetry off)
 ENV NEXT_TELEMETRY_DISABLED=1
 

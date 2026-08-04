@@ -123,6 +123,8 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/makemycv-frontend:latest
             ${{ secrets.DOCKER_USERNAME }}/makemycv-frontend:${{ github.sha }}
