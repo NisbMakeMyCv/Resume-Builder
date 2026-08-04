@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} h-full antialiased`} data-scroll-behavior="smooth">
       <head>
         {/* Material Symbols Outlined — used by all stitch frames for icons */}
         <link

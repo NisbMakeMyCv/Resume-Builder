@@ -1,0 +1,230 @@
+name: Production Deploy
+
+on:
+  push:
+    branches:
+      - main # Trigger on merges/pushes to main branch
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'deployment/**'
+      - 'nginx/**'
+      - '.github/workflows/**'
+  workflow_dispatch: # Allow manual triggering
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------------------------
+  # JOB 1: Test & Lint Backend
+  # -------------------------------------------------------------------------
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testuser -d testdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt pytest httpx
+
+      - name: Run Pytest
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
+          JWT_SECRET_KEY: testsecret
+          SMTP_USER: test
+          SMTP_PASSWORD: test
+          EMAILS_FROM_EMAIL: test@test.com
+        run: pytest
+
+  # -------------------------------------------------------------------------
+  # JOB 2: Build & Push Backend Image
+  # -------------------------------------------------------------------------
+  build-backend:
+    name: Build & Push Backend Docker Image
+    runs-on: ubuntu-latest
+    needs: [test-backend]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/makemycv-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/makemycv-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # -------------------------------------------------------------------------
+  # JOB 3: Build & Push Frontend Image
+  # -------------------------------------------------------------------------
+  build-frontend:
+    name: Build & Push Frontend Docker Image
+    runs-on: ubuntu-latest
+    # Assuming no frontend test job exists yet; otherwise add needs: [test-frontend]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/makemycv-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/makemycv-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # -------------------------------------------------------------------------
+  # JOB 4: Deploy to EC2
+  # -------------------------------------------------------------------------
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Discover EC2 Instance IP
+        id: ec2
+        run: |
+          # Find the instance with Tag Role=AppServer and Project=MakeMyCV that is running
+          INSTANCE_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+          
+          if [ "$INSTANCE_IP" == "None" ] || [ -z "$INSTANCE_IP" ]; then
+            echo "Error: Could not find a running EC2 instance with the specified tags."
+            exit 1
+          fi
+          
+          echo "Found EC2 Instance IP: $INSTANCE_IP"
+          echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          # Add the known host key securely if available, otherwise fallback to keyscan
+          if [ -n "${{ secrets.EC2_HOST_KEY }}" ]; then
+            echo "${{ secrets.EC2_HOST_KEY }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H ${{ steps.ec2.outputs.ip }} >> ~/.ssh/known_hosts
+          fi
+
+      - name: Copy Deployment Files
+        run: |
+          # Create deployment directory on server
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ steps.ec2.outputs.ip }} "mkdir -p ~/deployment/nginx"
+          
+          # Copy docker-compose and nginx config
+          scp -i ~/.ssh/id_rsa deployment/docker-compose.yml ubuntu@${{ steps.ec2.outputs.ip }}:~/deployment/
+          scp -i ~/.ssh/id_rsa nginx/nginx.conf ubuntu@${{ steps.ec2.outputs.ip }}:~/deployment/nginx/
+
+      - name: Create .env on Server
+        run: |
+          cat > .env.prod << 'EOF'
+          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+          EMAILS_FROM_EMAIL=${{ secrets.EMAILS_FROM_EMAIL }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          EOF
+          
+          # Remove leading whitespace caused by heredoc indentation
+          sed -i 's/^[ \t]*//' .env.prod
+          
+          scp -i ~/.ssh/id_rsa .env.prod ubuntu@${{ steps.ec2.outputs.ip }}:~/deployment/.env
+
+      - name: Deploy Containers
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ steps.ec2.outputs.ip }} << 'EOF'
+            cd ~/deployment
+            # Pull latest images
+            docker compose pull
+            # Restart containers (recreates only if image changed)
+            docker compose up -d
+            
+            # Prune old images to save space ONLY AFTER everything is running
+            # Sleep briefly to ensure containers are fully up before pruning
+            sleep 10
+            docker image prune -af
+          EOF
+
+      - name: Verify Deployment
+        run: |
+          echo "Waiting for services to become healthy..."
+          sleep 15
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ steps.ec2.outputs.ip }})
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Health check failed! Status: $HTTP_STATUS"
+            exit 1
+          fi
+          echo "Deployment verified ✅ — HTTP $HTTP_STATUS"
