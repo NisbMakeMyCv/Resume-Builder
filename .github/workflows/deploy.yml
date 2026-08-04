@@ -157,47 +157,32 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Discover or Provision EC2 Instance IP
+      - name: Provision Infrastructure & Get IP
         id: ec2-ip
         env:
           TF_VAR_aws_region: ${{ secrets.AWS_REGION }}
           TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
           TF_VAR_allowed_ssh_cidr: "0.0.0.0/0"
         run: |
-          # 1. Check if a running EC2 instance with matching tags already exists
-          INSTANCE_IP=$(aws ec2 describe-instances \
-            --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
-            --output text 2>/dev/null || echo "None")
-
-          if [ "$INSTANCE_IP" != "None" ] && [ -n "$INSTANCE_IP" ]; then
-            echo "Existing EC2 Instance found: $INSTANCE_IP ✅"
-            echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "No running EC2 instance found. Provisioning via Terraform..."
           cd terraform
+          
+          echo "Initializing Terraform with S3 Remote Backend..."
+          # Credentials are automatically provided by the configure-aws-credentials step above
           terraform init
+          
+          echo "Applying infrastructure..."
           terraform apply -auto-approve
-
-          # Query AWS again for the newly created instance IP
-          for i in {1..10}; do
-            INSTANCE_IP=$(aws ec2 describe-instances \
-              --filters "Name=tag:Role,Values=AppServer" "Name=tag:Project,Values=MakeMyCV" "Name=instance-state-name,Values=running" \
-              --query "Reservations[0].Instances[0].PublicIpAddress" \
-              --output text)
-            
-            if [ "$INSTANCE_IP" != "None" ] && [ -n "$INSTANCE_IP" ]; then
-              echo "Newly provisioned EC2 Instance IP: $INSTANCE_IP ✅"
-              echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-            sleep 3
-          done
-
-          echo "Error: Could not find or provision a running EC2 instance."
-          exit 1
+          
+          # Extract the IP directly from Terraform's output! No more manual AWS queries!
+          INSTANCE_IP=$(terraform output -raw instance_public_ip)
+          
+          if [ -z "$INSTANCE_IP" ]; then
+            echo "Error: Failed to retrieve EC2 IP from Terraform output."
+            exit 1
+          fi
+          
+          echo "App Server IP: $INSTANCE_IP ✅"
+          echo "ip=$INSTANCE_IP" >> $GITHUB_OUTPUT
 
   # -------------------------------------------------------------------------
   # JOB 5: Deploy Application to EC2
