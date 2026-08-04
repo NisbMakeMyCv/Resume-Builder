@@ -5,7 +5,7 @@
  * Base URL is set via NEXT_PUBLIC_API_URL (defaults to http://localhost:8000/api/v1).
  *
  * Usage:
- *   import { apiRequest, saveSession, getToken, getStoredUser, clearSession } from "../../lib/api";
+ *   import { apiRequest, saveSession, getToken, getStoredUser, clearSession } from "@/lib/api";
  */
 
 const BASE_URL =
@@ -44,7 +44,12 @@ export async function apiRequest<T = unknown>(
     headers["Authorization"] = `Bearer ${jwt}`;
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  // Normalize base URL and path to avoid double-slash or missing-slash issues
+  const baseUrlClean = BASE_URL.replace(/\/+$/, "");
+  const pathClean = path.startsWith("/") ? path : `/${path}`;
+  const url = `${baseUrlClean}${pathClean}`;
+
+  const response = await fetch(url, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
