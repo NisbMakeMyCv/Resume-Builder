@@ -19,7 +19,7 @@ variable "instance_type" {
 variable "key_name" {
   description = "Name of the SSH key pair deployed in AWS"
   type        = string
-  default     = "makemycv-deployer-key"
+  default     = "makemycv-deployer-key-v3"
 }
 
 variable "ssh_public_key" {

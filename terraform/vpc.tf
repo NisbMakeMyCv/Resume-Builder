@@ -12,7 +12,7 @@ data "aws_subnets" "default" {
 
 # Security group for the EC2 Instance
 resource "aws_security_group" "app_sg" {
-  name        = "makemycv-app-sg"
+  name        = "makemycv-app-sg-v3"
   description = "Allow HTTP, HTTPS, and SSH inbound traffic"
   vpc_id      = data.aws_vpc.default.id
 
@@ -52,6 +52,6 @@ resource "aws_security_group" "app_sg" {
   }
 
   tags = {
-    Name = "makemycv-app-sg"
+    Name = "makemycv-app-sg-v3"
   }
 }
