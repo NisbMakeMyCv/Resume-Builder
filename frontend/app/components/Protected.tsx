@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getStoredUser } from "../../lib/api";
+import { getToken, getStoredUser } from "@/lib/api";
 
 /**
  * Client-side guard for authenticated pages. While there is no token

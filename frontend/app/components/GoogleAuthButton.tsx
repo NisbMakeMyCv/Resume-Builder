@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleLogin } from "@react-oauth/google";
-import { apiRequest, saveSession } from "../../lib/api";
+import { apiRequest, saveSession } from "@/lib/api";
 
 /**
  * Google Sign-In / Sign-Up button — used on both /signin and /signup.

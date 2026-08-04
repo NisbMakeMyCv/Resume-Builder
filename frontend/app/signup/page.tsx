@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
-import { apiRequest } from "../../lib/api";
+import { apiRequest } from "@/lib/api";
 
 /**
  * Sign Up — coded from the `sign_up` stitch frame.

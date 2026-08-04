@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import MaterialIcon from "../components/MaterialIcon";
-import { apiRequest } from "../../lib/api";
+import { apiRequest } from "@/lib/api";
 
 /**
  * Verify Email / OTP — coded from the `otp_verification` stitch frame.

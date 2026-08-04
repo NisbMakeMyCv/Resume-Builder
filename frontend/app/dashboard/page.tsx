@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import AppSidebar from "../components/AppSidebar";
 import Protected from "../components/Protected";
 import MaterialIcon from "../components/MaterialIcon";
-import { apiRequest, getStoredUser, getToken } from "../../lib/api";
+import { apiRequest, getStoredUser, getToken } from "@/lib/api";
 
 /**
  * Dashboard — coded from the `main_dashboard_desktop` stitch frame.

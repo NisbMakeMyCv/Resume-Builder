@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import MaterialIcon from "./MaterialIcon";
-import { clearSession, getStoredUser } from "../../lib/api";
+import { clearSession, getStoredUser } from "@/lib/api";
 
 type SidebarItem = {
   label: string;
