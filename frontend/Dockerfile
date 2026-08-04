@@ -54,7 +54,7 @@ ENV HOSTNAME="0.0.0.0"
 
 # Add a HEALTHCHECK so Docker knows the app is alive
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/ || exit 1
+  CMD wget -qO- http://127.0.0.1:3000/ || exit 1
 
 # server.js is created by next build from the standalone output
 CMD ["node", "server.js"]
