@@ -1,6 +1,6 @@
 # IAM Role for the EC2 Instance (if it needs to interact with AWS services, e.g., CloudWatch, S3)
 resource "aws_iam_role" "ec2_role" {
-  name = "makemycv-ec2-role"
+  name = "makemycv-ec2-role-v2"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -23,7 +23,7 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "makemycv-ec2-profile"
+  name = "makemycv-ec2-profile-v2"
   role = aws_iam_role.ec2_role.name
 }
 
@@ -52,7 +52,7 @@ resource "aws_iam_policy" "github_actions_policy" {
 # In a true enterprise environment, OpenID Connect (OIDC) is preferred over static IAM users.
 # For this setup, assuming standard AWS Access Keys are used in GitHub Secrets.
 resource "aws_iam_user" "github_actions" {
-  name = "makemycv-github-deployer"
+  name = "makemycv-github-deployer-v2"
 }
 
 resource "aws_iam_user_policy_attachment" "github_actions_attach" {
