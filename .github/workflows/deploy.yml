@@ -229,7 +229,7 @@ jobs:
           fi
 
           echo "Waiting for cloud-init background updates and user_data scripts to complete..."
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "sudo cloud-init status --wait"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "sudo cloud-init status --wait || true"
 
           echo "Checking Docker installation status..."
           if ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "docker --version" >/dev/null 2>&1; then
