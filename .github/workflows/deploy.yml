@@ -209,14 +209,14 @@ jobs:
             ssh-keyscan -H ${{ needs.provision.outputs.ec2_ip }} >> ~/.ssh/known_hosts
           fi
 
-      - name: Wait for EC2 & Install Docker if Missing
+      - name: Wait for EC2 Boot Sequence and Docker
         run: |
           echo "Waiting for EC2 SSH to become available..."
           SSH_READY=false
           for i in {1..30}; do
             if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "echo 'SSH is up'" >/dev/null 2>&1; then
               SSH_READY=true
-              echo "SSH is ready! ✅"
+              echo "SSH connection established! ✅"
               break
             fi
             echo "Waiting for SSH... ($i/30)"
@@ -228,33 +228,16 @@ jobs:
             exit 1
           fi
 
-          echo "Checking if Docker is installed..."
-          if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "docker --version" >/dev/null 2>&1; then
-            echo "Docker is already installed! 🚀"
+          echo "Waiting for cloud-init background updates and user_data scripts to complete..."
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "sudo cloud-init status --wait"
+
+          echo "Checking Docker installation status..."
+          if ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "docker --version" >/dev/null 2>&1; then
+            echo "EC2 Server and Docker Engine are ready! 🚀"
           else
-            echo "Docker not found (user_data likely hit an apt lock). Installing manually..."
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
-              echo "Waiting for apt locks to clear..."
-              while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
-                echo "Apt is locked. Waiting 5 seconds..."
-                sleep 5
-              done
-              
-              echo "Installing Docker..."
-              export DEBIAN_FRONTEND=noninteractive
-              sudo apt-get update
-              sudo apt-get install -y ca-certificates curl gnupg lsb-release
-              sudo mkdir -p /etc/apt/keyrings
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
-              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-              
-              sudo apt-get update
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-              sudo systemctl enable docker
-              sudo systemctl start docker
-              sudo usermod -aG docker ubuntu
-          EOF
-            echo "Docker installation complete! 🚀"
+            echo "Docker not found after cloud-init. Installing via official Docker script..."
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} "curl -fsSL https://get.docker.com | sudo sh && sudo usermod -aG docker ubuntu"
+            echo "Docker installed successfully! 🚀"
           fi
 
       - name: Copy Deployment Files
