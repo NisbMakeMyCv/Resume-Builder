@@ -16,15 +16,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://nisbmakemycv.duckdns.org",
-]
+allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "*")
+origins = [o.strip() for o in allowed_origins_raw.split(",") if o.strip()] if allowed_origins_raw != "*" else ["*"]
 
-# The frontend fetches this API directly from the browser (see
-# backend/docs/frontend_setup_and_api.md), so CORS must be enabled for
-# the dev frontend origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
