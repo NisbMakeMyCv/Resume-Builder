@@ -280,17 +280,35 @@ jobs:
           
           scp -i ~/.ssh/id_rsa .env.prod ubuntu@${{ needs.provision.outputs.ec2_ip }}:~/deployment/.env
 
-      - name: Bootstrap Dummy SSL Certificate
+      - name: Provision Let's Encrypt SSL Certificate
         run: |
           ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
-            echo "Checking if SSL Certificate exists for nisbmakemycv.duckdns.org..."
-            sudo mkdir -p /etc/letsencrypt/live/nisbmakemycv.duckdns.org
-            if [ ! -f "/etc/letsencrypt/live/nisbmakemycv.duckdns.org/fullchain.pem" ]; then
-              echo "Creating a dummy self-signed certificate so Nginx can start..."
-              sudo openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
-                -keyout /etc/letsencrypt/live/nisbmakemycv.duckdns.org/privkey.pem \
-                -out /etc/letsencrypt/live/nisbmakemycv.duckdns.org/fullchain.pem \
-                -subj "/CN=nisbmakemycv.duckdns.org"
+            if [ -f "/etc/letsencrypt/live/nisbmakemycv.duckdns.org/fullchain.pem" ]; then
+              echo "✅ SSL Certificate already exists. Skipping initial provision."
+            else
+              echo "Requesting initial SSL certificate (Standalone) before starting Nginx..."
+              # Ensure port 80 is free
+              docker stop makemycv-nginx 2>/dev/null || true
+              
+              CERT_SUCCESS=false
+              for i in {1..8}; do
+                if sudo certbot certonly --standalone -d nisbmakemycv.duckdns.org --non-interactive --agree-tos --register-unsafely-without-email; then
+                  CERT_SUCCESS=true
+                  break
+                fi
+                echo "Certbot failed (waiting for DNS propagation). Retrying in 20s... ($i/8)"
+                sleep 20
+              done
+              
+              if [ "$CERT_SUCCESS" = false ]; then
+                echo "❌ Failed to obtain initial SSL certificate."
+                exit 1
+              fi
+              
+              # Switch Certbot to webroot mode for automatic renewals so Nginx doesn't have to stop in the future
+              sudo mkdir -p /var/www/certbot
+              sudo sed -i 's/authenticator = standalone/authenticator = webroot/' /etc/letsencrypt/renewal/nisbmakemycv.duckdns.org.conf
+              echo "webroot_path = /var/www/certbot" | sudo tee -a /etc/letsencrypt/renewal/nisbmakemycv.duckdns.org.conf
             fi
           EOF
 
@@ -308,16 +326,6 @@ jobs:
             docker compose up -d
             sleep 10
             docker image prune -af
-          EOF
-
-      - name: Obtain Let's Encrypt SSL Certificate
-        run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
-            sudo mkdir -p /var/www/certbot
-            echo "Requesting real SSL certificate via Certbot webroot..."
-            sudo certbot certonly --webroot -w /var/www/certbot -d nisbmakemycv.duckdns.org --non-interactive --agree-tos --register-unsafely-without-email --force-renewal || true
-            echo "Restarting Nginx to load the new certificate..."
-            docker compose -f /home/ubuntu/deployment/docker-compose.yml restart nginx || true
           EOF
 
       - name: Verify Deployment & Output Live Links
