@@ -197,6 +197,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Update DuckDNS IP Record
+        env:
+          DUCKDNS_TOKEN: ${{ secrets.DUCKDNS_TOKEN }}
+        run: |
+          if [ -n "$DUCKDNS_TOKEN" ]; then
+            echo "Updating DuckDNS IP for nisbmakemycv.duckdns.org to ${{ needs.provision.outputs.ec2_ip }}..."
+            RESPONSE=$(curl -s "https://www.duckdns.org/update?domains=nisbmakemycv&token=${DUCKDNS_TOKEN}&ip=${{ needs.provision.outputs.ec2_ip }}")
+            echo "DuckDNS Response: $RESPONSE"
+          else
+            echo "⚠️ DUCKDNS_TOKEN secret is not set in GitHub Secrets. Skipping DNS update."
+          fi
+
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -267,27 +279,44 @@ jobs:
           
           scp -i ~/.ssh/id_rsa .env.prod ubuntu@${{ needs.provision.outputs.ec2_ip }}:~/deployment/.env
 
+      - name: Bootstrap Dummy SSL Certificate
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
+            echo "Checking if SSL Certificate exists for nisbmakemycv.duckdns.org..."
+            sudo mkdir -p /etc/letsencrypt/live/nisbmakemycv.duckdns.org
+            if [ ! -f "/etc/letsencrypt/live/nisbmakemycv.duckdns.org/fullchain.pem" ]; then
+              echo "Creating a dummy self-signed certificate so Nginx can start..."
+              sudo openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+                -keyout /etc/letsencrypt/live/nisbmakemycv.duckdns.org/privkey.pem \
+                -out /etc/letsencrypt/live/nisbmakemycv.duckdns.org/fullchain.pem \
+                -subj "/CN=nisbmakemycv.duckdns.org"
+            fi
+          EOF
+
       - name: Deploy Containers
         run: |
           ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
             cd ~/deployment
-            # Source environment variables
             set -a
             source .env
             set +a
-            # Log in to Docker Hub to allow pulling private repositories
             if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
               echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin 2>/dev/null || true
             fi
-            # Pull latest images
             docker compose pull
-            # Restart containers (recreates only if image changed)
             docker compose up -d
-            
-            # Prune old images to save space ONLY AFTER everything is running
-            # Sleep briefly to ensure containers are fully up before pruning
             sleep 10
             docker image prune -af
+          EOF
+
+      - name: Obtain Let's Encrypt SSL Certificate
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ needs.provision.outputs.ec2_ip }} << 'EOF'
+            sudo mkdir -p /var/www/certbot
+            echo "Requesting real SSL certificate via Certbot webroot..."
+            sudo certbot certonly --webroot -w /var/www/certbot -d nisbmakemycv.duckdns.org --non-interactive --agree-tos --register-unsafely-without-email --force-renewal || true
+            echo "Restarting Nginx to load the new certificate..."
+            docker compose -f /home/ubuntu/deployment/docker-compose.yml restart nginx || true
           EOF
 
       - name: Verify Deployment & Output Live Links
@@ -295,7 +324,8 @@ jobs:
           echo "Waiting for services to become healthy..."
           sleep 15
           IP="${{ needs.provision.outputs.ec2_ip }}"
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${IP})
+          DOMAIN="nisbmakemycv.duckdns.org"
+          HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" https://${DOMAIN})
           
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "❌ Health check failed! Status code: $HTTP_STATUS"
@@ -306,9 +336,10 @@ jobs:
           echo "=========================================================================="
           echo "🎉 APPLICATION IS LIVE AND HEALTHY! (HTTP $HTTP_STATUS)"
           echo "=========================================================================="
-          echo "🌐 App URL:     http://${IP}"
-          echo "⚙️ API URL:     http://${IP}/api/v1"
-          echo "📚 Swagger Docs: http://${IP}/docs"
+          echo "🌐 Domain URL:   https://${DOMAIN}"
+          echo "🌐 App IP URL:  http://${IP}"
+          echo "⚙️ API URL:     https://${DOMAIN}/api/v1"
+          echo "📚 Swagger Docs: https://${DOMAIN}/docs"
           echo "🔑 SSH Command:  ssh ubuntu@${IP}"
           echo "=========================================================================="
           echo ""
@@ -319,9 +350,10 @@ jobs:
 
           | Resource | URL / Command |
           |---|---|
-          | **🌐 Frontend App** | [http://${IP}](http://${IP}) |
-          | **⚙️ Backend API** | [http://${IP}/api/v1](http://${IP}/api/v1) |
-          | **📚 Swagger Docs** | [http://${IP}/docs](http://${IP}/docs) |
+          | **🌐 Custom Domain** | [https://${DOMAIN}](https://${DOMAIN}) |
+          | **🌐 Direct Server IP** | [http://${IP}](http://${IP}) |
+          | **⚙️ Backend API** | [https://${DOMAIN}/api/v1](https://${DOMAIN}/api/v1) |
+          | **📚 Swagger Docs** | [https://${DOMAIN}/docs](https://${DOMAIN}/docs) |
           | **🔑 SSH Access** | \`ssh ubuntu@${IP}\` |
 
           *Deployed successfully at $(date)*
