@@ -10,7 +10,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 # Update and install dependencies
 apt-get update
-apt-get install -y ca-certificates curl gnupg lsb-release git certbot python3-certbot-nginx
+apt-get install -y ca-certificates curl gnupg lsb-release git certbot
 
 # Setup Certbot directory for ACME challenge
 mkdir -p /var/www/certbot

@@ -287,8 +287,11 @@ jobs:
               echo "✅ SSL Certificate already exists. Skipping initial provision."
             else
               echo "Requesting initial SSL certificate (Standalone) before starting Nginx..."
-              # Ensure port 80 is free
+              # Ensure port 80 is completely free
               docker stop makemycv-nginx 2>/dev/null || true
+              sudo systemctl stop nginx 2>/dev/null || true
+              sudo fuser -k 80/tcp 2>/dev/null || true
+              sleep 2
               
               CERT_SUCCESS=false
               for i in {1..8}; do
