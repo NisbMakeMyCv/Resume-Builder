@@ -272,6 +272,7 @@ jobs:
           SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
           EMAILS_FROM_EMAIL=${{ secrets.EMAILS_FROM_EMAIL }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          ALLOWED_ORIGINS=https://nisbmakemycv.duckdns.org
           EOF
           
           # Remove leading whitespace caused by heredoc indentation
