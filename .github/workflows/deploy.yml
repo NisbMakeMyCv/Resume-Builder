@@ -323,13 +323,31 @@ jobs:
       - name: Verify Deployment & Output Live Links
         run: |
           echo "Waiting for services to become healthy..."
-          sleep 15
           IP="${{ needs.provision.outputs.ec2_ip }}"
           DOMAIN="nisbmakemycv.duckdns.org"
-          HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" https://${DOMAIN})
           
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "❌ Health check failed! Status code: $HTTP_STATUS"
+          MAX_RETRIES=15
+          RETRY_INTERVAL=10
+          SUCCESS=false
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Health check attempt $i/$MAX_RETRIES..."
+            # --resolve bypasses DNS propagation delays by forcing curl to hit the new EC2 IP directly.
+            # || echo "000" prevents bash from aborting the script if curl fails to connect (exit code 7).
+            HTTP_STATUS=$(curl -s -L --resolve ${DOMAIN}:443:${IP} -o /dev/null -w "%{http_code}" https://${DOMAIN} || echo "000")
+            
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ Health check passed! Status code: 200"
+              SUCCESS=true
+              break
+            fi
+            
+            echo "⚠️ Health check returned: $HTTP_STATUS. Retrying in $RETRY_INTERVAL seconds..."
+            sleep $RETRY_INTERVAL
+          done
+          
+          if [ "$SUCCESS" = false ]; then
+            echo "❌ Health check failed after $MAX_RETRIES attempts!"
             exit 1
           fi
 
