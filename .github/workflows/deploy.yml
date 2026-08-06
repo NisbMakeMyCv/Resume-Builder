@@ -337,7 +337,7 @@ jobs:
           IP="${{ needs.provision.outputs.ec2_ip }}"
           DOMAIN="nisbmakemycv.duckdns.org"
           
-          MAX_RETRIES=15
+          MAX_RETRIES=30
           RETRY_INTERVAL=10
           SUCCESS=false
           
