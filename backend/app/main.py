@@ -19,7 +19,7 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    # Add the production frontend URL here when deployed.
+    "https://nisbmakemycv.duckdns.org",
 ]
 
 # The frontend fetches this API directly from the browser (see
