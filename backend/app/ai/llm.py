@@ -26,18 +26,27 @@ def generate_text(
     prompt: str,
     model: str = "llama-3.3-70b-versatile",
     temperature: float = 0.2,
+    json_mode: bool = False,
 ) -> str:
-    """Generate text using the configured LLM."""
+    """Generate text using the configured Groq LLM."""
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
+    request = {
+        "model": model,
+        "messages": [
             {
                 "role": "user",
                 "content": prompt,
             }
         ],
-        temperature=temperature,
-    )
+        "temperature": temperature,
+    }
+
+    # Ask Groq to return valid JSON when required.
+    if json_mode:
+        request["response_format"] = {
+            "type": "json_object"
+        }
+
+    response = client.chat.completions.create(**request)
 
     return response.choices[0].message.content or ""
