@@ -96,9 +96,12 @@ def register_user(request: UserRegisterRequest, background_tasks: BackgroundTask
             existing_user.full_name = request.full_name
             
         db.commit()
-        return {"message": "Password successfully linked to your existing account!", "email": existing_user.email}
+        
+        access_token = create_access_token(data={"sub": str(existing_user.id)})
+        return {"access_token": access_token, "token_type": "bearer", "message": "Password successfully linked to your existing account!"}
 
-    new_user = User(email=request.email, full_name=request.full_name)
+    avatar_url = f"https://ui-avatars.com/api/?name={request.full_name.replace(' ', '+')}&background=random"
+    new_user = User(email=request.email, full_name=request.full_name, profile_picture=avatar_url)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -112,7 +115,8 @@ def register_user(request: UserRegisterRequest, background_tasks: BackgroundTask
     body = f"Hi {request.full_name},\n\nThank you for registering with MakeMyCV! You have successfully created your account. We are excited to help you build the perfect resume.\n\nBest,\nThe MakeMyCV Team"
     background_tasks.add_task(send_email, request.email, subject, body)
 
-    return {"message": "User registered successfully", "email": new_user.email}
+    access_token = create_access_token(data={"sub": str(new_user.id)})
+    return {"access_token": access_token, "token_type": "bearer", "message": "User registered successfully"}
 
 @router.post("/login")
 def login_user(request: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -142,11 +146,12 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
         idinfo = id_token.verify_oauth2_token(request.token, requests.Request(), GOOGLE_CLIENT_ID)
         email = idinfo.get("email")
         full_name = idinfo.get("name")
+        picture = idinfo.get("picture")
         google_id = idinfo.get("sub")
         
         user = db.query(User).filter(User.email == email).first()
         if not user:
-            user = User(email=email, full_name=full_name)
+            user = User(email=email, full_name=full_name, profile_picture=picture)
             db.add(user)
             db.commit()
             db.refresh(user)
@@ -156,6 +161,11 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
             body = f"Hi {full_name},\n\nThank you for registering with MakeMyCV via Google! We are excited to help you build the perfect resume.\n\nBest,\nThe MakeMyCV Team"
             background_tasks.add_task(send_email, email, subject, body)
         else:
+            # Update their picture to their latest Google one
+            if picture:
+                user.profile_picture = picture
+                db.commit()
+                
             # Send Login Alert Email (Existing User)
             time_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
             subject = "New Google Login to MakeMyCV"
@@ -173,12 +183,33 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid Google Token")
 
+@router.delete("/me", status_code=204)
+def delete_current_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Deletes the current user and all their associated data (GDPR Compliant)."""
+    from app.models.resume import Profile, Education, Experience, Skill, Project
+    
+    # 1. Delete all resume data
+    db.query(Profile).filter(Profile.user_id == current_user.id).delete()
+    db.query(Education).filter(Education.user_id == current_user.id).delete()
+    db.query(Experience).filter(Experience.user_id == current_user.id).delete()
+    db.query(Skill).filter(Skill.user_id == current_user.id).delete()
+    db.query(Project).filter(Project.user_id == current_user.id).delete()
+    
+    # 2. Delete Auth Methods
+    db.query(UserAuthMethod).filter(UserAuthMethod.user_id == current_user.id).delete()
+    
+    # 3. Delete Core User Identity
+    db.delete(current_user)
+    db.commit()
+    return None
+
 @router.get("/me")
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "full_name": current_user.full_name
+        "full_name": current_user.full_name,
+        "profile_picture": current_user.profile_picture
     }
 
 @router.post("/forgot-password")
