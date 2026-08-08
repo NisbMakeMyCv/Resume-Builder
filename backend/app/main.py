@@ -5,8 +5,9 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.auth import router as auth_router
+from app.api.v1.profile import router as profile_router
 from app.core.database import engine
-from app.models import user
+from app.models import user, resume
 
 user.Base.metadata.create_all(bind=engine)
 
@@ -28,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(profile_router, prefix="/api/v1/profile", tags=["Profile"])
 
 @app.get("/")
 def root():
