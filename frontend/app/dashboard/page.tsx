@@ -7,6 +7,7 @@ import Protected from "../components/Protected";
 import MaterialIcon from "../components/MaterialIcon";
 import { SidebarProvider, useSidebar } from "../components/SidebarContext";
 import { apiRequest, getStoredUser, getToken } from "@/lib/api";
+import LiveClock from "../components/LiveClock";
 
 /**
  * Dashboard — coded from the `main_dashboard_desktop` stitch frame.
@@ -63,7 +64,12 @@ function DashboardInner() {
               menu
             </span>
           </button>
-          <span className="text-headline-md font-bold text-primary">Dashboard</span>
+          <div className="flex items-center gap-4">
+            <span className="text-headline-md font-bold text-primary">Dashboard</span>
+            <div className="hidden sm:block border-l border-outline-variant pl-4">
+              <LiveClock />
+            </div>
+          </div>
         </div>
 
         <Link

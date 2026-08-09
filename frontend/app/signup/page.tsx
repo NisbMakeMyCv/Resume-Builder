@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
 import { useToast } from "../components/ui/Toast";
@@ -77,248 +78,190 @@ export default function SignUp() {
   }
 
   return (
-    <main className="bg-background text-on-background min-h-screen flex flex-col">
-      {/* Top Nav Bar (transactional — brand only) */}
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center">
-        <div className="w-full px-8 flex justify-between items-center">
-          <div className="text-headline-md font-extrabold text-primary">
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-surface-container-lowest">
+      {/* Animated Abstract Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-primary">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 90, 0],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-secondary-container/40 blur-[100px]"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.4, 0.2],
+            rotate: [0, -90, 0],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-primary-container/30 blur-[120px]"
+        />
+        <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+      </div>
+
+      {/* Top Nav (Brand) */}
+      <header className="absolute top-0 w-full z-50 h-20 flex items-center px-8">
+        <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
+          <Link href="/" className="text-headline-md font-extrabold text-white drop-shadow-md">
             MakeMyCV
-          </div>
+          </Link>
           <Link
             href="/signin"
-            className="text-label-md font-semibold text-primary hover:underline"
+            className="text-label-md font-semibold text-white/90 hover:text-white hover:underline drop-shadow-md"
           >
             Log In
           </Link>
         </div>
       </header>
 
-      <main className="flex-grow flex flex-col md:flex-row pt-16 h-screen overflow-hidden">
-        {/* ============ LEFT: ABSTRACT ILLUSTRATION (hidden on mobile) ============ */}
-        <section className="hidden md:flex flex-1 bg-primary relative items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 opacity-20 hero-gradient" />
-          <div className="relative z-10 w-full max-w-xl px-12 text-center text-on-primary">
-            <div className="mb-12 relative">
-              {/* Floating Resume Preview */}
-              <div className="animate-float bg-white rounded-lg w-72 mx-auto resume-shadow border border-outline-variant">
-                <div className="p-6 aspect-[3/4]">
-                  {/* Mock resume skeleton */}
-                  <div className="h-6 w-1/2 bg-surface-container rounded-md mx-auto mb-6" />
-                  <div className="space-y-2">
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-5/6 bg-surface-container rounded-sm" />
-                    <div className="h-2 w-4/6 bg-surface-container rounded-sm" />
-                  </div>
-                  <div className="mt-6 space-y-3">
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-3/4 bg-surface-container rounded-sm" />
-                  </div>
-                  <div className="mt-6 space-y-2">
-                    <div className="h-3 w-1/3 bg-primary/10 rounded-md" />
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-2/3 bg-surface-container rounded-sm" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Decorative shapes */}
-              <div
-                className="absolute -top-10 -right-4 w-12 h-12 bg-secondary-container rounded-full opacity-30 animate-float"
-                style={{ animationDelay: "-1s" }}
-              />
-              <div
-                className="absolute top-20 -left-10 w-20 h-20 bg-primary-fixed-dim rounded-lg opacity-20 rotate-12 animate-float"
-                style={{ animationDelay: "-3s" }}
-              />
-            </div>
+      {/* Glass Card Container */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-lg mx-4 mt-12"
+      >
+        <div className="bg-surface/60 dark:bg-surface-container-lowest/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 p-8 sm:p-10 rounded-[32px] shadow-2xl">
+          
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="text-headline-md font-bold text-on-surface mb-2">
+              Create your account
+            </h2>
+            <p className="text-body-md text-on-surface-variant">
+              Build your career with confidence.
+            </p>
           </div>
-        </section>
 
-        {/* ============ RIGHT: SIGN UP FORM ============ */}
-        <section className="flex-1 flex items-center justify-center bg-background p-6 md:p-12 overflow-y-auto">
-          <div className="w-full max-w-md bg-white border border-outline-variant rounded-2xl p-8 md:p-10 shadow-sm">
-            <div className="mb-8">
-              <h2 className="text-headline-md text-primary mb-2">
-                Create your account
-              </h2>
-              <p className="text-body-md text-on-surface-variant">
-                Build your career with confidence.
-              </p>
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* Full Name */}
+            <div className="space-y-1.5">
+              <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="full_name">
+                Full Name
+              </label>
+              <input
+                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                id="full_name"
+                placeholder="John Doe"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                disabled={loading}
+              />
             </div>
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label
-                  className="text-label-md text-on-surface font-semibold block"
-                  htmlFor="full_name"
-                >
-                  Full Name
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="email">
+                Email Address
+              </label>
+              <input
+                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                id="email"
+                placeholder="name@company.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            {/* Password Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="password">
+                  Password
                 </label>
-                <div className="relative">
-                  <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
-                    id="full_name"
-                    placeholder="John Doe"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <label
-                  className="text-label-md text-on-surface font-semibold block"
-                  htmlFor="email"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
-                    id="email"
-                    placeholder="name@company.com"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Password Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label
-                    className="text-label-md text-on-surface font-semibold block"
-                    htmlFor="password"
-                  >
-                    Password
-                  </label>
-                  <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
-                    id="password"
-                    placeholder="••••••••"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    className="text-label-md text-on-surface font-semibold block"
-                    htmlFor="confirm_password"
-                  >
-                    Confirm Password
-                  </label>
-                  <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
-                    id="confirm_password"
-                    placeholder="••••••••"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="rounded-brand border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container">
-                  {error}
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="space-y-4 pt-4">
-                <button
-                  className="btn-press btn-shine w-full h-12 bg-primary-container text-white font-label-md rounded-2xl hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                  type="submit"
+                <input
+                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                  id="password"
+                  placeholder="••••••••"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
                   disabled={loading}
-                >
-                  <span>{loading ? "Sending Code..." : "Create Account"}</span>
-                  <MaterialIcon name="arrow_forward" className="text-[20px]" />
-                </button>
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="confirm_password">
+                  Confirm Password
+                </label>
+                <input
+                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                  id="confirm_password"
+                  placeholder="••••••••"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  disabled={loading}
+                />
+              </div>
+            </div>
 
-                <div className="flex items-center gap-4 text-on-surface-variant my-4">
-                  <div className="h-px bg-outline-variant flex-1" />
-                  <span className="text-label-sm uppercase tracking-wider">
-                    or
+            {/* Error */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-xl border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container flex items-center gap-2"
+              >
+                <MaterialIcon name="error" className="text-error text-[18px]" />
+                {error}
+              </motion.div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="pt-4 space-y-4">
+              <motion.button
+                whileTap={{ scale: loading ? 1 : 0.97 }}
+                className="btn-press btn-shine w-full h-12 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="material-symbols-outlined text-[20px] animate-spin">
+                    progress_activity
                   </span>
-                  <div className="h-px bg-outline-variant flex-1" />
-                </div>
+                ) : (
+                  <span>Create Account</span>
+                )}
+                {!loading && <MaterialIcon name="arrow_forward" className="text-[20px]" />}
+              </motion.button>
 
-                <GoogleAuthButton />
-
-                <div className="text-center mt-4">
-                  <span className="text-label-md text-on-surface-variant">
-                    Already have an account?{" "}
-                  </span>
-                  <Link
-                    className="text-label-md text-primary font-bold hover:underline"
-                    href="/signin"
-                  >
-                    Log In
-                  </Link>
-                </div>
+              <div className="flex items-center gap-4 text-on-surface-variant my-4">
+                <div className="h-px bg-outline-variant/50 flex-1" />
+                <span className="text-[11px] uppercase font-bold tracking-widest text-on-surface-variant/70">
+                  OR
+                </span>
+                <div className="h-px bg-outline-variant/50 flex-1" />
               </div>
 
-              <p className="text-center text-label-sm text-on-surface-variant mt-6 px-4">
-                By signing up, you agree to our{" "}
-                <a className="text-primary hover:underline" href="#">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a className="text-primary hover:underline" href="#">
-                  Privacy Policy
-                </a>
-                .
-              </p>
-            </form>
-          </div>
-        </section>
-      </main>
+              <GoogleAuthButton />
+            </div>
 
-      {/* Footer */}
-      <footer className="bg-surface-container py-8 border-t border-outline-variant">
-        <div className="w-full px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-label-sm text-on-surface-variant">
-            © 2026 MakeMyCV. Made by NISB.
-          </div>
-          <div className="flex gap-6">
-            <a
-              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-              href="#"
-            >
-              Support
-            </a>
-            <a
-              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-              href="#"
-            >
-              Privacy
-            </a>
-            <a
-              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-              href="#"
-            >
-              Terms
-            </a>
-          </div>
+            <p className="text-center text-xs text-on-surface-variant pt-4">
+              By signing up, you agree to our{" "}
+              <a className="text-primary hover:underline font-medium" href="#">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a className="text-primary hover:underline font-medium" href="#">
+                Privacy Policy
+              </a>
+              .
+            </p>
+          </form>
         </div>
-      </footer>
+      </motion.div>
     </main>
   );
 }

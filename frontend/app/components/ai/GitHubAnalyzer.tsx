@@ -165,7 +165,43 @@ export default function GitHubAnalyzer() {
   // ---------------------------------------------------------
 
   async function handleAnalyze() {
-    if (!owner.trim() || !repo.trim()) {
+    let finalOwner = owner.trim();
+    let finalRepo = repo.trim();
+
+    // Utility to extract owner/repo if user pasted a full URL
+    const parseUrl = (input: string) => {
+      try {
+        if (input.includes("github.com/")) {
+          const urlStr = input.startsWith("http") ? input : `https://${input}`;
+          const url = new URL(urlStr);
+          const parts = url.pathname.split("/").filter(Boolean);
+          if (parts.length >= 2) {
+            return { parsedOwner: parts[0], parsedRepo: parts[1].replace(".git", "") };
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return null;
+    };
+
+    const parsedFromRepo = parseUrl(finalRepo);
+    if (parsedFromRepo) {
+      finalOwner = parsedFromRepo.parsedOwner;
+      finalRepo = parsedFromRepo.parsedRepo;
+      setOwner(finalOwner);
+      setRepo(finalRepo);
+    } else {
+      const parsedFromOwner = parseUrl(finalOwner);
+      if (parsedFromOwner) {
+        finalOwner = parsedFromOwner.parsedOwner;
+        finalRepo = parsedFromOwner.parsedRepo;
+        setOwner(finalOwner);
+        setRepo(finalRepo);
+      }
+    }
+
+    if (!finalOwner || !finalRepo) {
       const msg = "Please enter both GitHub username and repository name.";
       setError(msg);
       toast.error(msg);
@@ -179,7 +215,7 @@ export default function GitHubAnalyzer() {
     setShowDiff(false);
 
     try {
-      const result = await analyzeGitHubRepository(owner.trim(), repo.trim());
+      const result = await analyzeGitHubRepository(finalOwner, finalRepo);
       setAnalysis(result);
       toast.success(`Analyzed "${result.project_name}" successfully.`);
     } catch (err) {

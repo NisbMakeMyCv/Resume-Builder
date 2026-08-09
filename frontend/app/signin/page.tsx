@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
 import { useToast } from "../components/ui/Toast";
@@ -31,8 +32,8 @@ export default function SignIn() {
   const [error, setError] = useState("");
 
   /** Step 1 — send the 6-digit code to the user's inbox. */
-  async function handleRequestOtp(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleRequestOtp(e?: FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) {
+    if (e) e.preventDefault();
     setError("");
 
     if (!email.trim() || !password) {
@@ -117,121 +118,106 @@ export default function SignIn() {
   };
 
   return (
-    <main className="flex min-h-screen bg-surface-bright text-on-surface antialiased">
-      {/* ============ LEFT: ABSTRACT ILLUSTRATION & BRANDING ============ */}
-      <section className="hidden lg:flex lg:w-1/2 relative bg-primary-container overflow-hidden">
-        {/* Animated shader layer */}
-        <div className="absolute inset-0 opacity-40 mix-blend-overlay hero-gradient" />
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-surface-container-lowest">
+      {/* Animated Abstract Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden bg-primary">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+            rotate: [0, 90, 0],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-secondary-container/40 blur-[100px]"
+        />
+        <motion.div
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.4, 0.2],
+            rotate: [0, -90, 0],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-primary-container/30 blur-[120px]"
+        />
+        <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
+      </div>
 
-        <div className="relative z-10 p-16 flex flex-col justify-between w-full">
-          <div>
-            <h1 className="text-headline-lg text-on-primary-container tracking-tight">
-              MakeMyCV
-            </h1>
-            <p className="mt-4 text-body-lg text-on-primary-container opacity-80 max-w-md">
-              One clean, recruiter-approved template. Write your story, let the
-              AI polish the details, and get hired.
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 bg-primary/20 p-6 rounded-brand backdrop-blur-sm border border-white/10">
-              <MaterialIcon
-                name="verified"
-                className="text-on-primary-container text-4xl"
-                filled
-              />
-              <div>
-                <p className="text-label-md text-on-primary-container">
-                  ATS-Friendly
-                </p>
-                <p className="text-body-md text-on-primary-container opacity-70">
-                  Your resume reads perfectly for both machines and recruiters.
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Top Nav (Brand) */}
+      <header className="absolute top-0 w-full z-50 h-20 flex items-center px-8">
+        <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
+          <Link href="/" className="text-headline-md font-extrabold text-white drop-shadow-md">
+            MakeMyCV
+          </Link>
+          <Link
+            href="/signup"
+            className="text-label-md font-semibold text-white/90 hover:text-white hover:underline drop-shadow-md"
+          >
+            Sign Up
+          </Link>
         </div>
+      </header>
 
-        {/* Atmospheric glow */}
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container blur-[120px] rounded-full opacity-30" />
-      </section>
-
-      {/* ============ RIGHT: SIGN IN FORM ============ */}
-      <section className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16 bg-surface-container-lowest">
-        <div className="w-full max-w-[440px] space-y-8">
+      {/* Glass Card Container */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md mx-4 mt-12"
+      >
+        <div className="bg-surface/60 dark:bg-surface-container-lowest/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 p-8 sm:p-10 rounded-[32px] shadow-2xl">
+          
           {/* Header */}
-          <div className="text-center lg:text-left">
-            <div className="lg:hidden mb-8">
-              <h1 className="text-headline-md text-primary font-bold">
-                MakeMyCV
-              </h1>
-            </div>
-            <h2 className="text-headline-md text-on-surface">Sign In</h2>
-            <p className="text-body-md text-on-surface-variant mt-2">
-              Enter your credentials to access your professional dashboard.
+          <div className="text-center mb-8">
+            <h2 className="text-headline-md font-bold text-on-surface mb-2">
+              Welcome back
+            </h2>
+            <p className="text-body-md text-on-surface-variant">
+              Log in to your professional dashboard.
             </p>
           </div>
 
-          {/* Sign In Card */}
-          <div className="bg-white p-2 rounded-brand space-y-6">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label
-                className="text-label-md text-on-surface-variant block"
-                htmlFor="email"
-              >
+          <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); }}>
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="email">
                 Email Address
               </label>
-              <div className="relative">
-                <MaterialIcon
-                  name="mail"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
-                />
-                <input
-                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant"
-                  id="email"
-                  placeholder="name@company.com"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={otpSent}
-                />
-              </div>
+              <input
+                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                id="email"
+                placeholder="name@company.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={otpSent}
+              />
             </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label
-                  className="text-label-md text-on-surface-variant block"
-                  htmlFor="password"
-                >
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-label-sm font-semibold text-on-surface" htmlFor="password">
                   Password
                 </label>
-                <a
-                  className="text-label-sm text-secondary hover:text-primary transition-colors"
-                  href="#"
-                >
+                <a href="#" className="text-[11px] font-semibold text-primary hover:underline">
                   Forgot password?
                 </a>
               </div>
               <div className="relative">
-                <MaterialIcon
-                  name="lock"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
-                />
                 <input
-                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant"
+                  className="w-full h-12 pl-4 pr-12 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
                   disabled={otpSent}
                 />
                 <button
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
@@ -246,14 +232,18 @@ export default function SignIn() {
 
             {/* OTP Field (revealed after requesting a code) */}
             {otpSent && (
-              <div className="space-y-2 entrance-fade-up">
-                <div className="flex justify-between items-center">
-                  <label className="text-label-md text-on-surface-variant block">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="space-y-2 pt-2"
+              >
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-label-sm font-semibold text-on-surface block">
                     Verification Code
                   </label>
                   <button
                     type="button"
-                    className="text-label-sm text-secondary hover:text-primary transition-colors"
+                    className="text-[11px] font-semibold text-secondary hover:text-primary transition-colors"
                     onClick={() => setOtpSent(false)}
                   >
                     Change email
@@ -264,102 +254,90 @@ export default function SignIn() {
                     <input
                       key={index}
                       id={`otp-${index}`}
-                      className="otp-input w-full aspect-square text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
+                      className="w-full aspect-square text-center text-headline-sm font-bold border border-outline-variant/50 rounded-xl bg-surface/50 focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200"
                       maxLength={1}
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       type="text"
                       value={digit}
-                      onChange={(e) =>
-                        handleOtpChange(e.target.value, index)
-                      }
+                      onChange={(e) => handleOtpChange(e.target.value, index)}
                       onKeyDown={(e) => handleOtpKeyDown(e, index)}
                     />
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Error */}
             {error && (
-              <div className="rounded-brand border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-xl border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container flex items-center gap-2"
+              >
+                <MaterialIcon name="error" className="text-error text-[18px]" />
                 {error}
-              </div>
+              </motion.div>
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-4 pt-2">
+            <div className="pt-4 space-y-4">
               {otpSent ? (
-                <button
-                  className="btn-press btn-shine w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                <motion.button
+                  whileTap={{ scale: loading ? 1 : 0.97 }}
+                  className="btn-press btn-shine w-full h-12 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-primary/20"
                   type="button"
                   onClick={handleVerify}
                   disabled={loading}
                 >
-                  <span>{loading ? "Signing In..." : "Verify & Sign In"}</span>
-                  <MaterialIcon name="arrow_forward" className="text-[18px]" />
-                </button>
-              ) : (
-                <form onSubmit={handleRequestOtp}>
-                  <button
-                    className="btn-press btn-shine w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                    type="submit"
-                    disabled={otpLoading}
-                  >
-                    <span>
-                      {otpLoading ? "Sending Code..." : "Send Verification Code"}
+                  {loading ? (
+                    <span className="material-symbols-outlined text-[20px] animate-spin">
+                      progress_activity
                     </span>
-                    <MaterialIcon name="arrow_forward" className="text-[18px]" />
-                  </button>
-                </form>
+                  ) : (
+                    <span>Verify & Sign In</span>
+                  )}
+                  {!loading && <MaterialIcon name="arrow_forward" className="text-[20px]" />}
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileTap={{ scale: otpLoading ? 1 : 0.97 }}
+                  className="btn-press btn-shine w-full h-12 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+                  type="button"
+                  onClick={handleRequestOtp}
+                  disabled={otpLoading}
+                >
+                  {otpLoading ? (
+                    <span className="material-symbols-outlined text-[20px] animate-spin">
+                      progress_activity
+                    </span>
+                  ) : (
+                    <span>Send Verification Code</span>
+                  )}
+                  {!otpLoading && <MaterialIcon name="arrow_forward" className="text-[20px]" />}
+                </motion.button>
               )}
 
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-outline-variant" />
-                <span className="flex-shrink mx-4 text-label-sm text-on-surface-variant uppercase tracking-widest">
+              <div className="flex items-center gap-4 text-on-surface-variant my-4">
+                <div className="h-px bg-outline-variant/50 flex-1" />
+                <span className="text-[11px] uppercase font-bold tracking-widest text-on-surface-variant/70">
                   or
                 </span>
-                <div className="flex-grow border-t border-outline-variant" />
+                <div className="h-px bg-outline-variant/50 flex-1" />
               </div>
 
               <GoogleAuthButton />
             </div>
-          </div>
 
-          {/* Footer Links */}
-          <div className="text-center space-y-6">
-            <p className="text-body-md text-on-surface-variant">
+            <p className="text-center text-xs text-on-surface-variant pt-4">
               Don&apos;t have an account?{" "}
-              <Link
-                className="text-primary font-semibold hover:underline"
-                href="/signup"
-              >
+              <Link className="text-primary hover:underline font-bold" href="/signup">
                 Sign Up
               </Link>
             </p>
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 pt-4">
-              <a
-                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-                href="#"
-              >
-                Privacy Policy
-              </a>
-              <a
-                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-                href="#"
-              >
-                Terms of Service
-              </a>
-              <a
-                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-                href="#"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
+          </form>
         </div>
-      </section>
+      </motion.div>
     </main>
   );
 }

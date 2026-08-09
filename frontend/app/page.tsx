@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import dynamic from "next/dynamic";
 import Container from "./components/Container";
 import MaterialIcon from "./components/MaterialIcon";
 import ThemeToggle from "./components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
-// Lazy-load the Timer so it only runs client-side (uses localStorage).
-const Timer = dynamic(() => import("./components/Timer"), { ssr: false });
+import LiveClock from "./components/LiveClock";
 
 /**
  * Landing page — `refined_landing_page` stitch frame.
@@ -30,8 +28,11 @@ export default function Home() {
           </div>
 
           {/* Desktop nav */}
-          <div className="hidden sm:flex items-center gap-2">
-            <ThemeToggle />
+          <div className="hidden sm:flex items-center gap-4">
+            <div className="flex items-center gap-2 border-r border-outline-variant pr-4">
+              <LiveClock />
+              <ThemeToggle />
+            </div>
             <Link
               href="/signin"
               className="text-label-md font-semibold text-primary px-4 py-2 rounded-full hover:bg-surface-container transition-all btn-press"
@@ -94,11 +95,6 @@ export default function Home() {
           <Container className="w-full grid grid-cols-12 gap-6 items-center">
             {/* Left Column */}
             <div className="col-span-12 lg:col-span-7 space-y-6 py-12 lg:py-20 z-10">
-
-              {/* Timer — stagger 1 */}
-              <div className="entrance-fade-up stagger-1 flex">
-                <Timer durationMinutes={15} />
-              </div>
 
               {/* Headline — stagger 2 */}
               <h1
