@@ -126,7 +126,7 @@ export default function SignUp() {
       </header>
 
       {/* Main Grid Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center min-h-[calc(100vh-5rem)] py-12 mt-16">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center min-h-[calc(100vh-5rem)] py-8 sm:py-12 mt-16">
         
         {/* Left Column (Parallax Trust Showcase) - 7 Cols */}
         <div className="hidden lg:flex col-span-7 flex-col justify-center relative min-h-[500px]">
@@ -151,9 +151,9 @@ export default function SignUp() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative z-10 w-full max-w-[440px] mx-4 lg:mx-0"
+            className="relative z-10 w-full max-w-[440px] mx-auto lg:mx-0"
           >
-        <div className="bg-white/85 dark:bg-surface-container-lowest/90 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,42,88,0.08)] p-8 sm:p-10 rounded-[32px]">
+        <div className="bg-white/85 dark:bg-surface-container-lowest/90 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,42,88,0.08)] p-6 sm:p-8 md:p-10 rounded-3xl md:rounded-[32px]">
           
           {/* Header */}
           <div className="text-center mb-8">
