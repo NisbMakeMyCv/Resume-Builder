@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getToken, getStoredUser } from "@/lib/api";
+import { getToken } from "@/lib/api";
 
 /**
  * Client-side guard for authenticated pages. While there is no token
@@ -18,6 +18,7 @@ export default function Protected({
 
   useEffect(() => {
     if (getToken()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
     } else {
       router.replace("/signin");

@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import { useToast } from "../components/ui/Toast";
 import { apiRequest } from "@/lib/api";
 
 /**
@@ -15,6 +16,7 @@ import { apiRequest } from "@/lib/api";
  */
 export default function SignUp() {
   const router = useRouter();
+  const toast = useToast();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -63,9 +65,12 @@ export default function SignUp() {
         })
       );
 
+      toast.info("Verification code sent — check your inbox.");
       router.push("/verify-email");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send code.");
+      const msg = err instanceof Error ? err.message : "Failed to send code.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

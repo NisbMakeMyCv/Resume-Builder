@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import MaterialIcon from "../components/MaterialIcon";
+import { useToast } from "../components/ui/Toast";
 import { apiRequest } from "@/lib/api";
 
 /**
@@ -15,6 +16,7 @@ import { apiRequest } from "@/lib/api";
  */
 export default function VerifyEmail() {
   const router = useRouter();
+  const toast = useToast();
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
@@ -30,6 +32,7 @@ export default function VerifyEmail() {
       try {
         const data = JSON.parse(storedData);
         if (data.email) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setEmail(data.email);
           setMode("signup");
         }
@@ -65,13 +68,16 @@ export default function VerifyEmail() {
           },
         });
         sessionStorage.removeItem("signupData");
+        toast.success("Account verified! Redirecting to sign in...");
         router.push("/signin");
       } else {
         // No pending signup — this page was reached directly. Nothing to do.
         router.push("/signin");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Verification failed.");
+      const msg = err instanceof Error ? err.message : "Verification failed.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
     }
   }
@@ -84,6 +90,7 @@ export default function VerifyEmail() {
         method: "POST",
         body: { email },
       });
+      toast.info("Verification code resent — check your inbox.");
       setResendCooldown(30);
       const timer = setInterval(() => {
         setResendCooldown((s) => {
@@ -95,7 +102,9 @@ export default function VerifyEmail() {
         });
       }, 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend code.");
+      const msg = err instanceof Error ? err.message : "Failed to resend code.";
+      setError(msg);
+      toast.error(msg);
     }
   }
 

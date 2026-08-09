@@ -58,3 +58,4 @@ frontend/.claude/
 .windsurf/
 .continue/
 .frontmatter/
+**/.env

@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import MaterialIcon from "./MaterialIcon";
+import ThemeToggle from "./ThemeToggle";
 import { clearSession, getStoredUser } from "@/lib/api";
+import { useSidebar } from "./SidebarContext";
+import { cn } from "@/lib/utils";
 
 type SidebarItem = {
   label: string;
@@ -25,13 +29,45 @@ const NAV_ITEMS: SidebarItem[] = [
 ];
 
 /**
- * Fixed left sidebar — matches the main_dashboard_desktop / my_resumes
- * stitch frames. Renders the authenticated user at the bottom.
+ * AppSidebar — fixed left sidebar on desktop (≥ lg), slide-over drawer on mobile.
+ *
+ * Desktop: always visible, 256px wide.
+ * Mobile: hidden behind a backdrop; slides in when useSidebar().isOpen is true.
+ *         Close by clicking the backdrop or pressing Escape.
  */
 export default function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = getStoredUser();
+  const { isOpen, close } = useSidebar();
+
+  // Close drawer on Escape key.
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) close();
+    },
+    [isOpen, close]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Close on route change (mobile).
+  useEffect(() => {
+    close();
+  }, [pathname, close]);
+
+  // Prevent body scroll when drawer is open on mobile.
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   function handleLogout() {
     clearSession();
@@ -45,20 +81,43 @@ export default function AppSidebar() {
     .join("")
     .toUpperCase();
 
-  return (
-    <aside className="bg-surface-container-low dark:bg-surface-container-lowest h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex flex-col z-50">
-      <div className="px-6 py-8">
-        <h1 className="text-headline-md font-bold text-primary">MakeMyCV</h1>
-        <p className="text-label-md text-on-surface-variant">
-          Professional Plan
-        </p>
+  const sidebarContent = (
+    <aside
+      className={cn(
+        // Base styles — same on all screen sizes
+        "bg-surface-container-low h-screen w-64 flex flex-col z-[500]",
+        "border-r border-outline-variant",
+        // Desktop: fixed in place, always visible
+        "lg:fixed lg:left-0 lg:top-0 lg:translate-x-0",
+        // Mobile: fixed, slide-over drawer
+        "fixed left-0 top-0",
+        "sidebar-drawer",
+        isOpen ? "sidebar-drawer-open" : "sidebar-drawer-closed lg:sidebar-drawer-open"
+      )}
+      aria-label="Navigation sidebar"
+    >
+      {/* Brand */}
+      <div className="px-6 py-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-headline-md font-bold text-primary">MakeMyCV</h1>
+          <p className="text-label-md text-on-surface-variant">Professional Plan</p>
+        </div>
+        {/* Close button — mobile only */}
+        <button
+          className="lg:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors"
+          onClick={close}
+          aria-label="Close navigation menu"
+        >
+          <span className="material-symbols-outlined text-[20px] text-on-surface-variant">
+            close
+          </span>
+        </button>
       </div>
 
-      <nav className="flex-1 px-4 space-y-1">
+      {/* Nav items */}
+      <nav className="flex-1 px-4 space-y-1" aria-label="Main navigation">
         {NAV_ITEMS.map((item) => {
-          const active = Boolean(
-            item.href && pathname?.startsWith(item.href)
-          );
+          const active = Boolean(item.href && pathname?.startsWith(item.href));
           const content = (
             <>
               <MaterialIcon
@@ -74,7 +133,7 @@ export default function AppSidebar() {
             return (
               <div
                 key={item.label}
-                className="flex items-center gap-3 px-4 py-3 text-on-surface-variant/60 cursor-not-allowed"
+                className="flex items-center gap-3 px-4 py-3 text-on-surface-variant/60 cursor-not-allowed rounded-xl"
                 title="Coming soon"
               >
                 {content}
@@ -86,11 +145,12 @@ export default function AppSidebar() {
             <Link
               key={item.label}
               href={item.href!}
-              className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150",
                 active
-                  ? "text-primary font-bold border-r-4 border-primary bg-surface-container-high"
-                  : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
+                  ? "text-primary font-bold bg-primary/8 border-r-4 border-primary"
+                  : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+              )}
             >
               {content}
             </Link>
@@ -98,22 +158,39 @@ export default function AppSidebar() {
         })}
       </nav>
 
-      <div className="p-6 mt-auto flex items-center gap-3 border-t border-outline-variant">
-        <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0">
-          {initials}
-        </div>
-        <div className="overflow-hidden flex-1">
-          <p className="text-label-md truncate">
-            {user?.full_name ?? "User"}
-          </p>
-          <button
-            className="text-xs text-primary hover:underline cursor-pointer"
-            onClick={handleLogout}
-          >
-            Log Out
-          </button>
+      {/* User + Theme toggle */}
+      <div className="p-6 mt-auto border-t border-outline-variant space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0 text-sm">
+            {initials}
+          </div>
+          <div className="overflow-hidden flex-1">
+            <p className="text-label-md truncate">{user?.full_name ?? "User"}</p>
+            <button
+              className="text-xs text-primary hover:underline cursor-pointer"
+              onClick={handleLogout}
+            >
+              Log Out
+            </button>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Backdrop — mobile only */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 bg-black/40 z-[400] sidebar-backdrop",
+          isOpen ? "sidebar-backdrop-visible" : "sidebar-backdrop-hidden"
+        )}
+        onClick={close}
+        aria-hidden="true"
+      />
+      {sidebarContent}
+    </>
   );
 }

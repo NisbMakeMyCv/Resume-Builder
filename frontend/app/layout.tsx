@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import GoogleProvider from "./components/GoogleProvider";
+import { ThemeProvider } from "./providers/ThemeProvider";
+import { ToastProvider } from "./components/ui/Toast";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,13 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`} data-scroll-behavior="smooth">
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <head>
         {/* Material Symbols Outlined — used by all stitch frames for icons */}
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"
@@ -42,7 +41,11 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <GoogleProvider>{children}</GoogleProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <GoogleProvider>{children}</GoogleProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

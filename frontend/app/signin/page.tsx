@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import { useToast } from "../components/ui/Toast";
 import { apiRequest, saveSession } from "@/lib/api";
 
 /**
@@ -16,6 +17,7 @@ import { apiRequest, saveSession } from "@/lib/api";
  */
 export default function SignIn() {
   const router = useRouter();
+  const toast = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,7 +48,9 @@ export default function SignIn() {
       });
       setOtpSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send code.");
+      const msg = err instanceof Error ? err.message : "Failed to send code.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setOtpLoading(false);
     }
@@ -85,7 +89,9 @@ export default function SignIn() {
       saveSession(res.access_token, user);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign in failed.");
+      const msg = err instanceof Error ? err.message : "Sign in failed.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

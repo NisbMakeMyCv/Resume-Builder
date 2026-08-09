@@ -2,8 +2,8 @@
 # Backend CI Pipeline: Test → Build → Push
 #
 # Triggers:
-#   - push to feature/backend-setup
-#   - pull_request targeting feature/backend-setup
+#   - push to feature/backend-setup, feature/integration01, main
+#   - pull_request targeting those branches
 #   - ONLY when files inside backend/ are changed
 #
 # Jobs:
@@ -17,11 +17,15 @@ on:
   push:
     branches:
       - feature/backend-setup
+      - feature/integration01
+      - main
     paths:
       - "backend/**"          # ← Only trigger when backend files change
   pull_request:
     branches:
       - feature/backend-setup
+      - feature/integration01
+      - main
     paths:
       - "backend/**"
   workflow_dispatch:          # ← Adds a "Run workflow" button in GitHub Actions UI
@@ -86,6 +90,7 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: pytest
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -123,12 +128,14 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           # Overwrite placeholder values already in .env
           sed -i "s|JWT_SECRET_KEY=.*|JWT_SECRET_KEY=${JWT_SECRET_KEY}|"         .env
           sed -i "s|SMTP_USER=.*|SMTP_USER=${SMTP_USER}|"                         .env
           sed -i "s|SMTP_PASSWORD=.*|SMTP_PASSWORD=${SMTP_PASSWORD}|"             .env
           sed -i "s|EMAILS_FROM_EMAIL=.*|EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}|" .env
+          sed -i "s|GROQ_API_KEY=.*|GROQ_API_KEY=${GROQ_API_KEY}|"               .env
           echo ".env secrets injection complete."
 
       # 4. Authenticate to Docker Hub using GitHub Secrets
