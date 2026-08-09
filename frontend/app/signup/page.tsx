@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import { AuthHeadlineTypewriter } from "../components/AuthHeadlineTypewriter";
+import { TestimonialCarousel } from "../components/TestimonialCarousel";
 import { useToast } from "../components/ui/Toast";
 import { apiRequest } from "@/lib/api";
 
@@ -78,53 +80,80 @@ export default function SignUp() {
   }
 
   return (
-    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-surface-container-lowest">
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#f9f9fc] dark:bg-background">
       {/* Animated Abstract Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-primary">
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <motion.div
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
+            opacity: [0.6, 0.8, 0.6],
             rotate: [0, 90, 0],
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-secondary-container/40 blur-[100px]"
+          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-[#d6e3ff]/60 blur-[120px]"
         />
         <motion.div
           animate={{
             scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
+            opacity: [0.5, 0.8, 0.5],
             rotate: [0, -90, 0],
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-primary-container/30 blur-[120px]"
+          className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-[#7fc5fd]/40 blur-[100px]"
         />
-        <div className="absolute inset-0 bg-background/40 backdrop-blur-[2px]" />
       </div>
 
       {/* Top Nav (Brand) */}
       <header className="absolute top-0 w-full z-50 h-20 flex items-center px-8">
         <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-headline-md font-extrabold text-white drop-shadow-md">
-            MakeMyCV
+          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+            <img
+              src="/logo.png"
+              alt="NISB-MakeMyCV Logo"
+              className="h-10 w-10 object-contain rounded-full shrink-0 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-headline-md font-bold text-primary tracking-tight">
+              NISB-MakeMyCV
+            </span>
           </Link>
           <Link
             href="/signin"
-            className="text-label-md font-semibold text-white/90 hover:text-white hover:underline drop-shadow-md"
+            className="text-label-md font-bold text-primary hover:text-[#004080] hover:underline transition-colors"
           >
             Log In
           </Link>
         </div>
       </header>
 
-      {/* Glass Card Container */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-lg mx-4 mt-12"
-      >
-        <div className="bg-surface/60 dark:bg-surface-container-lowest/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 p-8 sm:p-10 rounded-[32px] shadow-2xl">
+      {/* Main Grid Container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center min-h-[calc(100vh-5rem)] py-12 mt-16">
+        
+        {/* Left Column (Parallax Trust Showcase) - 7 Cols */}
+        <div className="hidden lg:flex col-span-7 flex-col justify-center relative min-h-[500px]">
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            <AuthHeadlineTypewriter />
+            <p className="text-body-lg text-on-surface-variant max-w-md leading-relaxed">
+              Join thousands of professionals landing interviews at top tech companies using our intelligent LLM-powered resume builder.
+            </p>
+          </motion.div>
+
+          <TestimonialCarousel />
+        </div>
+
+        {/* Right Column (Form Container) - 5 Cols */}
+        <div className="col-span-12 lg:col-span-5 flex justify-center lg:justify-end w-full">
+          {/* Glass Card Container */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative z-10 w-full max-w-[440px] mx-4 lg:mx-0"
+          >
+        <div className="bg-white/85 dark:bg-surface-container-lowest/90 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,42,88,0.08)] p-8 sm:p-10 rounded-[32px]">
           
           {/* Header */}
           <div className="text-center mb-8">
@@ -139,11 +168,11 @@ export default function SignUp() {
           <form className="space-y-5" onSubmit={handleSubmit}>
             {/* Full Name */}
             <div className="space-y-1.5">
-              <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="full_name">
+              <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="full_name">
                 Full Name
               </label>
               <input
-                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
                 id="full_name"
                 placeholder="John Doe"
                 type="text"
@@ -156,11 +185,11 @@ export default function SignUp() {
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="email">
+              <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="email">
                 Email Address
               </label>
               <input
-                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
                 id="email"
                 placeholder="name@company.com"
                 type="email"
@@ -174,11 +203,11 @@ export default function SignUp() {
             {/* Password Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-1.5">
-                <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="password">
+                <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="password">
                   Password
                 </label>
                 <input
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
                   id="password"
                   placeholder="••••••••"
                   type="password"
@@ -190,11 +219,11 @@ export default function SignUp() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-label-sm font-semibold text-on-surface ml-1" htmlFor="confirm_password">
+                <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="confirm_password">
                   Confirm Password
                 </label>
                 <input
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-surface/50 text-on-surface focus:bg-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
                   id="confirm_password"
                   placeholder="••••••••"
                   type="password"
@@ -262,6 +291,8 @@ export default function SignUp() {
           </form>
         </div>
       </motion.div>
+        </div>
+      </div>
     </main>
   );
 }

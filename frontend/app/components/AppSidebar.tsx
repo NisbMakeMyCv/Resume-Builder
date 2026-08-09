@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import MaterialIcon from "./MaterialIcon";
-import ThemeToggle from "./ThemeToggle";
 import { clearSession, getStoredUser } from "@/lib/api";
 import { useSidebar } from "./SidebarContext";
 import { cn } from "@/lib/utils";
@@ -84,15 +83,15 @@ export default function AppSidebar() {
   const sidebarContent = (
     <aside
       className={cn(
-        // Base styles — same on all screen sizes
-        "bg-surface-container-low h-screen w-64 flex flex-col z-[500]",
-        "border-r border-outline-variant",
-        // Desktop: fixed in place, always visible
-        "lg:fixed lg:left-0 lg:top-0 lg:translate-x-0",
-        // Mobile: fixed, slide-over drawer
+        // Base styles
+        "bg-surface h-screen w-64 flex flex-col z-[500]",
+        "border-r border-outline-variant/40 shadow-sm",
+        // Layout
         "fixed left-0 top-0",
-        "sidebar-drawer",
-        isOpen ? "sidebar-drawer-open" : "sidebar-drawer-closed lg:sidebar-drawer-open"
+        // Transitions
+        "transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+        // Visibility State (Mobile vs Desktop)
+        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}
       aria-label="Navigation sidebar"
     >
@@ -146,10 +145,10 @@ export default function AppSidebar() {
               key={item.label}
               href={item.href!}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
                 active
-                  ? "text-primary font-bold bg-primary/8 border-r-4 border-primary"
-                  : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+                  ? "text-primary font-bold bg-primary/10 border-l-4 border-primary shadow-sm"
+                  : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
               )}
             >
               {content}
@@ -173,7 +172,6 @@ export default function AppSidebar() {
               Log Out
             </button>
           </div>
-          <ThemeToggle />
         </div>
       </div>
     </aside>
@@ -184,8 +182,8 @@ export default function AppSidebar() {
       {/* Backdrop — mobile only */}
       <div
         className={cn(
-          "lg:hidden fixed inset-0 bg-black/40 z-[400] sidebar-backdrop",
-          isOpen ? "sidebar-backdrop-visible" : "sidebar-backdrop-hidden"
+          "lg:hidden fixed inset-0 bg-black/40 z-[400] transition-opacity duration-300 ease-in-out",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
         onClick={close}
         aria-hidden="true"

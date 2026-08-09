@@ -91,6 +91,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
         run: pytest
 
 # ─────────────────────────────────────────────────────────────────────────────

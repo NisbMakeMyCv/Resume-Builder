@@ -111,6 +111,8 @@
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
+  --animate-cursor-blink: cursor-blink 1s step-end infinite;
+
   /* ── Shadow elevation scale ── */
   --shadow-elev-1: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-elev-2: 0 4px 6px rgba(0, 0, 0, 0.07);
@@ -131,48 +133,6 @@
   --z-popover: 600;
   --z-tooltip: 700;
   --z-toast: 800;
-}
-
-/* =========================================================
-   DARK MODE OVERRIDES (class-based via ThemeProvider)
-   html.dark is set by ThemeProvider; html.light forces light.
-   ========================================================= */
-
-html.dark {
-  --background: #1a1c1e;
-  --foreground: #f0f0f3;
-
-  --color-background: #1a1c1e;
-  --color-surface: #1a1c1e;
-  --color-surface-bright: #242628;
-  --color-surface-container-lowest: #131416;
-  --color-surface-container-low: #1e2022;
-  --color-surface-container: #242628;
-  --color-surface-container-high: #2d2f31;
-  --color-surface-container-highest: #36383a;
-  --color-surface-dim: #121416;
-
-  --color-on-surface: #f0f0f3;
-  --color-on-surface-variant: #c3c6d2;
-  --color-on-background: #f0f0f3;
-
-  --color-outline: #8e919a;
-  --color-outline-variant: #424750;
-
-  --color-primary: #a9c7ff;
-  --color-primary-container: #004080;
-  --color-on-primary: #001b3d;
-  --color-on-primary-container: #83aef5;
-
-  --color-secondary: #90cdff;
-  --color-secondary-container: #00517b;
-  --color-on-secondary: #001e31;
-  --color-on-secondary-container: #cce5ff;
-
-  --color-error: #ffb4ab;
-  --color-error-container: #93000a;
-  --color-on-error: #690005;
-  --color-on-error-container: #ffdad6;
 }
 
 /* =========================================================
@@ -376,32 +336,6 @@ select:focus-visible,
 }
 
 /* =========================================================
-   MOBILE SIDEBAR DRAWER
-   ========================================================= */
-
-.sidebar-drawer {
-  transition: transform var(--duration-slow) var(--ease-out-cubic);
-}
-.sidebar-drawer-closed {
-  transform: translateX(-100%);
-}
-.sidebar-drawer-open {
-  transform: translateX(0);
-}
-
-.sidebar-backdrop {
-  transition: opacity var(--duration-normal) ease;
-}
-.sidebar-backdrop-hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-.sidebar-backdrop-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* =========================================================
    ACCESSIBILITY
    ========================================================= */
 
@@ -414,4 +348,9 @@ select:focus-visible,
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }

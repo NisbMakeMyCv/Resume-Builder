@@ -52,7 +52,7 @@ function DashboardInner() {
       <AppSidebar />
 
       {/* Top App Bar */}
-      <header className="bg-surface border-b border-outline-variant fixed top-0 left-0 w-full lg:left-64 lg:w-[calc(100%-16rem)] h-16 flex justify-between items-center px-4 sm:px-8 z-[300]">
+      <header className="bg-surface/80 backdrop-blur-md border-b border-outline-variant/40 fixed top-0 left-0 w-full lg:left-64 lg:w-[calc(100%-16rem)] h-16 flex justify-between items-center px-6 lg:px-10 z-[300]">
         {/* Hamburger — mobile only */}
         <div className="flex items-center gap-3">
           <button
@@ -82,8 +82,8 @@ function DashboardInner() {
       </header>
 
       {/* Main Content Canvas */}
-      <main className="ml-0 lg:ml-64 pt-16 min-h-screen pb-20">
-        <div className="max-w-[1280px] mx-auto p-4 sm:p-8 space-y-8">
+      <main className="lg:pl-64 pt-16 min-h-screen pb-20">
+        <div className="w-full p-6 lg:p-10 space-y-8 max-w-7xl mx-auto">
           {/* Welcome Header */}
           <header>
             <h2 className="text-headline-lg text-primary">Hello, {firstName}!</h2>
@@ -98,20 +98,21 @@ function DashboardInner() {
               label="Total Resumes"
               icon="description"
               value="0"
-              footnote="Create a resume to get started"
+              subtext="Create a resume to get started"
+              link={{ label: "Create a resume to get started", href: "/resumes" }}
             />
             <MetricCard
               label="Avg. ATS Score"
-              icon="analytics"
+              icon="leaderboard"
               value="—"
-              footnote="No resumes yet"
+              subtext="No resumes yet"
               progress={0}
             />
             <MetricCard
               label="Profile Views"
               icon="visibility"
               value="0"
-              footnote="Shown once you publish"
+              subtext="Shown once you publish"
             />
           </div>
 
@@ -204,13 +205,15 @@ function MetricCard({
   label,
   icon,
   value,
-  footnote,
+  subtext,
+  link,
   progress,
 }: {
   label: string;
   icon: string;
   value: string;
-  footnote: string;
+  subtext: string;
+  link?: { label: string; href: string };
   progress?: number;
 }) {
   const [displayValue, setDisplayValue] = useState("0");
@@ -245,17 +248,28 @@ function MetricCard({
   }, [value]);
 
   return (
-    <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant hover:border-primary hover:shadow-md transition-all duration-200 flex flex-col gap-2">
-      <div className="flex justify-between items-center">
-        <span className="text-label-md text-on-surface-variant">{label}</span>
-        <MaterialIcon name={icon} className="text-primary" />
+    <div className="group bg-surface-container-lowest p-6 rounded-[24px] border border-outline-variant/40 hover:border-primary/30 hover:shadow-elev-2 hover:-translate-y-1 transition-all duration-300 flex flex-col gap-2 relative overflow-hidden">
+      <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
+      <div className="flex justify-between items-center relative z-10">
+        <span className="text-label-md font-semibold text-on-surface-variant">{label}</span>
+        <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+          <MaterialIcon name={icon} className="text-primary text-[18px]" />
+        </div>
       </div>
-      <p className="text-headline-lg">{displayValue}</p>
-      <p className="text-xs text-secondary">{footnote}</p>
+      <p className="text-[32px] leading-tight font-bold text-on-surface mt-2 relative z-10">{displayValue}</p>
+      
+      {link ? (
+        <Link href={link.href} className="text-xs font-semibold text-secondary hover:text-primary transition-colors relative z-10">
+          {link.label}
+        </Link>
+      ) : (
+        <p className="text-xs text-on-surface-variant/70 relative z-10">{subtext}</p>
+      )}
+
       {progress !== undefined && (
-        <div className="w-full bg-surface-container rounded-full h-1.5 mt-1">
+        <div className="w-full bg-surface-container rounded-full h-1.5 mt-2 relative z-10 overflow-hidden">
           <div
-            className="bg-secondary h-1.5 rounded-full transition-all duration-700"
+            className="bg-secondary h-1.5 rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>

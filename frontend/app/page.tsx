@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import Container from "./components/Container";
 import MaterialIcon from "./components/MaterialIcon";
-import ThemeToggle from "./components/ThemeToggle";
+import { TypewriterText } from "./components/TypewriterText";
 import { cn } from "@/lib/utils";
 
 import LiveClock from "./components/LiveClock";
@@ -23,15 +24,21 @@ export default function Home() {
       {/* ================= TOP NAV BAR ================= */}
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant">
         <Container className="h-16 flex justify-between items-center">
-          <div className="text-headline-md font-bold text-primary shrink-0">
-            MakeMyCV
-          </div>
+          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+            <img
+              src="/logo.png"
+              alt="NISB-MakeMyCV Logo"
+              className="h-10 w-10 object-contain rounded-full shrink-0 group-hover:scale-105 transition-transform"
+            />
+            <span className="text-headline-md font-bold text-primary tracking-tight">
+              NISB-MakeMyCV
+            </span>
+          </Link>
 
           {/* Desktop nav */}
           <div className="hidden sm:flex items-center gap-4">
             <div className="flex items-center gap-2 border-r border-outline-variant pr-4">
               <LiveClock />
-              <ThemeToggle />
             </div>
             <Link
               href="/signin"
@@ -47,9 +54,8 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Mobile: theme toggle + hamburger */}
+          {/* Mobile: hamburger */}
           <div className="flex sm:hidden items-center gap-1">
-            <ThemeToggle />
             <button
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors"
               onClick={() => setMobileMenuOpen((v) => !v)}
@@ -89,12 +95,12 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="pt-16">
+      <div className="pt-16 pb-8">
         {/* ================= HERO SECTION ================= */}
-        <section className="relative min-h-[85vh] flex items-center hero-gradient overflow-hidden">
-          <Container className="w-full grid grid-cols-12 gap-6 items-center">
+        <section className="relative hero-gradient overflow-hidden pt-6 lg:pt-8 pb-12 lg:pb-16">
+          <Container className="w-full grid grid-cols-12 gap-6 items-start">
             {/* Left Column */}
-            <div className="col-span-12 lg:col-span-7 space-y-6 py-12 lg:py-20 z-10">
+            <div className="col-span-12 lg:col-span-7 space-y-6 pt-2 pb-4 z-10">
 
               {/* Headline — stagger 2 */}
               <h1
@@ -133,55 +139,109 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Column: Jake's Resume mockup — hidden below lg */}
-            <div className="hidden lg:flex col-span-5 relative justify-end py-12 lg:py-0 entrance-fade-up stagger-5">
-              <div className="glass-card p-4 rounded-[32px] border border-outline-variant shadow-2xl animate-float relative z-10 w-full max-w-[480px]">
-                <div className="bg-surface-container-lowest rounded-[24px] overflow-hidden border border-outline-variant aspect-[3/4] flex flex-col">
-                  {/* Jake's Resume — two-column: dark sidebar + white main */}
-                  <div className="flex-1 flex">
-                    {/* Dark sidebar */}
-                    <div className="w-[38%] bg-primary text-white p-6 flex flex-col gap-6">
-                      <div className="w-16 h-16 rounded-full bg-on-primary/20 border-2 border-white/40 mx-auto" />
-                      <div className="space-y-1 text-center">
-                        <div className="h-2.5 w-3/4 mx-auto bg-white/50 rounded-full" />
-                        <div className="h-2 w-1/2 mx-auto bg-white/25 rounded-full" />
-                      </div>
-                      <div className="space-y-2 border-t border-white/20 pt-4">
-                        <div className="h-1.5 w-full bg-white/25 rounded-full" />
-                        <div className="h-1.5 w-5/6 bg-white/25 rounded-full" />
-                        <div className="h-1.5 w-4/6 bg-white/25 rounded-full" />
-                      </div>
-                      <div className="space-y-2 border-t border-white/20 pt-4">
-                        <div className="h-1.5 w-3/4 bg-white/25 rounded-full" />
-                        <div className="h-1.5 w-2/3 bg-white/25 rounded-full" />
-                      </div>
+            {/* Right Column: Interactive Live Resume Canvas */}
+            <div className="hidden lg:flex col-span-5 relative justify-end pt-2 pb-4 entrance-fade-up stagger-5">
+              
+              {/* Floating ATS Badge */}
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1, duration: 0.6 }}
+                className="absolute top-4 right-12 z-30 bg-white/90 backdrop-blur-md rounded-2xl border border-white p-4 shadow-xl flex items-center gap-3 animate-float"
+              >
+                <div className="relative flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">ATS Match</div>
+                  <div className="text-lg font-black text-emerald-600 leading-none mt-1">98%</div>
+                </div>
+              </motion.div>
+
+              {/* Floating AI Badge */}
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.5, duration: 0.6 }}
+                className="absolute -bottom-6 -left-12 z-30 bg-white/90 backdrop-blur-md rounded-full border border-white px-5 py-3 shadow-xl flex items-center gap-2 animate-float"
+                style={{ animationDelay: '1s' }}
+              >
+                <span className="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
+                <span className="text-xs font-bold text-on-surface">AI Bullet Optimization Active</span>
+              </motion.div>
+
+              {/* Glass Resume Card */}
+              <div className="bg-white/80 dark:bg-surface-container-low/80 backdrop-blur-2xl p-6 rounded-[32px] border border-white/60 dark:border-white/10 shadow-[0_30px_60px_rgba(0,42,88,0.12)] relative z-10 w-full max-w-[500px]">
+                <div className="bg-white dark:bg-surface rounded-[24px] overflow-hidden border border-outline-variant/30 flex flex-col min-h-[560px] shadow-sm">
+                  
+                  {/* Real Resume Header */}
+                  <div className="bg-primary px-8 py-10 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div className="w-20 h-20 rounded-full bg-white/10 border-2 border-white/30 mb-4 flex items-center justify-center text-white text-2xl font-bold relative z-10">
+                      JR
                     </div>
-                    {/* White main */}
-                    <div className="flex-1 p-6 space-y-5">
-                      <div className="h-5 w-3/4 bg-primary/15 rounded-sm" />
-                      <div className="space-y-2">
-                        <div className="h-2 w-full bg-surface-container rounded-sm" />
-                        <div className="h-2 w-5/6 bg-surface-container rounded-sm" />
-                        <div className="h-2 w-4/6 bg-surface-container rounded-sm" />
-                      </div>
-                      <div className="pt-2 space-y-2">
-                        <div className="h-1.5 w-1/3 bg-primary/20 rounded-sm" />
-                        <div className="h-2 w-full bg-surface-container rounded-sm" />
-                        <div className="h-2 w-3/4 bg-surface-container rounded-sm" />
-                      </div>
-                      <div className="pt-2 space-y-2">
-                        <div className="h-1.5 w-1/3 bg-primary/20 rounded-sm" />
-                        <div className="h-2 w-full bg-surface-container rounded-sm" />
-                        <div className="h-2 w-2/3 bg-surface-container rounded-sm" />
-                      </div>
+                    <h2 className="text-2xl font-bold text-white relative z-10">Jake Ryan</h2>
+                    <div className="text-white/90 text-sm font-medium mt-1 relative z-10 h-6">
+                      <TypewriterText 
+                        words={["Senior Full-Stack Engineer", "AI & Machine Learning Developer", "Lead Frontend Architect"]} 
+                      />
+                    </div>
+                    <div className="flex gap-3 text-white/70 text-[10px] mt-4 relative z-10 font-medium">
+                      <span>jake@example.com</span>
+                      <span>•</span>
+                      <span>github.com/jakeryan</span>
                     </div>
                   </div>
+
+                  {/* Real Resume Content (Staggered Animation) */}
+                  <motion.div 
+                    initial="hidden"
+                    animate="show"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      show: {
+                        opacity: 1,
+                        transition: { staggerChildren: 0.3, delayChildren: 0.5 }
+                      }
+                    }}
+                    className="flex-1 p-8 space-y-8 bg-[#fdfdfd] dark:bg-surface"
+                  >
+                    
+                    {/* Experience section */}
+                    <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }}>
+                      <h3 className="text-xs font-black text-primary tracking-widest uppercase border-b border-outline-variant/40 pb-2 mb-4">Experience</h3>
+                      
+                      <div className="mb-4">
+                        <div className="flex justify-between items-baseline">
+                          <h4 className="text-sm font-bold text-on-surface">MakeMyCV AI Platform</h4>
+                          <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">Present</span>
+                        </div>
+                        <div className="text-[11px] font-semibold text-secondary italic mb-2">Software Engineer</div>
+                        <ul className="list-disc list-outside ml-3 space-y-1.5 text-[11px] text-on-surface-variant leading-relaxed">
+                          <li>Engineered FastAPI microservices with Groq LLM integration, reducing resume generation latency by 45%.</li>
+                          <li>Designed responsive React & Tailwind components serving 10,000+ active job seekers.</li>
+                        </ul>
+                      </div>
+                    </motion.div>
+
+                    {/* Skills section */}
+                    <motion.div variants={{ hidden: { opacity: 0, y: 15 }, show: { opacity: 1, y: 0 } }}>
+                      <h3 className="text-xs font-black text-primary tracking-widest uppercase border-b border-outline-variant/40 pb-2 mb-4">Core Competencies</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {["React", "TypeScript", "FastAPI", "Python", "TailwindCSS", "PostgreSQL"].map(skill => (
+                          <span key={skill} className="text-[10px] font-bold text-[#006496] bg-[#006496]/10 dark:text-[#7fc5fd] dark:bg-[#7fc5fd]/10 border border-[#006496]/20 dark:border-[#7fc5fd]/20 px-2.5 py-1 rounded-md hover:bg-[#006496]/20 dark:hover:bg-[#7fc5fd]/20 transition-colors cursor-default">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </motion.div>
                 </div>
               </div>
 
               {/* Decorative Elements */}
-              <div className="absolute -top-10 -right-10 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl -z-10" />
-              <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-primary-container/10 rounded-full blur-3xl -z-10" />
+              <div className="absolute -top-10 -right-10 w-72 h-72 bg-[#d6e3ff]/40 rounded-full blur-[80px] -z-10" />
+              <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-[#7fc5fd]/30 rounded-full blur-[80px] -z-10" />
             </div>
 
             {/* Mobile hero decoration — shown below lg instead of the mockup */}

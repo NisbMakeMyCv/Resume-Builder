@@ -79,6 +79,8 @@ services:
       - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
       - GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TOKEN_GITHUB=${TOKEN_GITHUB}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/"]
       interval: 10s
