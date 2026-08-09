@@ -24,13 +24,13 @@ export default function Home() {
       {/* ================= TOP NAV BAR ================= */}
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant">
         <Container className="h-16 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0 group">
             <img
               src="/logo.png"
               alt="NISB-MakeMyCV Logo"
-              className="h-10 w-10 object-contain rounded-full shrink-0 group-hover:scale-105 transition-transform"
+              className="h-8 w-8 sm:h-10 sm:w-10 object-contain rounded-full shrink-0 group-hover:scale-105 transition-transform"
             />
-            <span className="text-headline-md font-bold text-primary tracking-tight">
+            <span className="text-[20px] sm:text-headline-md font-bold text-primary tracking-tight whitespace-nowrap">
               NISB-MakeMyCV
             </span>
           </Link>
