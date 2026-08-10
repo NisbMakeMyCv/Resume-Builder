@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Logo from "../components/Logo";
 import MaterialIcon from "../components/MaterialIcon";
+import SuccessBurst from "../components/SuccessBurst";
 import { apiRequest } from "../../lib/api";
 
 /**
@@ -22,6 +24,7 @@ export default function VerifyEmail() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -65,7 +68,8 @@ export default function VerifyEmail() {
           },
         });
         sessionStorage.removeItem("signupData");
-        router.push("/signin");
+        setCelebrate(true);
+        setTimeout(() => router.push("/signin"), 1400);
       } else {
         // No pending signup — this page was reached directly. Nothing to do.
         router.push("/signin");
@@ -119,37 +123,35 @@ export default function VerifyEmail() {
   };
 
   return (
-    <main className="bg-background font-body-md text-on-background min-h-screen flex flex-col">
+    <main className="page-enter bg-background font-body-md text-on-background min-h-[100dvh] flex flex-col justify-between">
       {/* Top Nav Bar (transactional — brand only) */}
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant">
+      <header className="fixed top-0 w-full z-50 bg-white border-b border-outline-variant">
         <div className="w-full px-8 h-16 flex items-center">
-          <span className="text-headline-md font-bold text-primary">
-            MakeMyCV
-          </span>
+          <Logo />
         </div>
       </header>
 
-      <main className="flex-grow flex items-center justify-center px-8 pt-20 pb-12">
-        <div className="max-w-md w-full bg-surface-container-lowest border border-outline-variant rounded-[20px] p-8 md:p-12 entrance-fade-up">
+      <main className="flex-grow flex items-center justify-center px-4 sm:px-8 py-10 lg:py-16">
+        <div className="max-w-md w-full bg-surface-container-lowest border border-outline-variant rounded-[20px] p-5 sm:p-8 lg:p-12 entrance-fade-up">
           {/* Success Illustration */}
-          <div className="flex justify-center mb-8 entrance-fade-up">
-            <div className="w-24 h-24 bg-secondary-fixed rounded-full flex items-center justify-center">
+          <div className="flex justify-center mb-4 sm:mb-8 entrance-fade-up">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-secondary-fixed rounded-full flex items-center justify-center">
               <MaterialIcon
                 name="mark_email_read"
-                className="text-primary text-[48px]"
+                className="text-primary text-[36px] sm:text-[48px]"
                 filled
               />
             </div>
           </div>
 
           {/* Content */}
-          <div className="text-center mb-10">
-            <h1 className="text-headline-md text-on-surface mb-2">
+          <div className="text-center mb-6 sm:mb-10">
+            <h1 className="text-xl sm:text-headline-md text-on-surface mb-2">
               Verify your email
             </h1>
             <p className="text-body-md text-on-surface-variant">
               We&apos;ve sent a 6-digit code to your inbox. Please enter it
-              below to secure your MakeMyCV account.
+              below to secure your NISB-MakeMyCV account.
               {email ? (
                 <>
                   {" "}
@@ -163,7 +165,7 @@ export default function VerifyEmail() {
 
           {/* OTP Inputs — grid keeps 6 boxes inside the card on any width */}
           <div
-            className="grid grid-cols-6 gap-2 md:gap-3 mb-10"
+            className="grid grid-cols-6 gap-2 md:gap-3 mb-6 sm:mb-10"
             id="otp-container"
           >
             {otp.map((digit, index) => (
@@ -193,7 +195,7 @@ export default function VerifyEmail() {
           {/* Actions */}
           <div className="space-y-4">
             <button
-              className="btn-shine w-full h-14 bg-primary-container text-on-tertiary font-label-md rounded-full hover:bg-[#006699] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary btn-shine btn-magnetic w-full h-11 sm:h-14 rounded-full font-label-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               id="verify-btn"
               type="button"
               onClick={handleVerify}
@@ -255,7 +257,7 @@ export default function VerifyEmail() {
       {/* Footer */}
       <footer className="w-full bg-surface-container border-t border-outline-variant mt-auto">
         <div className="w-full px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-6 text-on-surface-variant font-label-sm">
-          <span>© 2026 MakeMyCV. Made by NISB.</span>
+          <span>© 2026 NISB-MakeMyCV. Made by NISB.</span>
           <div className="flex gap-6">
             <a className="hover:underline" href="#">
               Support
@@ -269,6 +271,8 @@ export default function VerifyEmail() {
           </div>
         </div>
       </footer>
+
+      {celebrate && <SuccessBurst message="Account created!" />}
     </main>
   );
 }

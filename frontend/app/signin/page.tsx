@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import Logo from "../components/Logo";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import SuccessBurst from "../components/SuccessBurst";
 import { apiRequest, saveSession } from "../../lib/api";
 
 /**
@@ -27,6 +30,7 @@ export default function SignIn() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
 
   /** Step 1 — send the 6-digit code to the user's inbox. */
   async function handleRequestOtp(e: FormEvent<HTMLFormElement>) {
@@ -80,10 +84,12 @@ export default function SignIn() {
         id: string;
         email: string;
         full_name: string;
+        profile_picture: string | null;
       }>("/auth/me", { token: res.access_token });
 
       saveSession(res.access_token, user);
-      router.push("/dashboard");
+      setCelebrate(true);
+      setTimeout(() => router.push("/dashboard"), 1400);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
     } finally {
@@ -111,24 +117,89 @@ export default function SignIn() {
   };
 
   return (
-    <main className="flex min-h-screen bg-surface-bright text-on-surface antialiased">
+    <main className="page-enter flex min-h-[100dvh] bg-surface-bright text-on-surface antialiased flex-col">
+      {/* Top Nav Bar (transactional — brand only) */}
+      <header className="shrink-0 bg-white border-b border-outline-variant h-16 flex items-center relative z-50">
+        <div className="w-full px-8 flex justify-between items-center">
+          <Logo />
+          <Link
+            href="/signup"
+            className="btn-outline inline-flex items-center text-label-md font-semibold px-5 py-2 rounded-full"
+          >
+            Sign Up
+          </Link>
+        </div>
+      </header>
+
+      <div className="flex-1 min-h-0 flex">
       {/* ============ LEFT: ABSTRACT ILLUSTRATION & BRANDING ============ */}
-      <section className="hidden lg:flex lg:w-1/2 relative bg-primary-container overflow-hidden">
-        {/* Animated shader layer */}
+      <section className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary">
+        {/* Real-world dark/blue background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/images/signin-desk.jpg')" }}
+        />
+        {/* Dark blue overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
         <div className="absolute inset-0 opacity-40 mix-blend-overlay hero-gradient" />
 
-        <div className="relative z-10 p-16 flex flex-col justify-between w-full">
-          <div>
-            <h1 className="text-headline-lg text-on-primary-container tracking-tight">
-              MakeMyCV
+        {/* Floating decorative orbs */}
+        <motion.div
+          className="absolute top-16 -left-16 w-72 h-72 bg-secondary-container/30 rounded-full blur-3xl"
+          animate={{ y: [0, 30, 0], x: [0, 20, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-40 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"
+          animate={{ y: [0, -30, 0], x: [0, -20, 0] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        <div className="relative z-10 p-16 flex flex-col justify-between w-full h-full">
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
+            <h1 className="text-headline-lg text-on-primary-container tracking-tight font-bold">
+              NISB-MakeMyCV
             </h1>
             <p className="mt-4 text-body-lg text-on-primary-container opacity-80 max-w-md">
               One clean, recruiter-approved template. Write your story, let the
               AI polish the details, and get hired.
             </p>
+          </motion.div>
+
+          {/* Sleek, dynamic feature showcase instead of the static resume */}
+          <div className="my-auto py-8">
+            <motion.div
+              className="text-left space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+            >
+              <h2 className="text-2xl lg:text-3xl text-white font-bold tracking-tight">
+                Empowering your career growth:
+              </h2>
+              <div className="h-16 flex items-center">
+                <span className="text-xl lg:text-2xl text-secondary-container font-semibold">
+                  <Typewriter words={VALUE_PROPS} />
+                  <motion.span
+                    className="inline-block w-[3px] h-[0.95em] bg-secondary-container ml-1 align-middle"
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 1] }}
+                  />
+                </span>
+              </div>
+            </motion.div>
           </div>
 
-          <div className="space-y-6">
+          <motion.div
+            className="space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.7, ease: "easeOut" }}
+          >
             <div className="flex items-center gap-4 bg-primary/20 p-6 rounded-brand backdrop-blur-sm border border-white/10">
               <MaterialIcon
                 name="verified"
@@ -144,33 +215,98 @@ export default function SignIn() {
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
+        {/* Floating glassmorphic badges */}
+        <FloatBadge className="top-1/4 right-8" delay={0.2}>
+          <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-3 shadow-lg backdrop-blur-md">
+            <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-secondary-container/30">
+              <MaterialIcon name="bolt" className="text-[20px] text-secondary-container" filled />
+            </span>
+            <div className="text-left">
+              <div className="text-label-md font-semibold text-white">
+                ATS Match: 98%
+              </div>
+              <div className="text-label-sm text-white/70">
+                Instant optimization
+              </div>
+            </div>
+          </div>
+        </FloatBadge>
+
+        <FloatBadge className="bottom-1/3 left-10" delay={0.5}>
+          <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-3 shadow-lg backdrop-blur-md">
+            <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-success-container/30">
+              <MaterialIcon name="verified" className="text-[20px] text-green-400" filled />
+            </span>
+            <div className="text-left">
+              <div className="text-label-md font-semibold text-white">
+                10k+ Resumes Built
+              </div>
+              <div className="text-label-sm text-white/70">
+                Recruiter-approved templates
+              </div>
+            </div>
+          </div>
+        </FloatBadge>
+
+        <FloatBadge className="top-1/2 right-12" delay={0.8}>
+          <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-3 shadow-lg backdrop-blur-md">
+            <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-primary-container/30">
+              <MaterialIcon name="star" className="text-[20px] text-amber-400" filled />
+            </span>
+            <div className="text-left">
+              <div className="text-label-md font-semibold text-white">
+                4.9/5 Rating
+              </div>
+              <div className="text-label-sm text-white/70">
+                Loved by professionals
+              </div>
+            </div>
+          </div>
+        </FloatBadge>
+
         {/* Atmospheric glow */}
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container blur-[120px] rounded-full opacity-30" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container blur-[120px] rounded-full opacity-30 animate-breathe" />
       </section>
 
       {/* ============ RIGHT: SIGN IN FORM ============ */}
-      <section className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16 bg-surface-container-lowest">
-        <div className="w-full max-w-[440px] space-y-8">
+      <section className="auth-panel w-full lg:w-1/2 flex flex-col justify-center relative bg-slate-50 overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
+        {/* Subtle grid pattern background */}
+        <div 
+          className="absolute inset-0 opacity-40 pointer-events-none" 
+          style={{
+            backgroundImage: "radial-gradient(#6366f1 1px, transparent 1px)",
+            backgroundSize: "20px 20px"
+          }}
+        />
+        
+        {/* Ambient background blur blobs */}
+        <div className="absolute top-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none animate-drift" />
+        <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none animate-drift-slow" />
+
+        <div className="w-full flex items-center justify-center p-3 sm:p-6 md:p-10 relative z-10 my-auto">
+          {/* Elevate the login form on an entrance-animated card */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative z-10 w-full max-w-[440px] px-2 sm:px-0"
+          >
+          <div className="space-y-4 lg:space-y-6">
           {/* Header */}
           <div className="text-center lg:text-left">
-            <div className="lg:hidden mb-8">
-              <h1 className="text-headline-md text-primary font-bold">
-                MakeMyCV
-              </h1>
-            </div>
-            <h2 className="text-headline-md text-on-surface">Sign In</h2>
-            <p className="text-body-md text-on-surface-variant mt-2">
+            <h2 className="text-2xl sm:text-headline-md text-on-surface font-semibold">Sign In</h2>
+            <p className="text-body-md text-on-surface-variant mt-1.5">
               Enter your credentials to access your professional dashboard.
             </p>
           </div>
 
-          {/* Sign In Card */}
-          <div className="bg-white p-2 rounded-brand space-y-6">
+          {/* Sign In Card — elevated off the new background */}
+          <div className="ambient-card bg-white/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 space-y-3 sm:space-y-4 lg:space-y-6 shadow-2xl ring-1 ring-black/5">
             {/* Email Field */}
-            <div className="space-y-2">
+            <div className="space-y-1 sm:space-y-2">
               <label
                 className="text-label-md text-on-surface-variant block"
                 htmlFor="email"
@@ -183,19 +319,20 @@ export default function SignIn() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
                 />
                 <input
-                  className="w-full pl-12 pr-4 py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant"
+                  className="w-full pl-12 pr-4 py-2.5 sm:py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all duration-200"
                   id="email"
                   placeholder="name@company.com"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={otpSent}
+                  suppressHydrationWarning
                 />
               </div>
             </div>
 
             {/* Password Field */}
-            <div className="space-y-2">
+            <div className="space-y-1 sm:space-y-2">
               <div className="flex justify-between items-center">
                 <label
                   className="text-label-md text-on-surface-variant block"
@@ -216,7 +353,7 @@ export default function SignIn() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
                 />
                 <input
-                  className="w-full pl-12 pr-12 py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant"
+                  className="w-full pl-12 pr-12 py-2.5 sm:py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all duration-200"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? "text" : "password"}
@@ -282,10 +419,10 @@ export default function SignIn() {
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-4 pt-2">
+            <div className="space-y-3 pt-1 sm:pt-2">
               {otpSent ? (
                 <button
-                  className="btn-press btn-shine w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   type="button"
                   onClick={handleVerify}
                   disabled={loading}
@@ -296,7 +433,7 @@ export default function SignIn() {
               ) : (
                 <form onSubmit={handleRequestOtp}>
                   <button
-                    className="btn-press btn-shine w-full py-4 bg-primary text-on-primary rounded-brand font-label-md shadow-lg shadow-primary/10 hover:bg-primary-container flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                     type="submit"
                     disabled={otpLoading}
                   >
@@ -308,9 +445,9 @@ export default function SignIn() {
                 </form>
               )}
 
-              <div className="relative flex items-center py-2">
+              <div className="relative flex items-center py-1 sm:py-1.5">
                 <div className="flex-grow border-t border-outline-variant" />
-                <span className="flex-shrink mx-4 text-label-sm text-on-surface-variant uppercase tracking-widest">
+                <span className="flex-shrink mx-4 text-[10px] text-on-surface-variant uppercase tracking-widest">
                   or
                 </span>
                 <div className="flex-grow border-t border-outline-variant" />
@@ -331,29 +468,114 @@ export default function SignIn() {
                 Sign Up
               </Link>
             </p>
-            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 pt-4">
-              <a
-                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-                href="#"
-              >
-                Privacy Policy
-              </a>
-              <a
-                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-                href="#"
-              >
-                Terms of Service
-              </a>
-              <a
-                className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-                href="#"
-              >
-                Contact
-              </a>
-            </div>
           </div>
         </div>
+        </motion.div>
+        </div>
+
+        {/* Bottom footer pinned to the bottom of the page */}
+        <footer className="px-8 py-5 border-t border-outline-variant flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2 text-center">
+          <a
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+            href="#"
+          >
+            Privacy Policy
+          </a>
+          <a
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+            href="#"
+          >
+            Terms of Service
+          </a>
+          <a
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+            href="#"
+          >
+            Contact
+          </a>
+        </footer>
       </section>
+      </div>
+
+      {celebrate && <SuccessBurst message="Welcome back!" />}
     </main>
+  );
+}
+
+/* =========================================================
+   LOCAL HELPERS — stats cycler typewriter + floating badges
+   ========================================================= */
+
+const VALUE_PROPS = [
+  "⚡ 10k+ Resumes Generated",
+  "🎯 98% ATS Pass Rate",
+  "💼 Land Interviews 2x Faster",
+  "⭐ 4.9/5 User Rating",
+];
+
+function useTypewriter(
+  words: readonly string[],
+  typeSpeed = 60,
+  deleteSpeed = 30,
+  pause = 2000
+) {
+  const [text, setText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = words[wordIndex % words.length];
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && text === current) {
+      timer = setTimeout(() => setIsDeleting(true), pause);
+    } else if (isDeleting && text === "") {
+      setIsDeleting(false);
+      setWordIndex((i) => (i + 1) % words.length);
+    } else {
+      timer = setTimeout(
+        () =>
+          setText(current.slice(0, text.length + (isDeleting ? -1 : 1))),
+        isDeleting ? deleteSpeed : typeSpeed
+      );
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, wordIndex, words, typeSpeed, deleteSpeed, pause]);
+
+  return text;
+}
+
+function Typewriter({ words }: { words: readonly string[] }) {
+  return <span>{useTypewriter(words)}</span>;
+}
+
+function FloatBadge({
+  className = "",
+  delay = 0,
+  children,
+}: {
+  className?: string;
+  delay?: number;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      className={`absolute z-20 ${className}`}
+      initial={{ opacity: 0, scale: 0.85, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: [10, -10, 10] }}
+      transition={{
+        opacity: { delay: 0.9, duration: 0.4 },
+        scale: { delay: 0.9, duration: 0.4, type: "spring", stiffness: 220 },
+        y: {
+          delay: delay + 1,
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        },
+      }}
+    >
+      {children}
+    </motion.div>
   );
 }

@@ -10,12 +10,16 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
  * configured the provider still renders children (GoogleAuthButton shows a
  * friendly "not configured" note instead of the button).
  */
+const FALLBACK_GOOGLE_CLIENT_ID =
+  "162439018220-2gn11m76oek6vspri9b8q794pdcdll91.apps.googleusercontent.com";
+
 export default function GoogleProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId =
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? FALLBACK_GOOGLE_CLIENT_ID;
 
   if (!clientId) {
     return <>{children}</>;

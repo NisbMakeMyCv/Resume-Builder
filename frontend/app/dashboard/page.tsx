@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import AppSidebar from "../components/AppSidebar";
+import AnimatedHeading from "../components/AnimatedHeading";
+import Reveal from "../components/Reveal";
 import Protected from "../components/Protected";
 import MaterialIcon from "../components/MaterialIcon";
 import { apiRequest, getStoredUser, getToken } from "../../lib/api";
@@ -28,9 +31,12 @@ function DashboardInner() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    apiRequest<{ id: string; email: string; full_name: string }>("/auth/me", {
-      token,
-    })
+    apiRequest<{
+      id: string;
+      email: string;
+      full_name: string;
+      profile_picture: string | null;
+    }>("/auth/me", { token })
       .then((me) => {
         setUser(me);
         localStorage.setItem("makemycv_user", JSON.stringify(me));
@@ -43,37 +49,51 @@ function DashboardInner() {
   const firstName = (user?.full_name ?? "there").split(" ")[0];
 
   return (
-    <div className="min-h-screen text-on-surface bg-surface">
+    <div className="page-enter min-h-screen text-on-surface bg-surface">
       <AppSidebar />
 
       {/* Top App Bar */}
-      <header className="bg-surface border-b border-outline-variant fixed top-0 left-64 w-[calc(100%-16rem)] h-16 flex justify-between items-center px-8 z-40">
+      <header className="bg-surface border-b border-outline-variant fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-14 lg:top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))]">
         <span className="text-headline-md font-bold text-primary">
           Dashboard
         </span>
         <Link
           href="/resumes"
-          className="bg-primary hover:bg-secondary text-white text-label-md px-6 py-2 rounded-full transition-transform active:scale-95"
+          className="btn-primary btn-shine inline-flex items-center gap-2 text-white text-label-md px-4 lg:px-6 py-2 rounded-full"
         >
           Create New Resume
         </Link>
       </header>
 
       {/* Main Content Canvas */}
-      <main className="ml-64 pt-16 min-h-screen pb-20">
+      <main className="pt-28 lg:pt-16 lg:ml-[var(--sidebar-width)] min-h-screen pb-20">
         <div className="max-w-[1280px] mx-auto p-8 space-y-8">
           {/* Welcome Header */}
           <header>
-            <h2 className="text-headline-lg text-primary">
-              Hello, {firstName}!
-            </h2>
-            <p className="text-body-lg text-on-surface-variant">
+            <AnimatedHeading
+              text={`Hello, ${firstName}!`}
+              className="text-headline-lg text-primary"
+            />
+            <motion.p
+              className="text-body-lg text-on-surface-variant"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.55, ease: "easeOut" }}
+            >
               Your career dashboard is up to date.
-            </p>
+            </motion.p>
           </header>
 
           {/* Metrics Bento Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
+            }}
+          >
             <MetricCard
               label="Total Resumes"
               icon="description"
@@ -93,10 +113,15 @@ function DashboardInner() {
               value="0"
               footnote="Shown once you publish"
             />
-          </div>
+          </motion.div>
 
           {/* Action Hero Card */}
-          <div className="bg-primary-container text-white p-8 rounded-xl flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden">
+          <Reveal>
+          <motion.div
+            className="ambient-card bg-primary-container text-white p-8 rounded-xl flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden"
+            whileHover={{ y: -4, boxShadow: "0 24px 48px rgba(0, 42, 88, 0.24)" }}
+            transition={{ type: "spring", stiffness: 260, damping: 22 }}
+          >
             <div className="space-y-4 z-10 max-w-lg">
               <h3 className="text-headline-md text-on-primary-container">
                 Complete Your Master Profile
@@ -115,25 +140,35 @@ function DashboardInner() {
                   <div className="bg-secondary-container h-3 rounded-full w-0" />
                 </div>
               </div>
-              <div className="bg-white/10 border border-white/30 px-8 py-3 rounded-full font-bold text-white/80 cursor-not-allowed inline-block">
-                Coming Soon
-              </div>
+              <Link
+                href="/profile"
+                className="bg-white text-primary px-8 py-3 rounded-full font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
+              >
+                Complete Your Profile
+                <MaterialIcon name="arrow_forward" className="text-[18px]" />
+              </Link>
             </div>
 
             {/* Abstract Decoration */}
             <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 -mr-10" />
-            <div className="hidden md:block z-10 w-48 h-48 rounded-full border-8 border-white/10 flex items-center justify-center">
+            <motion.div
+              className="hidden md:block z-10 w-48 h-48 rounded-full border-8 border-white/10 flex items-center justify-center"
+              animate={{ rotate: [0, 8, 0] }}
+              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            >
               <MaterialIcon
                 name="verified_user"
                 className="text-white/20 text-6xl"
                 filled
               />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
+          </Reveal>
 
           {/* Recent Activity Table */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-3 bg-white rounded-xl border border-outline-variant overflow-hidden">
+            <Reveal className="lg:col-span-3">
+            <div className="ambient-card bg-white rounded-xl border border-outline-variant overflow-hidden">
               <div className="p-6 border-b border-outline-variant flex justify-between items-center">
                 <h4 className="text-headline-md text-primary">
                   Recent Activity
@@ -142,7 +177,13 @@ function DashboardInner() {
                   No activity yet
                 </span>
               </div>
-              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+                className="flex flex-col items-center justify-center py-16 px-6 text-center"
+              >
                 <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4">
                   <MaterialIcon
                     name="description"
@@ -153,25 +194,26 @@ function DashboardInner() {
                   Your resume journey starts here
                 </h5>
                 <p className="text-label-md text-on-surface-variant mt-1 max-w-sm">
-                  Create your first resume and let MakeMyCV help you build a
+                  Create your first resume and let NISB-MakeMyCV help you build a
                   professional, ATS-friendly application.
                 </p>
                 <Link
                   href="/resumes"
-                  className="mt-6 bg-primary text-white px-6 py-2.5 rounded-full text-label-md font-semibold hover:bg-secondary transition-colors"
+                  className="btn-primary btn-shine mt-6 text-white px-6 py-2.5 rounded-full text-label-md font-semibold"
                 >
                   Create My First Resume
                 </Link>
-              </div>
+              </motion.div>
             </div>
+            </Reveal>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="ml-64 w-[calc(100%-16rem)] flex justify-between items-center px-8 py-4 bg-surface-container-lowest border-t border-outline-variant text-on-surface-variant text-label-sm">
+      <footer className="lg:ml-[var(--sidebar-width)] lg:w-[calc(100%-var(--sidebar-width))] w-full flex flex-col lg:flex-row gap-3 justify-between items-center px-4 lg:px-8 py-4 bg-surface-container-lowest border-t border-outline-variant text-on-surface-variant text-label-sm">
         <div className="font-label-md font-bold">
-          © 2026 MakeMyCV. Made by NISB.
+          © 2026 NISB-MakeMyCV. Made by NISB.
         </div>
         <div className="flex gap-6">
           <a className="hover:text-primary transition-colors" href="#">
@@ -200,7 +242,15 @@ function MetricCard({
   progress?: number;
 }) {
   return (
-    <div className="bg-white p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors flex flex-col gap-2">
+    <motion.div
+      className="ambient-card bg-white p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors flex flex-col gap-2"
+      variants={{
+        hidden: { opacity: 0, y: 26 },
+        visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 110, damping: 18 } },
+      }}
+      whileHover={{ y: -5, boxShadow: "0 18px 40px rgba(0, 42, 88, 0.12)" }}
+      transition={{ type: "spring", stiffness: 260, damping: 22 }}
+    >
       <div className="flex justify-between items-center">
         <span className="text-label-md text-on-surface-variant">{label}</span>
         <MaterialIcon name={icon} className="text-primary" />
@@ -215,6 +265,6 @@ function MetricCard({
           />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

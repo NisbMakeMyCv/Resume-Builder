@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import Logo from "../components/Logo";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
 import { apiRequest } from "../../lib/api";
@@ -72,79 +74,137 @@ export default function SignUp() {
   }
 
   return (
-    <main className="bg-background text-on-background min-h-screen flex flex-col">
+    <main className="page-enter bg-background text-on-background min-h-[100dvh] flex flex-col justify-between">
       {/* Top Nav Bar (transactional — brand only) */}
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center">
+      <header className="w-full shrink-0 bg-white border-b border-outline-variant h-16 flex items-center">
         <div className="w-full px-8 flex justify-between items-center">
-          <div className="text-headline-md font-extrabold text-primary">
-            MakeMyCV
-          </div>
+          <Logo />
           <Link
             href="/signin"
-            className="text-label-md font-semibold text-primary hover:underline"
+            className="btn-outline inline-flex items-center text-label-md font-semibold px-5 py-2 rounded-full"
           >
             Log In
           </Link>
         </div>
       </header>
 
-      <main className="flex-grow flex flex-col md:flex-row pt-16 h-screen overflow-hidden">
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row">
         {/* ============ LEFT: ABSTRACT ILLUSTRATION (hidden on mobile) ============ */}
-        <section className="hidden md:flex flex-1 bg-primary relative items-center justify-center overflow-hidden">
+        <section className="hidden lg:flex lg:w-1/2 relative bg-primary items-center justify-center overflow-hidden">
+          {/* Real-world dark/blue background image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('/images/signup-team.jpg')" }}
+          />
+          {/* Dark blue overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
           <div className="absolute inset-0 opacity-20 hero-gradient" />
-          <div className="relative z-10 w-full max-w-xl px-12 text-center text-on-primary">
-            <div className="mb-12 relative">
-              {/* Floating Resume Preview */}
-              <div className="animate-float bg-white rounded-lg w-72 mx-auto resume-shadow border border-outline-variant">
-                <div className="p-6 aspect-[3/4]">
-                  {/* Mock resume skeleton */}
-                  <div className="h-6 w-1/2 bg-surface-container rounded-md mx-auto mb-6" />
-                  <div className="space-y-2">
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-5/6 bg-surface-container rounded-sm" />
-                    <div className="h-2 w-4/6 bg-surface-container rounded-sm" />
-                  </div>
-                  <div className="mt-6 space-y-3">
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-3/4 bg-surface-container rounded-sm" />
-                  </div>
-                  <div className="mt-6 space-y-2">
-                    <div className="h-3 w-1/3 bg-primary/10 rounded-md" />
-                    <div className="h-2 w-full bg-surface-container rounded-sm" />
-                    <div className="h-2 w-2/3 bg-surface-container rounded-sm" />
-                  </div>
+
+          {/* Floating ambient orbs */}
+          <motion.div
+            className="absolute top-20 -left-16 w-64 h-64 bg-secondary-container/25 rounded-full blur-3xl"
+            animate={{ y: [0, 30, 0], x: [0, 20, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute bottom-24 -right-16 w-72 h-72 bg-white/10 rounded-full blur-3xl"
+            animate={{ y: [0, -30, 0], x: [0, -20, 0] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          {/* Atmospheric glow — breathing so the backdrop never sits still */}
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container/20 blur-[120px] rounded-full animate-breathe" />
+
+          {/* Hero headline — persuasive copy with a live-typing role */}
+          <div className="relative z-10 w-full max-w-2xl px-8 lg:px-12 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <h1 className="font-headline-lg text-[34px] lg:text-[46px] leading-[1.15] font-bold text-white">
+                Build a resume that lands your next{" "}
+                <span className="inline-block text-secondary-container">
+                  <Typewriter words={ROLES} />
+                  <motion.span
+                    className="inline-block w-[3px] h-[0.95em] bg-secondary-container ml-1 align-middle"
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 1] }}
+                  />
+                </span>
+              </h1>
+              <p className="mt-5 text-body-lg text-on-primary-container/90 max-w-lg mx-auto">
+                Pick the Jake template, tell your story, and let our AI polish
+                the details — recruiter-ready in minutes.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Floating credibility badges */}
+          <FloatBadge className="top-24 right-10" delay={0.2}>
+            <div className="flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 shadow-lg shadow-black/25 backdrop-blur-sm">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-label-md font-semibold text-on-surface">
+                ATS Match: 98%
+              </span>
+            </div>
+          </FloatBadge>
+
+          <FloatBadge className="bottom-28 left-8" delay={0.5}>
+            <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-3 shadow-lg shadow-black/20 backdrop-blur-md">
+              <span className="flex w-9 h-9 items-center justify-center rounded-xl bg-secondary-container/30">
+                <MaterialIcon name="work" className="text-[18px] text-secondary-container" filled />
+              </span>
+              <div className="text-left">
+                <div className="text-label-md font-semibold text-white">
+                  Resume in 5 minutes
+                </div>
+                <div className="text-label-sm text-white/70">
+                  AI-picked highlights
                 </div>
               </div>
-
-              {/* Decorative shapes */}
-              <div
-                className="absolute -top-10 -right-4 w-12 h-12 bg-secondary-container rounded-full opacity-30 animate-float"
-                style={{ animationDelay: "-1s" }}
-              />
-              <div
-                className="absolute top-20 -left-10 w-20 h-20 bg-primary-fixed-dim rounded-lg opacity-20 rotate-12 animate-float"
-                style={{ animationDelay: "-3s" }}
-              />
             </div>
-          </div>
+          </FloatBadge>
+
+          <FloatBadge className="top-[32%] right-8" delay={0.8}>
+            <div className="flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 shadow-lg shadow-black/25 backdrop-blur-sm">
+              <MaterialIcon name="bolt" className="text-[16px] text-amber-500" filled />
+              <span className="text-label-md font-semibold text-on-surface">
+                2x more callbacks
+              </span>
+            </div>
+          </FloatBadge>
         </section>
 
         {/* ============ RIGHT: SIGN UP FORM ============ */}
-        <section className="flex-1 flex items-center justify-center bg-background p-6 md:p-12 overflow-y-auto">
-          <div className="w-full max-w-md bg-white border border-outline-variant rounded-2xl p-8 md:p-10 shadow-sm">
-            <div className="mb-8">
-              <h2 className="text-headline-md text-primary mb-2">
-                Create your account
-              </h2>
-              <p className="text-body-md text-on-surface-variant">
-                Build your career with confidence.
-              </p>
-            </div>
+        <section className="auth-panel lg:w-1/2 w-full flex flex-col justify-center relative bg-slate-50 overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
+          {/* Subtle grid pattern background */}
+          <div 
+            className="absolute inset-0 opacity-40 pointer-events-none" 
+            style={{
+              backgroundImage: "radial-gradient(#6366f1 1px, transparent 1px)",
+              backgroundSize: "20px 20px"
+            }}
+          />
+          
+          {/* Ambient background blur blobs */}
+          <div className="absolute top-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none animate-drift" />
+          <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none animate-drift-slow" />
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="w-full flex items-center justify-center p-3 sm:p-6 md:p-10 relative z-10 my-auto">
+            <div className="ambient-card relative z-10 w-full max-w-md bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl ring-1 ring-black/5 space-y-3 sm:space-y-4 lg:space-y-6">
+              <div className="mb-3 lg:mb-4 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-headline-md text-primary font-semibold mb-1">
+                  Create your account
+                </h2>
+                <p className="text-body-md text-on-surface-variant">
+                  Build your career with confidence.
+                </p>
+              </div>
+
+            <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
               {/* Full Name */}
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-1.5">
                 <label
                   className="text-label-md text-on-surface font-semibold block"
                   htmlFor="full_name"
@@ -153,7 +213,7 @@ export default function SignUp() {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
                     id="full_name"
                     placeholder="John Doe"
                     type="text"
@@ -166,7 +226,7 @@ export default function SignUp() {
               </div>
 
               {/* Email */}
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-1.5">
                 <label
                   className="text-label-md text-on-surface font-semibold block"
                   htmlFor="email"
@@ -175,7 +235,7 @@ export default function SignUp() {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
                     id="email"
                     placeholder="name@company.com"
                     type="email"
@@ -183,13 +243,14 @@ export default function SignUp() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={loading}
+                    suppressHydrationWarning
                   />
                 </div>
               </div>
 
               {/* Password Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
+                <div className="space-y-1 sm:space-y-1.5">
                   <label
                     className="text-label-md text-on-surface font-semibold block"
                     htmlFor="password"
@@ -197,7 +258,7 @@ export default function SignUp() {
                     Password
                   </label>
                   <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
                     id="password"
                     placeholder="••••••••"
                     type="password"
@@ -208,7 +269,7 @@ export default function SignUp() {
                     disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-1.5">
                   <label
                     className="text-label-md text-on-surface font-semibold block"
                     htmlFor="confirm_password"
@@ -216,7 +277,7 @@ export default function SignUp() {
                     Confirm Password
                   </label>
                   <input
-                    className="w-full h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
                     id="confirm_password"
                     placeholder="••••••••"
                     type="password"
@@ -237,9 +298,9 @@ export default function SignUp() {
               )}
 
               {/* Action Buttons */}
-              <div className="space-y-4 pt-4">
+              <div className="space-y-3 pt-2">
                 <button
-                  className="btn-press btn-shine w-full h-12 bg-primary-container text-white font-label-md rounded-2xl hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="btn-primary btn-shine btn-magnetic w-full h-10 sm:h-12 rounded-2xl font-label-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   type="submit"
                   disabled={loading}
                 >
@@ -247,9 +308,9 @@ export default function SignUp() {
                   <MaterialIcon name="arrow_forward" className="text-[20px]" />
                 </button>
 
-                <div className="flex items-center gap-4 text-on-surface-variant my-4">
+                <div className="flex items-center gap-4 text-on-surface-variant my-2 lg:my-3">
                   <div className="h-px bg-outline-variant flex-1" />
-                  <span className="text-label-sm uppercase tracking-wider">
+                  <span className="text-label-sm uppercase tracking-wider text-[10px] sm:text-xs">
                     or
                   </span>
                   <div className="h-px bg-outline-variant flex-1" />
@@ -257,7 +318,7 @@ export default function SignUp() {
 
                 <GoogleAuthButton />
 
-                <div className="text-center mt-4">
+                <div className="text-center mt-3">
                   <span className="text-label-md text-on-surface-variant">
                     Already have an account?{" "}
                   </span>
@@ -282,15 +343,16 @@ export default function SignUp() {
                 .
               </p>
             </form>
+            </div>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-surface-container py-8 border-t border-outline-variant">
-        <div className="w-full px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <footer className="shrink-0 bg-surface-container py-3 border-t border-outline-variant">
+        <div className="w-full px-8 flex flex-col md:flex-row justify-between items-center gap-2">
           <div className="text-label-sm text-on-surface-variant">
-            © 2026 MakeMyCV. Made by NISB.
+            © 2026 NISB-MakeMyCV. Made by NISB.
           </div>
           <div className="flex gap-6">
             <a
@@ -315,5 +377,87 @@ export default function SignUp() {
         </div>
       </footer>
     </main>
+  );
+}
+
+/* =========================================================
+   LOCAL HELPERS — hero copy animation + floating badges
+   ========================================================= */
+
+const ROLES = [
+  "UI/UX Design role",
+  "Full-Stack Web Dev job",
+  "Engineering position",
+  "Product Designer role",
+];
+
+/** Typewriter — types a word, pauses, erases, moves to the next. */
+function useTypewriter(
+  words: readonly string[],
+  typeSpeed = 65,
+  deleteSpeed = 35,
+  pause = 1800
+) {
+  const [text, setText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = words[wordIndex % words.length];
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && text === current) {
+      // full word shown — hold, then start deleting
+      timer = setTimeout(() => setIsDeleting(true), pause);
+    } else if (isDeleting && text === "") {
+      // fully erased — move to next word
+      setIsDeleting(false);
+      setWordIndex((i) => (i + 1) % words.length);
+    } else {
+      timer = setTimeout(
+        () =>
+          setText(current.slice(0, text.length + (isDeleting ? -1 : 1))),
+        isDeleting ? deleteSpeed : typeSpeed
+      );
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, wordIndex, words, typeSpeed, deleteSpeed, pause]);
+
+  return text;
+}
+
+function Typewriter({ words }: { words: readonly string[] }) {
+  return <span>{useTypewriter(words)}</span>;
+}
+
+/** Gently bobbing badge — floats up/down forever, fades in first. */
+function FloatBadge({
+  className = "",
+  delay = 0,
+  children,
+}: {
+  className?: string;
+  delay?: number;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      className={`absolute z-20 ${className}`}
+      initial={{ opacity: 0, scale: 0.85, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: [10, -10, 10] }}
+      transition={{
+        opacity: { delay: 0.9, duration: 0.4 },
+        scale: { delay: 0.9, duration: 0.4, type: "spring", stiffness: 220 },
+        y: {
+          delay: delay + 1,
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        },
+      }}
+    >
+      {children}
+    </motion.div>
   );
 }
