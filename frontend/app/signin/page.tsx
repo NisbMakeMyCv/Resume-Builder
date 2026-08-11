@@ -13,9 +13,9 @@ import { apiRequest, saveSession } from "../../lib/api";
 /**
  * Sign In — coded from the `sign_in` stitch frame.
  *
- * The backend requires an OTP for login (2FA): after submitting
- * credentials we request a code and reveal an inline OTP field to
- * complete the sign-in.
+ * Single-step email + password login: POST /auth/login returns a JWT
+ * immediately, which is stored and the user is sent to /profile.
+ * No verification-code step on sign-in.
  */
 export default function SignIn() {
   const router = useRouter();
@@ -24,16 +24,11 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [celebrate, setCelebrate] = useState(false);
 
-  /** Step 1 — send the 6-digit code to the user's inbox. */
-  async function handleRequestOtp(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
 
@@ -42,29 +37,6 @@ export default function SignIn() {
       return;
     }
 
-    setOtpLoading(true);
-    try {
-      await apiRequest("/auth/request-otp", {
-        method: "POST",
-        body: { email: email.trim() },
-      });
-      setOtpSent(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send code.");
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  /** Step 2 — verify the code and sign in. */
-  async function handleVerify() {
-    const code = otp.join("");
-    if (code.length !== 6) {
-      setError("Please enter the 6-digit verification code.");
-      return;
-    }
-
-    setError("");
     setLoading(true);
     try {
       const res = await apiRequest<{
@@ -75,7 +47,6 @@ export default function SignIn() {
         body: {
           email: email.trim(),
           password,
-          otp_code: code,
         },
       });
 
@@ -89,32 +60,13 @@ export default function SignIn() {
 
       saveSession(res.access_token, user);
       setCelebrate(true);
-      setTimeout(() => router.push("/dashboard"), 1400);
+      setTimeout(() => router.push("/profile"), 1400);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed.");
     } finally {
       setLoading(false);
     }
   }
-
-  const handleOtpChange = (value: string, index: number) => {
-    if (!/^\d?$/.test(value)) return;
-    const updated = [...otp];
-    updated[index] = value;
-    setOtp(updated);
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      document.getElementById(`otp-${index - 1}`)?.focus();
-    }
-  };
 
   return (
     <main className="page-enter flex min-h-[100dvh] bg-surface-bright text-on-surface antialiased flex-col">
@@ -325,7 +277,7 @@ export default function SignIn() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={otpSent}
+                  disabled={loading}
                   suppressHydrationWarning
                 />
               </div>
@@ -359,7 +311,7 @@ export default function SignIn() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={otpSent}
+                  disabled={loading}
                 />
                 <button
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
@@ -375,42 +327,6 @@ export default function SignIn() {
               </div>
             </div>
 
-            {/* OTP Field (revealed after requesting a code) */}
-            {otpSent && (
-              <div className="space-y-2 entrance-fade-up">
-                <div className="flex justify-between items-center">
-                  <label className="text-label-md text-on-surface-variant block">
-                    Verification Code
-                  </label>
-                  <button
-                    type="button"
-                    className="text-label-sm text-secondary hover:text-primary transition-colors"
-                    onClick={() => setOtpSent(false)}
-                  >
-                    Change email
-                  </button>
-                </div>
-                <div className="grid grid-cols-6 gap-2">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      className="otp-input w-full aspect-square text-center text-headline-md font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary transition-all duration-200"
-                      maxLength={1}
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      type="text"
-                      value={digit}
-                      onChange={(e) =>
-                        handleOtpChange(e.target.value, index)
-                      }
-                      onKeyDown={(e) => handleOtpKeyDown(e, index)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Error */}
             {error && (
               <div className="rounded-brand border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container">
@@ -420,30 +336,23 @@ export default function SignIn() {
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-1 sm:pt-2">
-              {otpSent ? (
+              <form onSubmit={handleSubmit}>
                 <button
                   className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                  type="button"
-                  onClick={handleVerify}
+                  type="submit"
                   disabled={loading}
                 >
-                  <span>{loading ? "Signing In..." : "Verify & Sign In"}</span>
-                  <MaterialIcon name="arrow_forward" className="text-[18px]" />
-                </button>
-              ) : (
-                <form onSubmit={handleRequestOtp}>
-                  <button
-                    className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                    type="submit"
-                    disabled={otpLoading}
-                  >
-                    <span>
-                      {otpLoading ? "Sending Code..." : "Send Verification Code"}
-                    </span>
+                  <span>{loading ? "Signing In..." : "Sign In"}</span>
+                  {loading ? (
+                    <MaterialIcon
+                      name="sync"
+                      className="animate-spin text-[18px]"
+                    />
+                  ) : (
                     <MaterialIcon name="arrow_forward" className="text-[18px]" />
-                  </button>
-                </form>
-              )}
+                  )}
+                </button>
+              </form>
 
               <div className="relative flex items-center py-1 sm:py-1.5">
                 <div className="flex-grow border-t border-outline-variant" />
@@ -530,8 +439,12 @@ function useTypewriter(
     if (!isDeleting && text === current) {
       timer = setTimeout(() => setIsDeleting(true), pause);
     } else if (isDeleting && text === "") {
-      setIsDeleting(false);
-      setWordIndex((i) => (i + 1) % words.length);
+      // fully erased — move to next word (deferred so the effect never
+      // synchronously writes state)
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+        setWordIndex((i) => (i + 1) % words.length);
+      }, deleteSpeed);
     } else {
       timer = setTimeout(
         () =>

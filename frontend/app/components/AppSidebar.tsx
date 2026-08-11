@@ -23,8 +23,14 @@ const NAV_ITEMS: SidebarItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
   { label: "Master Profile", icon: "person_book", href: "/profile" },
   { label: "My Resumes", icon: "description", href: "/resumes" },
+  { label: "AI Tools", icon: "auto_awesome", href: "/ai-tools" },
   { label: "Settings", icon: "settings", disabled: true },
 ];
+
+/** Shared link treatment — larger text, soft rounded hover states. */
+const LINK_BASE =
+  "flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 ease-in-out";
+const LINK_ACTIVE = "text-blue-600 bg-blue-50 font-semibold";
 
 /**
  * Responsive sidebar. On desktop it is a fixed left rail that the user can
@@ -82,20 +88,16 @@ export default function AppSidebar() {
     router.push("/");
   }
 
-  const initials = (user?.full_name ?? "U")
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initial = (user?.full_name ?? "U").trim().charAt(0).toUpperCase();
+
+  /** Render a real avatar only when profile_picture is a usable URL. */
+  const avatarSrc = (user?.profile_picture ?? "").trim();
+  const showAvatar = /^(https?:)?\/\//i.test(avatarSrc);
 
   const sidebarBody = (
     <div className="flex flex-col h-full" style={{ width }}>
-      <div className="px-6 py-8">
+      <div className="px-6 pt-8 pb-6">
         <Logo />
-        <p className="text-label-md text-on-surface-variant">
-          Professional Plan
-        </p>
       </div>
 
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -107,10 +109,10 @@ export default function AppSidebar() {
             <>
               <MaterialIcon
                 name={item.icon}
-                className={active ? "text-primary" : ""}
+                className={active ? "text-blue-600" : "text-gray-400"}
                 filled={active}
               />
-              <span className="text-label-md truncate">{item.label}</span>
+              <span className="truncate">{item.label}</span>
             </>
           );
 
@@ -118,10 +120,13 @@ export default function AppSidebar() {
             return (
               <div
                 key={item.label}
-                className="flex items-center gap-3 px-4 py-3 text-on-surface-variant/60 cursor-not-allowed"
+                className={`${LINK_BASE} text-gray-300 cursor-not-allowed`}
                 title="Coming soon"
               >
                 {content}
+                <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  Coming Soon
+                </span>
               </div>
             );
           }
@@ -131,11 +136,7 @@ export default function AppSidebar() {
               key={item.label}
               href={item.href!}
               onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                active
-                  ? "text-primary font-bold border-r-4 border-primary bg-surface-container-high"
-                  : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
+              className={`${LINK_BASE} ${active ? LINK_ACTIVE : ""}`}
             >
               {content}
             </Link>
@@ -143,10 +144,22 @@ export default function AppSidebar() {
         })}
       </nav>
 
-      <div className="p-6 mt-auto flex items-center gap-3 border-t border-outline-variant">
-        {user?.profile_picture ? (
+      <button
+        className="px-4 py-3 flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors w-full text-left"
+        onClick={handleLogout}
+      >
+        <MaterialIcon name="logout" />
+        <span className="text-label-md">Log Out</span>
+      </button>
+
+      <Link
+        href="/profile"
+        className="p-6 mt-auto flex items-center gap-3 border-t border-outline-variant hover:bg-surface-container-high cursor-pointer transition-colors"
+        onClick={() => setOpen(false)}
+      >
+        {showAvatar ? (
           <Image
-            src={user.profile_picture}
+            src={avatarSrc}
             alt={user?.full_name ?? "User"}
             width={40}
             height={40}
@@ -154,21 +167,18 @@ export default function AppSidebar() {
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0">
-            {initials}
+            {initial}
           </div>
         )}
-        <div className="overflow-hidden flex-1">
+        <div className="overflow-hidden flex-1 flex flex-col">
           <p className="text-label-md truncate">
             {user?.full_name ?? "User"}
           </p>
-          <button
-            className="text-xs text-primary hover:underline cursor-pointer"
-            onClick={handleLogout}
-          >
-            Log Out
-          </button>
+          <p className="text-xs text-primary hover:underline cursor-pointer mt-1">
+            View Profile
+          </p>
         </div>
-      </div>
+      </Link>
     </div>
   );
 

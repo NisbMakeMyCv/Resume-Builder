@@ -139,10 +139,116 @@ export function deleteAccount(token: string): Promise<void> {
 }
 
 /* =========================================================
-   AI FEATURES — GitHub Repository Analyzer
+   RESUME DATA — Education / Experience / Skills / Projects
+   Each backend router exposes:
+     GET    /            → list
+     POST   /            → create (201)
+     PUT    /{id}        → partial update
+     DELETE /{id}        → 204 No Content
+   Dates are sent as "YYYY-MM-DD"; every response carries the
+   server-assigned id, display_order, created_at and updated_at.
    ========================================================= */
 
-/** A GitHub project that has been analyzed into resume-ready content. */
+export type Education = {
+  id: string;
+  institution: string;
+  degree: string;
+  branch: string;
+  start_date: string;
+  end_date: string | null;
+  cgpa: number | null;
+};
+
+export type Experience = {
+  id: string;
+  company: string;
+  designation: string;
+  description: string | null;
+  start_date: string;
+  end_date: string | null;
+};
+
+export const PROFICIENCY_LEVELS = ["Beginner", "Intermediate", "Expert"] as const;
+export type Proficiency = (typeof PROFICIENCY_LEVELS)[number];
+
+export type Skill = {
+  id: string;
+  skill_name: string;
+  proficiency: Proficiency;
+};
+
+export type Project = {
+  id: string;
+  title: string;
+  description: string | null;
+  github_link: string | null;
+};
+
+/**
+ * Minimal per-entity REST helper factory.
+ * `url` is the API path (e.g. "/education") — the auth prefix is omitted.
+ */
+function createCrud<T, C>(url: string) {
+  return {
+    list(token: string): Promise<T[]> {
+      return apiRequest<T[]>(`${url}/`, { token });
+    },
+    create(token: string, payload: C): Promise<T> {
+      return apiRequest<T>(`${url}/`, { method: "POST", token, body: payload });
+    },
+    update(token: string, id: string, patch: Partial<C>): Promise<T> {
+      return apiRequest<T>(`${url}/${id}`, {
+        method: "PUT",
+        token,
+        body: patch,
+      });
+    },
+    remove(token: string, id: string): Promise<void> {
+      return apiRequest<void>(`${url}/${id}`, { method: "DELETE", token });
+    },
+  };
+}
+
+export const educationApi = createCrud<Education, EducationCreateInput>("/education");
+export const experienceApi = createCrud<Experience, ExperienceCreateInput>("/experience");
+export const skillsApi = createCrud<Skill, SkillCreateInput>("/skills");
+export const projectsApi = createCrud<Project, ProjectCreateInput>("/projects");
+
+/** Education create payload — the only required fields. */
+export type EducationCreateInput = {
+  institution: string;
+  degree: string;
+  branch: string;
+  start_date: string;
+  end_date?: string | null;
+  cgpa?: number | null;
+};
+
+/** Experience create payload — the only required fields. */
+export type ExperienceCreateInput = {
+  company: string;
+  designation: string;
+  description?: string | null;
+  start_date: string;
+  end_date?: string | null;
+};
+
+/** Skill create payload — proficiency must be "Beginner" | "Intermediate" | "Expert". */
+export type SkillCreateInput = {
+  skill_name: string;
+  proficiency: Proficiency;
+};
+
+/** Project create payload — the only required field is title. */
+export type ProjectCreateInput = {
+  title: string;
+  description?: string | null;
+  github_link?: string | null;
+};
+
+/* =========================================================
+   AI FEATURES — GitHub Repository Analyzer
+   ========================================================= *//** A GitHub project that has been analyzed into resume-ready content. */
 export type GitHubAnalysis = {
   project_name: string;
   description: string;

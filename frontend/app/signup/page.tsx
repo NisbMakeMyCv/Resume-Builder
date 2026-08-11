@@ -13,7 +13,9 @@ import { apiRequest } from "../../lib/api";
  * Sign Up — coded from the `sign_up` stitch frame.
  *
  * Flow: submit name/email/password → request an OTP → redirect to
- * /verify-email where the account is created with the code.
+ * /verify-email where the account is created with the code. That page
+ * stores the returned JWT and redirects straight to /dashboard — the user
+ * is signed in as soon as they verify, with no separate login step.
  */
 export default function SignUp() {
   const router = useRouter();
@@ -410,9 +412,12 @@ function useTypewriter(
       // full word shown — hold, then start deleting
       timer = setTimeout(() => setIsDeleting(true), pause);
     } else if (isDeleting && text === "") {
-      // fully erased — move to next word
-      setIsDeleting(false);
-      setWordIndex((i) => (i + 1) % words.length);
+      // fully erased — move to next word (deferred so the effect never
+      // synchronously writes state)
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+        setWordIndex((i) => (i + 1) % words.length);
+      }, typeSpeed);
     } else {
       timer = setTimeout(
         () =>

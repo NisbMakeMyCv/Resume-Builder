@@ -29,7 +29,6 @@ FROM python:3.12-slim AS runtime
 # Runtime system library for psycopg2 (no gcc needed at runtime)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -48,10 +47,6 @@ USER appuser
 
 # Expose the application port
 EXPOSE 8000
-
-# Add a HEALTHCHECK so Docker knows the app is alive
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD curl -f http://localhost:8000/ || exit 1
 
 # Use exec form for proper signal handling (graceful shutdown)
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

@@ -28,7 +28,7 @@ export default function Logo({
     <Link
       href="/"
       onClick={handleClick}
-      className={`inline-flex items-center gap-2.5 group shrink-0 ${className}`}
+      className={`inline-flex items-center gap-2.5 group shrink-0${className ? ` ${className}` : ""}`}
       aria-label="NISB-MakeMyCV home"
     >
       {/* NISB logo mark */}

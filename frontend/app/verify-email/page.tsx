@@ -1,18 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "../components/Logo";
 import MaterialIcon from "../components/MaterialIcon";
 import SuccessBurst from "../components/SuccessBurst";
-import { apiRequest } from "../../lib/api";
+import { apiRequest, saveSession } from "../../lib/api";
 
 /**
  * Verify Email / OTP — coded from the `otp_verification` stitch frame.
  *
  * This page both shows the 6-digit entry and — when reached from signup —
  * registers the account with the backend using the stashed signup data.
+ * On success the returned JWT is stored immediately, so the user is signed
+ * in and lands directly on /dashboard (no separate login step).
  * (Sign-in with an existing account verifies the code inline on /signin.)
  */
 export default function VerifyEmail() {
@@ -28,17 +29,21 @@ export default function VerifyEmail() {
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
+    // Read the pending signup stash once, then commit it on the next tick —
+    // deferred so it never triggers a synchronous re-render from the effect.
     const storedData = sessionStorage.getItem("signupData");
-    if (storedData) {
-      try {
-        const data = JSON.parse(storedData);
-        if (data.email) {
+    if (!storedData) return;
+    try {
+      const data = JSON.parse(storedData);
+      if (data.email) {
+        const t = setTimeout(() => {
           setEmail(data.email);
           setMode("signup");
-        }
-      } catch {
-        /* malformed storage — treat as no pending signup */
+        }, 0);
+        return () => clearTimeout(t);
       }
+    } catch {
+      /* malformed storage — treat as no pending signup */
     }
   }, []);
 
@@ -58,7 +63,13 @@ export default function VerifyEmail() {
         if (!storedData) throw new Error("Signup session expired. Please try again.");
         const data = JSON.parse(storedData);
 
-        await apiRequest("/auth/register", {
+        // Register returns { access_token, token_type } — the account is
+        // created AND authenticated in one call, so capture the JWT, stash it
+        // alongside the identity, and skip the login page entirely.
+        const res = await apiRequest<{
+          access_token: string;
+          token_type: string;
+        }>("/auth/register", {
           method: "POST",
           body: {
             full_name: data.fullName,
@@ -67,9 +78,20 @@ export default function VerifyEmail() {
             otp_code: code,
           },
         });
+
+        // Fetch the fresh identity so the sidebar / dashboard greet the user
+        // by name (same pattern as /signin).
+        const user = await apiRequest<{
+          id: string;
+          email: string;
+          full_name: string;
+          profile_picture: string | null;
+        }>("/auth/me", { token: res.access_token });
+
+        saveSession(res.access_token, user);
         sessionStorage.removeItem("signupData");
         setCelebrate(true);
-        setTimeout(() => router.push("/signin"), 1400);
+        setTimeout(() => router.push("/dashboard"), 1400);
       } else {
         // No pending signup — this page was reached directly. Nothing to do.
         router.push("/signin");
@@ -243,12 +265,17 @@ export default function VerifyEmail() {
           {/* Change email (only meaningful during signup) */}
           {mode === "signup" && (
             <div className="mt-8 text-center">
-              <Link
-                href="/signup"
+              <button
+                type="button"
+                onClick={() => {
+                  // Drop the stashed signup details so a fresh attempt starts clean.
+                  sessionStorage.removeItem("signupData");
+                  router.push("/signup");
+                }}
                 className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
               >
                 ← Change email address
-              </Link>
+              </button>
             </div>
           )}
         </div>
