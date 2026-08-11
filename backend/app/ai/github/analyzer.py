@@ -31,7 +31,7 @@ load_dotenv(BASE_DIR / ".env.local")
 
 GITHUB_API_BASE = "https://api.github.com"
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+TOKEN_GITHUB = os.getenv("TOKEN_GITHUB")
 
 HEADERS = {
     "Accept": "application/vnd.github+json",
@@ -41,8 +41,8 @@ HEADERS = {
 # Use authentication when a token is configured.
 # This allows access to private repositories that
 # the token owner has permission to read.
-if GITHUB_TOKEN:
-    HEADERS["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+if TOKEN_GITHUB:
+    HEADERS["Authorization"] = f"Bearer {TOKEN_GITHUB}"
 
 
 # =========================================================
