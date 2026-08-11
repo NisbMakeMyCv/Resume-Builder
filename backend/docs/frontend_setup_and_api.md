@@ -57,3 +57,23 @@ You do not need to install Python. We have fully Dockerized the backend environm
 `PATCH /api/v1/profile/`
 - **Body:** `{ "headline": "Software Engineer" }` (Send only the fields you want to update).
 - **Action:** Used for UI Auto-Saving. Safely updates partial profile data without destroying other fields.
+
+### Lists (Education, Experience, Skills, Projects)
+All four of these tables follow the exact same standard REST CRUD pattern! Just replace `<resource>` with `education`, `experience`, `skills`, or `projects`.
+
+`GET /api/v1/<resource>/`
+- **Response:** Returns an array of items, perfectly sorted by `display_order`.
+
+`POST /api/v1/<resource>/`
+- **Body:** Pass the required fields (e.g., `institution`, `degree`, etc.)
+- **Action:** Creates a new item.
+
+`PUT /api/v1/<resource>/{id}`
+- **Action:** Updates a specific item.
+
+`DELETE /api/v1/<resource>/{id}`
+- **Action:** Deletes a specific item.
+
+`POST /api/v1/<resource>/reorder`
+- **Body:** `{ "ordered_ids": ["uuid-1", "uuid-2", "uuid-3"] }`
+- **Action:** Pass an array of UUIDs in the exact order they appear on the screen. The backend will instantly bulk-update their `display_order` so Drag-and-Drop is saved!
