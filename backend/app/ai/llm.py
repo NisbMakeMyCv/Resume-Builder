@@ -8,18 +8,25 @@ from groq import Groq
 # backend/ directory
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-# Load local secrets
+# Load local secrets (no-op if file doesn't exist)
 load_dotenv(BASE_DIR / ".env.local")
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-if not GROQ_API_KEY:
-    raise RuntimeError(
-        "GROQ_API_KEY is not configured. "
-        "Add it to backend/.env.local"
-    )
+def _get_client() -> Groq:
+    """
+    Lazily create and return the Groq client.
 
-client = Groq(api_key=GROQ_API_KEY)
+    Raising here (instead of at import time) means unit tests that
+    mock ``generate_text`` can import this module without a real key.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "GROQ_API_KEY is not configured. "
+            "Add it to backend/.env.local (local dev) "
+            "or set it as a GitHub Secret (CI/CD)."
+        )
+    return Groq(api_key=api_key)
 
 
 def generate_text(
@@ -29,6 +36,8 @@ def generate_text(
     json_mode: bool = False,
 ) -> str:
     """Generate text using the configured Groq LLM."""
+
+    client = _get_client()
 
     request = {
         "model": model,
