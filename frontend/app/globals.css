@@ -657,35 +657,70 @@ body {
 }
 
 @media print {
-  /* Hide sidebars, headers, and any builder controls marked with .no-print */
-  aside, header, footer, .no-print {
+  /* Hide the app chrome — sidebar nav, page topbar, page footer, and builder controls */
+  .no-print,
+  nav,
+  aside,
+  footer:not(#resume-pdf-content footer) {
     display: none !important;
   }
-  
-  /* Reset margins for printing A4 */
+
+  /* Also hide the fixed topbar header (the app header, not the resume header) */
+  body > div header,
+  main > div > header,
+  .page-enter > header {
+    display: none !important;
+  }
+
+  /* A4 page */
   @page {
     size: A4;
-    margin: 0;
+    margin: 12mm 15mm;
   }
-  
+
   body, html {
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* Remove padding/margins of parent containers so the preview flows to top */
-  main, .page-enter, .grid, #resume-preview-container {
+  /* Remove padding/margins of parent containers */
+  main, .page-enter, #resume-preview-container {
     padding: 0 !important;
     margin: 0 !important;
     display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    background: white !important;
   }
 
-  /* Force exact A4 width for the resume itself */
+  /* Collapse the two-column editor/preview grid to single column */
+  /* Only target the top-level builder grid, not grids inside the resume content */
+  .xl\:sticky {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* The editor left panel and toolbar are hidden; the preview fills the page */
+  .space-y-8.no-print {
+    display: none !important;
+  }
+
+  /* Reset the builder grid wrapper */
+  .grid.grid-cols-1 {
+    display: block !important;
+  }
+
+  /* Resume content: preserve padding for proper A4 margins within the page */
   #resume-pdf-content {
-    width: 210mm !important;
-    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 24px 32px !important;
+    margin: 0 !important;
     box-shadow: none !important;
+    border: none !important;
+    background: white !important;
   }
 }
 

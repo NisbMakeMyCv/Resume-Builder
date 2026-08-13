@@ -35,14 +35,16 @@ export default function JakeResumePreview({
         className="px-6 py-6 sm:px-10 sm:py-9 bg-white shadow-xl shrink-0 w-full max-w-[800px] transition-all print:w-[210mm] print:min-h-[297mm] print:shadow-none print:p-0"
       >
         {/* ===== Header ===== */}
-        <header className="text-center">
+        <div className="text-center mb-1">
           <h1
-            className="text-[22px] leading-tight font-semibold text-gray-900"
+            className="text-[22px] leading-tight font-bold text-gray-900"
             style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif" }}
           >
             {header.fullName || "Your Name"}
           </h1>
-          <p className="text-[13px] text-gray-800 mt-0.5">{header.position || "Job Title"}</p>
+          {header.position && (
+            <p className="text-[13px] text-gray-700 mt-0.5">{header.position}</p>
+          )}
 
           {/* Contact line — phone / email / location */}
           <p className="text-[11px] text-gray-900 mt-1.5">
@@ -88,7 +90,7 @@ export default function JakeResumePreview({
               )}
             </p>
           )}
-        </header>
+        </div>
 
         {/* ===== Education ===== */}
         {renderSection<typeof education[number]>(
@@ -187,16 +189,16 @@ export default function JakeResumePreview({
         )}
 
         {/* ===== Technical Skills ===== */}
-        {skills.length > 0 && (
+        {skills.length > 0 && skills.some((s) => s.category || s.items) && (
           <>
             <SectionDivider />
             <h2
               className="text-[12px] font-bold text-[#1c3fa8] tracking-wide uppercase"
               style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif" }}
             >
-              Technical Skills
+              TECHNICAL SKILLS
             </h2>
-            <div className="mt-1.5 grid grid-cols-2 gap-x-6 gap-y-1">
+            <div className="mt-1.5 space-y-0.5">
               {skills
                 .filter((s) => s.category || s.items)
                 .map((s: SkillGroup) => (
