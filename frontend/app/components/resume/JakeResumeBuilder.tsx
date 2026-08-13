@@ -15,7 +15,6 @@ import {
   type SkillGroup,
 } from "../../../lib/resume";
 import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
-import html2canvas from "html2canvas";
 
 /**
  * Jake's Resume Builder — the resume editor for the `editor` stitch frame.
@@ -62,29 +61,6 @@ export default function JakeResumeBuilder() {
       alert("Failed to save resume: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleExportPNG = async () => {
-    const el = document.getElementById("resume-pdf-content");
-    if (!el) return;
-    
-    const originalWidth = el.style.width;
-    const originalMaxWidth = el.style.maxWidth;
-    el.style.width = "210mm";
-    el.style.maxWidth = "210mm";
-    
-    try {
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
-      const link = document.createElement("a");
-      link.download = "resume.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (err) {
-      alert("Failed to export PNG: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      el.style.width = originalWidth;
-      el.style.maxWidth = originalMaxWidth;
     }
   };
 
@@ -515,7 +491,7 @@ export default function JakeResumeBuilder() {
       </div>
 
       {/* ============ RIGHT: LIVE PREVIEW ============ */}
-      <div className="xl:sticky xl:top-24">
+      <div className="xl:sticky xl:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8">
         <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
           <div>
             <p className="text-label-md font-semibold text-on-surface">
@@ -534,13 +510,6 @@ export default function JakeResumeBuilder() {
             >
               <MaterialIcon name="cloud_upload" className="text-[16px]" />
               {saving ? "Saving..." : "Save to Cloud"}
-            </button>
-            <button
-              onClick={handleExportPNG}
-              className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
-            >
-              <MaterialIcon name="image" className="text-[16px]" />
-              PNG
             </button>
             <button
               onClick={handleExportPDF}

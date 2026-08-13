@@ -54,7 +54,7 @@ function MyResumesInner() {
         <div className="max-w-[1280px] mx-auto">
           {editorOpen ? (
             <>
-              <div className="mb-8">
+              <div className="mb-8 no-print">
                 <h2 className="text-headline-md text-on-surface">
                   Jake&apos;s Resume Builder
                 </h2>
