@@ -128,6 +128,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+            NEXT_PUBLIC_API_URL=/api/v1
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/makemycv-frontend:latest
             ${{ secrets.DOCKER_USERNAME }}/makemycv-frontend:${{ github.sha }}
