@@ -13,6 +13,7 @@ from app.api.v1.education import router as edu_router
 from app.api.v1.experience import router as exp_router
 from app.api.v1.skills import router as skill_router
 from app.api.v1.projects import router as project_router
+from app.api.v1.ai.github import router as ai_github_router
 from app.core.database import engine
 from app.models import user, resume
 
@@ -41,6 +42,7 @@ app.include_router(edu_router, prefix="/api/v1/education", tags=["Education"])
 app.include_router(exp_router, prefix="/api/v1/experience", tags=["Experience"])
 app.include_router(skill_router, prefix="/api/v1/skills", tags=["Skills"])
 app.include_router(project_router, prefix="/api/v1/projects", tags=["Projects"])
+app.include_router(ai_github_router, prefix="/api/v1/ai/github", tags=["AI GitHub"])
 
 @app.get("/")
 def root():
