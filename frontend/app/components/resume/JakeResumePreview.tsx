@@ -1,6 +1,6 @@
 "use client";
 
-import type { ResumeData, SkillGroup } from "../../../lib/resume";
+import type { ResumeData, SkillGroup, CustomSection, CustomSectionField } from "../../../lib/resume";
 
 /**
  * Live preview — pixel-perfect replica of Jake's Resume Template.
@@ -245,6 +245,48 @@ export default function JakeResumePreview({
                   </p>
                 ))}
             </div>
+          </>
+        )}
+
+        {/* ===== CUSTOM SECTIONS ===== */}
+        {data.customSections && data.customSections.length > 0 && (
+          <>
+            {data.customSections.map((section) => (
+              <div key={section.id}>
+                {section.title && <SectionHeading title={section.title} />}
+                <div style={{ marginTop: "4px" }}>
+                  {section.fields.map((field) => (
+                    <div key={field.id} style={{ fontSize: "11px", color: "#1f2937", margin: "2px 0", lineHeight: "1.5" }}>
+                      {field.type === "text" && (
+                        <p style={{ margin: 0 }}>
+                          <strong style={{ color: "#111827" }}>{field.label}: </strong>
+                          {field.value}
+                        </p>
+                      )}
+                      {field.type === "textarea" && (
+                        <div style={{ margin: "2px 0" }}>
+                          <strong style={{ color: "#111827" }}>{field.label}</strong>
+                          <p style={{ margin: "2px 0 0 0", whiteSpace: "pre-wrap" }}>{field.value}</p>
+                        </div>
+                      )}
+                      {field.type === "link" && (
+                        <p style={{ margin: 0 }}>
+                          <strong style={{ color: "#111827" }}>{field.label}: </strong>
+                          <a
+                            href={normalizeHref(field.href || field.value)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "#1c3fa8", textDecoration: "underline" }}
+                          >
+                            {field.value}
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </>
         )}
 

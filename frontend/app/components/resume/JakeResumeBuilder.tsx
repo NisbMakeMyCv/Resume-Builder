@@ -13,6 +13,9 @@ import {
   type Project,
   type ResumeData,
   type SkillGroup,
+  type CustomSection,
+  type CustomSectionField,
+  type CustomSectionFieldType,
 } from "../../../lib/resume";
 import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
 
@@ -27,8 +30,17 @@ import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
  * "sign in to use AI" fallback is shown otherwise). The document persists
  * to localStorage — no resume endpoints exist on the backend yet.
  */
-export default function JakeResumeBuilder() {
-  const [data, setData] = useState<ResumeData>(() => loadResume());
+export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?: string | null }) {
+  const [data, setData] = useState<ResumeData>(() => {
+    if (initialDataStr) {
+      try {
+        return JSON.parse(initialDataStr) as ResumeData;
+      } catch (err) {
+        console.error("Failed to parse initial resume data", err);
+      }
+    }
+    return loadResume();
+  });
   const [saving, setSaving] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
 
@@ -132,8 +144,66 @@ export default function JakeResumeBuilder() {
     }));
   }
 
+  function addCustomSection() {
+    setData((d) => ({
+      ...d,
+      customSections: [
+        ...(d.customSections || []),
+        { id: uid(), title: "Custom Section", fields: [] },
+      ],
+    }));
+  }
+
+  function addCustomField(sectionId: string, type: CustomSectionFieldType) {
+    setData((d) => ({
+      ...d,
+      customSections: (d.customSections || []).map((s) =>
+        s.id === sectionId
+          ? {
+              ...s,
+              fields: [
+                ...s.fields,
+                { id: uid(), type, label: "", value: "", href: "" },
+              ],
+            }
+          : s
+      ),
+    }));
+  }
+
+  function removeCustomField(sectionId: string, fieldId: string) {
+    setData((d) => ({
+      ...d,
+      customSections: (d.customSections || []).map((s) =>
+        s.id === sectionId
+          ? { ...s, fields: s.fields.filter((f) => f.id !== fieldId) }
+          : s
+      ),
+    }));
+  }
+
+  function updateCustomField(
+    sectionId: string,
+    fieldId: string,
+    patch: Partial<CustomSectionField>
+  ) {
+    setData((d) => ({
+      ...d,
+      customSections: (d.customSections || []).map((s) =>
+        s.id === sectionId
+          ? {
+              ...s,
+              fields: s.fields.map((f) =>
+                f.id === fieldId ? { ...f, ...patch } : f
+              ),
+            }
+          : s
+      ),
+    }));
+  }
+
   const removeItem = <T extends { id: string }>(
-    key: "education" | "experience" | "projects" | "skills",
+    key: "education" | "experience" | "projects" | "skills" | "customSections",
     id: string
   ) =>
     setData((d) => ({
@@ -142,7 +212,7 @@ export default function JakeResumeBuilder() {
     }));
 
   const updateItem = <T extends { id: string }>(
-    key: "education" | "experience" | "projects" | "skills",
+    key: "education" | "experience" | "projects" | "skills" | "customSections",
     id: string,
     patch: Partial<T>
   ) =>
@@ -484,6 +554,131 @@ export default function JakeResumeBuilder() {
           ))}
         </Section>
 
+        {/* Custom Sections */}
+        <Section
+          icon="add_circle"
+          title="Custom Sections"
+          subtitle="Add any other details (Certifications, Awards, Languages)."
+          action={<AddButton onClick={addCustomSection} label="Add Section" />}
+        >
+          {(!data.customSections || data.customSections.length === 0) && (
+            <EmptyRow onAdd={addCustomSection} />
+          )}
+          {(data.customSections || []).map((s) => (
+            <EditableCard
+              key={s.id}
+              title={s.title || "Custom Section"}
+              onRemove={() => removeItem<CustomSection>("customSections", s.id)}
+            >
+              <div className="space-y-4">
+                <Field label="Section Title">
+                  <TextInput
+                    value={s.title}
+                    onChange={(v) =>
+                      updateItem<CustomSection>("customSections", s.id, { title: v })
+                    }
+                    placeholder="E.g., Certifications"
+                  />
+                </Field>
+                
+                {s.fields.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    {s.fields.map((f) => (
+                      <div key={f.id} className="relative bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                        <button
+                          onClick={() => removeCustomField(s.id, f.id)}
+                          className="absolute top-3 right-3 text-on-surface-variant hover:text-error"
+                          title="Remove Field"
+                        >
+                          <MaterialIcon name="close" className="text-[18px]" />
+                        </button>
+                        
+                        <div className="pr-6 space-y-3">
+                          <div className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+                            {f.type} Field
+                          </div>
+                          
+                          <Field label="Label">
+                            <TextInput
+                              value={f.label}
+                              onChange={(v) => updateCustomField(s.id, f.id, { label: v })}
+                              placeholder="E.g., AWS Certified"
+                            />
+                          </Field>
+                          
+                          {f.type === "text" && (
+                            <Field label="Value">
+                              <TextInput
+                                value={f.value}
+                                onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
+                                placeholder="E.g., Solutions Architect"
+                              />
+                            </Field>
+                          )}
+                          
+                          {f.type === "textarea" && (
+                            <Field label="Value">
+                              <TextAreaInput
+                                value={f.value}
+                                onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
+                                placeholder="E.g., Description of the award..."
+                                rows={3}
+                              />
+                            </Field>
+                          )}
+                          
+                          {f.type === "link" && (
+                            <>
+                              <Field label="Display Text">
+                                <TextInput
+                                  value={f.value}
+                                  onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
+                                  placeholder="E.g., view credential"
+                                />
+                              </Field>
+                              <Field label="URL">
+                                <TextInput
+                                  value={f.href || ""}
+                                  onChange={(v) => updateCustomField(s.id, f.id, { href: v })}
+                                  placeholder="https://..."
+                                />
+                              </Field>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="pt-2 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => addCustomField(s.id, "text")}
+                    className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                  >
+                    <MaterialIcon name="short_text" className="text-[16px]" />
+                    Add Text
+                  </button>
+                  <button
+                    onClick={() => addCustomField(s.id, "textarea")}
+                    className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                  >
+                    <MaterialIcon name="notes" className="text-[16px]" />
+                    Add Paragraph
+                  </button>
+                  <button
+                    onClick={() => addCustomField(s.id, "link")}
+                    className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                  >
+                    <MaterialIcon name="link" className="text-[16px]" />
+                    Add Link
+                  </button>
+                </div>
+              </div>
+            </EditableCard>
+          ))}
+        </Section>
+
         {/* Reset */}
         <div className="flex justify-start pt-2">
           <button
@@ -653,6 +848,28 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
+    />
+  );
+}
+
+function TextAreaInput({
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <textarea
+      className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all resize-y"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
     />
   );
 }

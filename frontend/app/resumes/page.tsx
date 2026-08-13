@@ -1,181 +1,186 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import AppSidebar from "../components/AppSidebar";
-import Protected from "../components/Protected";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import MaterialIcon from "../components/MaterialIcon";
 import JakeResumeBuilder from "../components/resume/JakeResumeBuilder";
+import { resumesApi, getToken, type ResumeDocument } from "../../lib/api";
+import { emptyResume } from "../../lib/resume";
 
-/**
- * My Resumes — grasshopper-free take on the `my_resumes` stitch frame.
- *
- * The builder hosts Jake's Resume Template (frontend-only, persisted to
- * localStorage) with live preview. The GitHub Analyzer wire's the live
- * backend AI endpoints (/api/v1/ai/github/analyze + /improve-bullets).
- */
-export default function MyResumes() {
-  return (
-    <Protected>
-      <div className="page-enter min-h-screen bg-surface text-on-surface">
-        <AppSidebar />
-        <MyResumesInner />
-      </div>
-    </Protected>
-  );
-}
-
-function MyResumesInner() {
-  // Bilingual header: "My Resumes" view and the editor view
+export default function ResumesPage() {
   const [editorOpen, setEditorOpen] = useState(false);
+  const [resumes, setResumes] = useState<ResumeDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // This state holds the raw JSON string if a user opens a saved resume
+  const [selectedResumeJson, setSelectedResumeJson] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchResumes();
+  }, []);
+
+  const fetchResumes = async () => {
+    const token = getToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const data = await resumesApi.list(token);
+      setResumes(data || []);
+    } catch (err) {
+      console.error("Failed to fetch resumes", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenResume = (doc: ResumeDocument) => {
+    // Pass the saved content so the builder can load it
+    setSelectedResumeJson(doc.content);
+    setEditorOpen(true);
+  };
+
+  const handleDeleteResume = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this saved resume?")) return;
+    
+    const token = getToken();
+    if (!token) return;
+    
+    try {
+      await resumesApi.remove(token, id);
+      setResumes((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      alert("Failed to delete resume.");
+    }
+  };
+
+  const handleCreateNew = () => {
+    // Clear out any selected resume so it starts with the default local storage
+    // or empty resume
+    setSelectedResumeJson(JSON.stringify(emptyResume()));
+    setEditorOpen(true);
+  };
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Top App Bar */}
-      <header className="fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-14 lg:top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))] bg-surface border-b border-outline-variant">
-        <h1 className="text-headline-md font-bold text-primary">
-          {editorOpen ? "Resume Editor" : "My Resumes"}
-        </h1>
-        <button
-          type="button"
-          onClick={() => setEditorOpen((v) => !v)}
-          className={`btn-${editorOpen ? "outline" : "primary"} btn-shine px-4 lg:px-6 py-2 rounded-full text-label-md flex items-center gap-2`}
-        >
-          <MaterialIcon
-            name={editorOpen ? "grid_view" : "edit"}
-            className="text-[18px]"
-          />
-          {editorOpen ? "View Library" : "Create New Resume"}
-        </button>
-      </header>
-
-      {/* Main Content Canvas */}
-      <main className="pt-28 lg:pt-24 lg:ml-[var(--sidebar-width)] pb-12 px-4 lg:px-8 min-h-screen">
-        <div className="max-w-[1280px] mx-auto">
-          {editorOpen ? (
-            <>
+    <div className="flex-1 w-full min-h-[100vh] bg-surface relative">
+      <AnimatePresence mode="wait">
+        {!editorOpen ? (
+          <motion.div
+            key="library"
+            className="w-full min-h-screen py-10 px-4 sm:px-8 xl:px-16 pb-24"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="max-w-[1280px] mx-auto">
               <div className="mb-8 no-print">
-                <h2 className="text-headline-md text-on-surface">
-                  Jake&apos;s Resume Builder
-                </h2>
-                <p className="text-body-md text-on-surface-variant">
-                  Fill in the sections on the left and watch the live ATS-ready
-                  preview on the right. AI Enhance turns plain achievements
-                  into strong action-verb bullets.
-                </p>
-              </div>
-              <JakeResumeBuilder />
-            </>
-          ) : (
-            <>
-              {/* Page Title */}
-              <div className="mb-8">
                 <h2 className="text-headline-md text-on-surface">My Resumes</h2>
                 <p className="text-body-md text-on-surface-variant">
                   Manage, download, and track your tailored CVs.
                 </p>
               </div>
 
-              {/* Resume Grid — empty state with New Template card */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {/* 1. NEW TEMPLATE CARD (Always present) */}
                 <motion.div
                   className="flex flex-col group cursor-pointer"
                   initial={{ opacity: 0, y: 26 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15, type: "spring", stiffness: 100, damping: 18 }}
-                  onClick={() => setEditorOpen(true)}
+                  onClick={handleCreateNew}
                 >
                   <div className="ambient-card relative aspect-[3/4] bg-surface-container rounded-[20px] border-2 border-dashed border-outline-variant overflow-hidden flex flex-col items-center justify-center gap-4 hover:bg-surface-container-high hover:border-primary transition-all active:scale-[0.98]">
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-primary shadow-sm border border-outline-variant group-hover:scale-110 transition-transform">
                       <MaterialIcon name="add_circle" className="text-4xl" />
                     </div>
                     <div className="text-center px-6">
-                      <p className="font-bold text-on-surface">New Template</p>
+                      <p className="font-bold text-on-surface">New Resume</p>
                       <p className="text-label-sm text-on-surface-variant mt-1">
-                        Start from a professional base
+                        Start from a professional template
                       </p>
                     </div>
                   </div>
                   <div className="mt-4 px-2">
-                    <p className="text-label-sm text-primary font-bold">
-                      Jake&apos;s Resume
-                    </p>
-                    <p className="text-label-sm text-on-surface-variant">
-                      Recruiter-approved classic template
-                    </p>
+                    <p className="text-label-sm text-primary font-bold">Jake&apos;s Template</p>
+                    <p className="text-label-sm text-on-surface-variant">Standard 1-column layout</p>
                   </div>
                 </motion.div>
+
+                {/* 2. SAVED RESUMES CARDS */}
+                {loading ? (
+                  <div className="flex items-center justify-center w-full aspect-[3/4] col-span-full sm:col-span-1">
+                    <span className="text-on-surface-variant text-body-sm">Loading...</span>
+                  </div>
+                ) : (
+                  resumes.map((doc, i) => (
+                    <motion.div
+                      key={doc.id}
+                      className="flex flex-col group cursor-pointer"
+                      initial={{ opacity: 0, y: 26 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 + i * 0.05, type: "spring", stiffness: 100, damping: 18 }}
+                      onClick={() => handleOpenResume(doc)}
+                    >
+                      <div className="ambient-card relative aspect-[3/4] bg-white rounded-[20px] border border-outline-variant overflow-hidden flex flex-col hover:shadow-lg transition-all active:scale-[0.98]">
+                        <div className="flex-1 bg-surface-container-lowest p-6 flex flex-col items-center justify-center relative">
+                          {/* Delete button (top right) */}
+                          <button
+                            onClick={(e) => handleDeleteResume(e, doc.id)}
+                            className="absolute top-4 right-4 text-on-surface-variant hover:text-error hover:bg-error/10 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                            title="Delete resume"
+                          >
+                            <MaterialIcon name="delete" className="text-[18px]" />
+                          </button>
+                          
+                          <MaterialIcon name="description" className="text-6xl text-primary/40 mb-4" />
+                          <div className="flex gap-2">
+                            <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">PDF</span>
+                            <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">DOCX</span>
+                          </div>
+                        </div>
+                        <div className="p-4 border-t border-outline-variant bg-surface-container-low">
+                          <p className="font-bold text-on-surface truncate">{doc.title}</p>
+                          <p className="text-[11px] text-on-surface-variant mt-1">
+                            Updated {new Date(doc.updated_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
               </div>
-
-              {/* Stats Bar */}
-              <motion.div
-                className="mt-10 bg-surface-container-lowest border border-outline-variant rounded-2xl p-8 shadow-sm"
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="editor"
+            className="w-full bg-surface-container-lowest"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Minimal Header for Editor */}
+            <div className="h-16 border-b border-outline-variant bg-surface-container sticky top-0 z-50 flex items-center px-4 sm:px-8 xl:px-16 no-print">
+              <button
+                onClick={() => setEditorOpen(false)}
+                className="btn-outline px-4 py-2 rounded-full text-label-sm flex items-center gap-2 hover:bg-surface-container-high"
               >
-                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-                  <div className="text-center md:text-left">
-                    <div className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">
-                      Total Resumes
-                    </div>
-                    <div className="text-headline-md font-bold text-on-surface">
-                      0
-                    </div>
-                  </div>
-                  <div className="hidden md:block w-px h-12 bg-outline-variant" />
-                  <div className="text-center md:text-left">
-                    <div className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">
-                      Avg. ATS Score
-                    </div>
-                    <div className="text-headline-md font-bold text-primary">
-                      —
-                    </div>
-                  </div>
-                  <div className="flex-grow" />
-                  <div className="w-full md:w-64">
-                    <div className="flex justify-between text-[10px] font-bold text-on-surface-variant mb-2">
-                      <span>Storage Capacity</span>
-                      <span>(0%)</span>
-                    </div>
-                    <div className="h-2 bg-surface-container rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full w-0" />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
+                <MaterialIcon name="arrow_back" className="text-[18px]" />
+                Back to Library
+              </button>
+              <div className="ml-4 font-semibold text-on-surface">Jake&apos;s Resume Builder</div>
+            </div>
 
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="lg:ml-[var(--sidebar-width)] lg:w-[calc(100%-var(--sidebar-width))] w-full flex flex-col lg:flex-row gap-4 justify-between items-center px-4 lg:px-8 py-8 bg-surface-container-lowest border-t border-outline-variant">
-        <div className="flex items-center gap-8">
-          <span className="text-label-md font-bold text-on-surface">
-            NISB-MakeMyCV
-          </span>
-          <div className="flex gap-4">
-            <a
-              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-              href="#"
-            >
-              Privacy Policy
-            </a>
-            <a
-              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-              href="#"
-            >
-              Terms
-            </a>
-          </div>
-        </div>
-        <p className="text-label-sm text-on-surface-variant">
-          © 2026 NISB-MakeMyCV. Made by NISB.
-        </p>
-      </footer>
+            <div className="w-full min-h-[calc(100vh-4rem)] p-4 sm:p-8 xl:px-16 pb-24 max-w-[1920px] mx-auto">
+              <JakeResumeBuilder initialDataStr={selectedResumeJson} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

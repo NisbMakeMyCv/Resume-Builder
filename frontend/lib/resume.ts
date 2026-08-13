@@ -63,6 +63,25 @@ export type SkillGroup = {
   items: string;
 };
 
+/** A single field inside a custom section. */
+export type CustomSectionFieldType = "text" | "textarea" | "link";
+
+export type CustomSectionField = {
+  id: string;
+  type: CustomSectionFieldType;
+  label: string;
+  value: string;
+  /** Only used when type === "link" */
+  href?: string;
+};
+
+/** A fully user-defined resume section (Certifications, Awards, Publications, etc.) */
+export type CustomSection = {
+  id: string;
+  title: string;
+  fields: CustomSectionField[];
+};
+
 /** The full Jake's Resume document. */
 export type ResumeData = {
   header: ResumeHeader;
@@ -70,6 +89,7 @@ export type ResumeData = {
   experience: Experience[];
   projects: Project[];
   skills: SkillGroup[];
+  customSections: CustomSection[];
 };
 
 /* =========================================================
@@ -97,6 +117,7 @@ export function emptyResume(): ResumeData {
     experience: [],
     projects: [],
     skills: [],
+    customSections: [],
   };
 }
 
@@ -170,6 +191,7 @@ export function sampleResume(): ResumeData {
         items: "Git, Docker, AWS, PostgreSQL",
       },
     ],
+    customSections: [],
   };
 }
 

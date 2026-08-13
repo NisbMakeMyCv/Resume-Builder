@@ -245,7 +245,9 @@ def upload_profile_photo(
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    photo_url = f"/api/v1/uploads/{filename}"
+    base_url = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
+    photo_url = f"{base_url}/api/v1/uploads/{filename}"
+    
     current_user.profile_picture = photo_url
     db.commit()
     
