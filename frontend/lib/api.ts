@@ -64,10 +64,17 @@ export async function apiRequest<T>(
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const detail =
-      typeof data?.detail === "string"
-        ? data.detail
-        : "Something went wrong. Please try again.";
+    let detail = "Something went wrong. Please try again.";
+    if (typeof data?.detail === "string") {
+      detail = data.detail;
+    } else if (Array.isArray(data?.detail)) {
+      detail = data.detail
+        .map((d: any) => {
+          const loc = d.loc?.slice(1).join(".") || "";
+          return loc ? `${loc}: ${d.msg}` : d.msg;
+        })
+        .join(" | ");
+    }
     throw new Error(detail);
   }
 
@@ -136,6 +143,23 @@ export function updateProfile(
  */
 export function deleteAccount(token: string): Promise<void> {
   return apiRequest<void>("/auth/me", { method: "DELETE", token });
+}
+
+/** POST /api/v1/auth/me/photo - Upload a new profile picture */
+export async function uploadProfilePhoto(token: string, file: File): Promise<{ message: string; profile_picture: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  const res = await fetch(`${API_URL}/auth/me/photo`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to upload photo");
+  }
+  return res.json();
 }
 
 /* =========================================================
@@ -213,6 +237,25 @@ export const educationApi = createCrud<Education, EducationCreateInput>("/educat
 export const experienceApi = createCrud<Experience, ExperienceCreateInput>("/experience");
 export const skillsApi = createCrud<Skill, SkillCreateInput>("/skills");
 export const projectsApi = createCrud<Project, ProjectCreateInput>("/projects");
+
+/* =========================================================
+   RESUMES — Cloud Storage for Resumes
+   ========================================================= */
+
+export type ResumeDocument = {
+  id: string;
+  title: string;
+  content: string; // JSON string of resume data
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResumeDocumentCreateInput = {
+  title: string;
+  content: string;
+};
+
+export const resumesApi = createCrud<ResumeDocument, ResumeDocumentCreateInput>("/resumes");
 
 /** Education create payload — the only required fields. */
 export type EducationCreateInput = {

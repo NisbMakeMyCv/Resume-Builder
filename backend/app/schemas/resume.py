@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, datetime
 from uuid import UUID
@@ -37,7 +37,7 @@ class EducationBase(BaseModel):
     branch: str
     start_date: date
     end_date: Optional[date] = None
-    cgpa: Optional[float] = None
+    cgpa: Optional[float] = Field(None, ge=0.0, le=10.0)
     display_order: Optional[int] = 0
 
 class EducationCreate(EducationBase):
@@ -49,7 +49,7 @@ class EducationUpdate(BaseModel):
     branch: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    cgpa: Optional[float] = None
+    cgpa: Optional[float] = Field(None, ge=0.0, le=10.0)
     display_order: Optional[int] = None
 
 class EducationResponse(EducationBase):
@@ -130,6 +130,27 @@ class ProjectUpdate(BaseModel):
     display_order: Optional[int] = None
 
 class ProjectResponse(ProjectBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# RESUME DOCUMENT
+class ResumeDocumentBase(BaseModel):
+    title: str
+    content: str
+
+class ResumeDocumentCreate(ResumeDocumentBase):
+    pass
+
+class ResumeDocumentUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+class ResumeDocumentResponse(ResumeDocumentBase):
     id: UUID
     user_id: UUID
     created_at: datetime

@@ -221,6 +221,35 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         "profile_picture": current_user.profile_picture
     }
 
+from fastapi import UploadFile, File
+import shutil
+import uuid
+
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/me/photo")
+def upload_profile_photo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    photo_url = f"/api/v1/uploads/{filename}"
+    current_user.profile_picture = photo_url
+    db.commit()
+    
+    return {"message": "Photo uploaded successfully", "profile_picture": photo_url}
+
 @router.post("/forgot-password")
 def forgot_password(request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == request.email).first()

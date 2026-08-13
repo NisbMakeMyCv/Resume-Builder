@@ -650,6 +650,35 @@ body {
   }
 }
 
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #resume-pdf-content, #resume-pdf-content * {
+    visibility: visible;
+  }
+  #resume-pdf-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 0;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    box-shadow: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
+
 /* =========================================================
    ACCESSIBILITY
    ========================================================= */

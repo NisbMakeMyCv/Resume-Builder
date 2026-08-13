@@ -14,7 +14,9 @@ import {
   type ResumeData,
   type SkillGroup,
 } from "../../../lib/resume";
-import { getToken, improveGitHubBullets } from "../../../lib/api";
+} from "../../../lib/resume";
+import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
+import html2canvas from "html2canvas";
 
 /**
  * Jake's Resume Builder — the resume editor for the `editor` stitch frame.
@@ -29,11 +31,88 @@ import { getToken, improveGitHubBullets } from "../../../lib/api";
  */
 export default function JakeResumeBuilder() {
   const [data, setData] = useState<ResumeData>(() => loadResume());
+  const [saving, setSaving] = useState(false);
+  const [resumeId, setResumeId] = useState<string | null>(null);
 
-  // Persist on every change (cheap; localStorage is synchronous).
+  // Persist on every change to local storage
   useEffect(() => {
     saveResume(data);
   }, [data]);
+
+  const handleCloudSave = async () => {
+    const token = getToken();
+    if (!token) {
+      alert("Please log in to save your resume to the cloud.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        title: data.header.fullName ? `${data.header.fullName}'s Resume` : "My Resume",
+        content: JSON.stringify(data),
+      };
+      if (resumeId) {
+        await resumesApi.update(token, resumeId, payload);
+        alert("Resume updated in cloud!");
+      } else {
+        const created = await resumesApi.create(token, payload);
+        setResumeId(created.id);
+        alert("Resume saved to cloud!");
+      }
+    } catch (err) {
+      alert("Failed to save resume: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExportPNG = async () => {
+    const el = document.getElementById("resume-pdf-content");
+    if (!el) return;
+    const canvas = await html2canvas(el, { scale: 2 });
+    const link = document.createElement("a");
+    link.download = "resume.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
+  const handleExportDOCX = async () => {
+    const el = document.getElementById("resume-pdf-content");
+    if (!el) return;
+    
+    // We dynamically import html-to-docx to avoid SSR issues
+    try {
+      const htmlToDocx = (await import("html-to-docx")).default;
+      const htmlString = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { font-family: 'Baskerville', 'Palatino Linotype', Georgia, serif; }
+            </style>
+          </head>
+          <body>${el.outerHTML}</body>
+        </html>
+      `;
+      const fileBuffer = await htmlToDocx(htmlString, null, {
+        table: { row: { cantSplit: true } },
+        footer: true,
+        pageNumber: true,
+      });
+      const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "resume.docx";
+      link.click();
+    } catch (err) {
+      alert("Failed to export DOCX: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
   const updateHeader = (patch: Partial<ResumeData["header"]>) =>
     setData((d) => ({ ...d, header: { ...d.header, ...patch } }));
@@ -434,13 +513,47 @@ export default function JakeResumeBuilder() {
 
       {/* ============ RIGHT: LIVE PREVIEW ============ */}
       <div className="xl:sticky xl:top-24">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-label-md font-semibold text-on-surface">
-            Live Preview
-          </p>
-          <span className="text-label-sm text-on-surface-variant">
-            Jake&apos;s Resume Template
-          </span>
+        <div className="mb-3 flex flex-wrap gap-3 items-center justify-between">
+          <div>
+            <p className="text-label-md font-semibold text-on-surface">
+              Live Preview
+            </p>
+            <span className="text-label-sm text-on-surface-variant">
+              Jake&apos;s Resume Template
+            </span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCloudSave}
+              disabled={saving}
+              className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+            >
+              <MaterialIcon name="cloud_upload" className="text-[16px]" />
+              {saving ? "Saving..." : "Save to Cloud"}
+            </button>
+            <button
+              onClick={handleExportPNG}
+              className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+            >
+              <MaterialIcon name="image" className="text-[16px]" />
+              PNG
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+            >
+              <MaterialIcon name="picture_as_pdf" className="text-[16px]" />
+              PDF
+            </button>
+            <button
+              onClick={handleExportDOCX}
+              className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+            >
+              <MaterialIcon name="description" className="text-[16px]" />
+              DOCX
+            </button>
+          </div>
         </div>
         <div className="ambient-card rounded-2xl border border-outline-variant bg-surface-container-low p-4 sm:p-6">
           <JakeResumePreview data={data} />

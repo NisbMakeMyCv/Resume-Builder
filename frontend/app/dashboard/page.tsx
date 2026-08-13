@@ -9,7 +9,17 @@ import Reveal from "../components/Reveal";
 import Protected from "../components/Protected";
 import MaterialIcon from "../components/MaterialIcon";
 import { SidebarProvider, useSidebar } from "../components/SidebarContext";
-import { apiRequest, getStoredUser, getToken } from "@/lib/api";
+import { 
+  apiRequest, 
+  getStoredUser, 
+  getToken, 
+  getProfile, 
+  educationApi, 
+  experienceApi, 
+  skillsApi, 
+  projectsApi, 
+  resumesApi 
+} from "@/lib/api";
 import LiveClock from "../components/LiveClock";
 
 /**
@@ -33,9 +43,14 @@ function DashboardInner() {
   const [user, setUser] = useState(getStoredUser());
   const { toggle } = useSidebar();
 
+  const [totalResumes, setTotalResumes] = useState(0);
+  const [completion, setCompletion] = useState(0);
+
   useEffect(() => {
     const token = getToken();
     if (!token) return;
+    
+    // Fetch identity
     apiRequest<{
       id: string;
       email: string;
@@ -46,10 +61,30 @@ function DashboardInner() {
         setUser(me);
         localStorage.setItem("makemycv_user", JSON.stringify(me));
       })
-      .catch(() => {
-        /* token may have expired — Protected redirects on next visit */
-      });
-  }, []);
+      .catch(() => {});
+
+    // Fetch completion metrics & resumes
+    Promise.all([
+      getProfile(token).catch(() => null),
+      educationApi.list(token).catch(() => []),
+      experienceApi.list(token).catch(() => []),
+      skillsApi.list(token).catch(() => []),
+      projectsApi.list(token).catch(() => []),
+      resumesApi.list(token).catch(() => []),
+    ]).then(([profile, edu, exp, skills, proj, resumes]) => {
+      let score = 0;
+      if (user?.profile_picture) score += 10;
+      if (profile?.headline) score += 15;
+      if (profile?.summary) score += 15;
+      if (profile?.location) score += 10;
+      if (edu && edu.length > 0) score += 15;
+      if (exp && exp.length > 0) score += 15;
+      if (skills && skills.length > 0) score += 10;
+      if (proj && proj.length > 0) score += 10;
+      setCompletion(Math.min(100, score));
+      setTotalResumes(resumes ? resumes.length : 0);
+    });
+  }, [user?.profile_picture]);
 
   const firstName = (user?.full_name ?? "there").split(" ")[0];
 
@@ -103,15 +138,15 @@ function DashboardInner() {
             <MetricCard
               label="Total Resumes"
               icon="description"
-              value="0"
+              value={totalResumes.toString()}
               subtext="Create a resume to get started"
-              link={{ label: "Create a resume to get started", href: "/resumes" }}
+              link={{ label: "Go to My Resumes", href: "/resumes" }}
             />
             <MetricCard
               label="Avg. ATS Score"
               icon="leaderboard"
               value="—"
-              subtext="No resumes yet"
+              subtext="ATS Integration Coming Soon"
               progress={0}
             />
             <MetricCard
@@ -141,10 +176,13 @@ function DashboardInner() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm text-on-primary-container">
                   <span>Profile Completion</span>
-                  <span>0%</span>
+                  <span>{completion}%</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-3">
-                  <div className="bg-secondary-container h-3 rounded-full w-0" />
+                  <div 
+                    className="bg-secondary-container h-3 rounded-full transition-all duration-1000 ease-out" 
+                    style={{ width: `${completion}%` }}
+                  />
                 </div>
               </div>
               <Link

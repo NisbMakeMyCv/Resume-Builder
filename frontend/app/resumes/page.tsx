@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import AppSidebar from "../components/AppSidebar";
 import Protected from "../components/Protected";
 import MaterialIcon from "../components/MaterialIcon";
-import GitHubAnalyzer from "../components/ai/GitHubAnalyzer";
 import JakeResumeBuilder from "../components/resume/JakeResumeBuilder";
 
 /**
@@ -149,21 +148,6 @@ function MyResumesInner() {
             </>
           )}
 
-          {/* AI Resume Tools */}
-          <div className="mt-12">
-            <div className="mb-6">
-              <div className="flex items-center gap-2">
-                <MaterialIcon name="smart_toy" className="text-primary" filled />
-                <h2 className="text-headline-md text-on-surface">
-                  AI Resume Tools
-                </h2>
-              </div>
-              <p className="text-body-md text-on-surface-variant mt-1">
-                Turn any public GitHub repository into resume-ready content.
-              </p>
-            </div>
-            <GitHubAnalyzer />
-          </div>
         </div>
       </main>
 

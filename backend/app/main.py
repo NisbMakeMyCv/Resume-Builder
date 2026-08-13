@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.auth import router as auth_router
@@ -14,6 +15,7 @@ from app.api.v1.experience import router as exp_router
 from app.api.v1.skills import router as skill_router
 from app.api.v1.projects import router as project_router
 from app.api.v1.ai.github import router as ai_github_router
+from app.api.v1.resumes import router as resumes_router
 from app.core.database import engine
 from app.models import user, resume
 
@@ -43,6 +45,11 @@ app.include_router(exp_router, prefix="/api/v1/experience", tags=["Experience"])
 app.include_router(skill_router, prefix="/api/v1/skills", tags=["Skills"])
 app.include_router(project_router, prefix="/api/v1/projects", tags=["Projects"])
 app.include_router(ai_github_router, prefix="/api/v1/ai/github", tags=["AI GitHub"])
+app.include_router(resumes_router, prefix="/api/v1/resumes", tags=["Resumes"])
+
+import os
+os.makedirs("uploads", exist_ok=True)
+app.mount("/api/v1/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 def root():

@@ -23,6 +23,7 @@ import {
   skillsApi,
   storeUser,
   updateProfile,
+  uploadProfilePhoto,
   type CurrentUser,
   type EducationCreateInput,
   type ExperienceCreateInput,
@@ -165,6 +166,31 @@ function ProfileInner() {
     }
   };
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const token = getToken();
+    if (!token) return;
+
+    setLoading(true);
+    try {
+      const res = await uploadProfilePhoto(token, file);
+      if (user) {
+        const updatedUser = { ...user, profile_picture: res.profile_picture };
+        setUser(updatedUser);
+        storeUser(updatedUser);
+      }
+      notify.success("Profile photo updated successfully!");
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Failed to upload photo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ---- Avatar: render the image only when profile_picture is a usable URL.
   // No ui-avatars (or any other) fallback — without a picture we show a clean
   // initials tile so there is never a broken/overlapping image.
@@ -221,20 +247,35 @@ function ProfileInner() {
           {/* Identity Card — avatar + name + email */}
           <Reveal>
             <div className="ambient-card bg-white rounded-2xl border border-outline-variant p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
-              <div className="relative shrink-0">
-                {showAvatar ? (
-                  <Image
-                    src={avatarUrl}
-                    alt={user?.full_name ?? "Profile"}
-                    width={96}
-                    height={96}
-                    className="w-24 h-24 rounded-full object-cover ring-4 ring-primary-fixed"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-primary-fixed flex items-center justify-center text-primary text-headline-lg font-bold ring-4 ring-primary-fixed">
-                    {initial}
+              <div 
+                className="relative shrink-0 cursor-pointer group" 
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                />
+                <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-primary-fixed relative">
+                  {showAvatar ? (
+                    <Image
+                      src={avatarUrl.startsWith("/api") ? `http://localhost:8000${avatarUrl}` : avatarUrl}
+                      alt={user?.full_name ?? "Profile"}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-primary-fixed flex items-center justify-center text-primary text-headline-lg font-bold">
+                      {initial}
+                    </div>
+                  )}
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <MaterialIcon name="photo_camera" className="text-white text-2xl" />
                   </div>
-                )}
+                </div>
                 {loading && (
                   <div className="absolute inset-0 rounded-full bg-surface-container/60 animate-pulse" />
                 )}
@@ -472,35 +513,6 @@ function ProfileInner() {
               }
               deleteItem={(token: string, id: string) => projectsApi.remove(token, id)}
             />
-          </Reveal>
-
-          {/* Danger Zone — Delete Account */}
-          <Reveal delay={200}>
-            <div className="ambient-card bg-white rounded-2xl border border-error-container overflow-hidden">
-              <div className="p-6 border-b border-error-container/40 flex items-center gap-3">
-                <MaterialIcon name="delete_forever" className="text-error" />
-                <h4 className="text-headline-md text-on-surface">Danger Zone</h4>
-              </div>
-
-              <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <p className="text-label-md font-semibold text-on-surface">
-                    Delete account
-                  </p>
-                  <p className="text-label-sm text-on-surface-variant mt-1 max-w-lg">
-                    Permanently wipes your identity, master profile, and all
-                    resume data. This action cannot be undone.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setConfirmOpen(true)}
-                  className="btn-outline px-5 py-2.5 rounded-full text-label-md !border-error !text-error hover:!bg-error-container shrink-0"
-                >
-                  Delete Account
-                </button>
-              </div>
-            </div>
           </Reveal>
         </div>
       </main>
