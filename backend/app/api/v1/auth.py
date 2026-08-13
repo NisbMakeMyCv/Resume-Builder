@@ -120,7 +120,6 @@ def register_user(request: UserRegisterRequest, background_tasks: BackgroundTask
 
 @router.post("/login")
 def login_user(request: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    verify_and_delete_otp(db, request.email, request.otp_code)
 
     user = db.query(User).filter(User.email == request.email).first()
     if not user:

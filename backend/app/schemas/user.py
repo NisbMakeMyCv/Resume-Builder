@@ -6,7 +6,6 @@ class OTPRequest(BaseModel):
 class UserLoginRequest(BaseModel):
     email: EmailStr
     password: str
-    otp_code: str
 
 class UserRegisterRequest(BaseModel):
     full_name: str
