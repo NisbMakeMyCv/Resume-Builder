@@ -3,17 +3,20 @@
 import type { ResumeData, SkillGroup } from "../../../lib/resume";
 
 /**
- * Live preview — renders the current resume data styled strictly after
- * Jake's Resume Template:
+ * Live preview — pixel-perfect replica of Jake's Resume Template.
  *
- *  - Serif headline (Baskerville, Georgia fallback), centered name + position
- *  - Uppercase, letter-spaced, navy-blue section headings
- *  - Full-width horizontal rules between the header and each section
- *  - Compact margins, two-column skills layout
- *  - Distinguishable clickable links (underline + inline accent color)
- *
- * This is intentionally independent of the app design system so the PDF-like
- * print style stays true to the template. Out of print scope on purpose.
+ * Layout rules (matching the original PDF exactly):
+ *  - Large centered serif name (~28px bold)
+ *  - Single contact line: phone | email | location | linkedin | github | portfolio
+ *  - Section headings: small-caps, navy blue, with a horizontal rule BELOW the heading
+ *  - Education:  Row1 = School (bold, left) + Location (right)
+ *               Row2 = Degree (italic, left) + Dates (right)
+ *  - Experience: Row1 = Job Title (bold, left) + Dates (right)
+ *               Row2 = Company (italic, left) + Location (right)
+ *               Then bullet points (non-empty only)
+ *  - Projects:   Row1 = Project Name (bold) | Technologies (italic, left) + Dates (right)
+ *               Then bullet points (non-empty only)
+ *  - Skills:    Category: items  (one per line, bold category label)
  */
 export default function JakeResumePreview({
   data,
@@ -24,187 +27,219 @@ export default function JakeResumePreview({
 }) {
   const { header, education, experience, projects, skills } = data;
 
+  // Build single unified contact + links line
+  const contactParts = [
+    header.phone,
+    header.email,
+    header.location,
+    header.links.linkedin,
+    header.links.github,
+    header.links.portfolio,
+  ].filter(Boolean);
+
+  // Determine which parts are links vs plain text
+  const linkFields = new Set([
+    header.links.linkedin,
+    header.links.github,
+    header.links.portfolio,
+  ].filter(Boolean));
+
   return (
     <div
       id="resume-preview-container"
       className={`bg-surface-container flex justify-center text-gray-900 w-full overflow-auto ${className}`}
       style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif", padding: "1rem" }}
     >
-      <div 
+      <div
         id="resume-pdf-content"
-        className="px-6 py-6 sm:px-10 sm:py-9 bg-white shadow-xl shrink-0 w-full max-w-[800px] transition-all print:w-[210mm] print:min-h-[297mm] print:shadow-none print:p-0"
+        className="px-10 py-8 bg-white shadow-xl shrink-0 w-full max-w-[800px] transition-all print:shadow-none"
+        style={{ minHeight: "297mm" }}
       >
-        {/* ===== Header ===== */}
-        <div className="text-center mb-1">
+
+        {/* ===== NAME / HEADER ===== */}
+        <div style={{ textAlign: "center", marginBottom: "4px" }}>
           <h1
-            className="text-[22px] leading-tight font-bold text-gray-900"
-            style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif" }}
+            style={{
+              fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif",
+              fontSize: "28px",
+              fontWeight: "700",
+              lineHeight: "1.2",
+              color: "#111827",
+              margin: 0,
+            }}
           >
             {header.fullName || "Your Name"}
           </h1>
-          {header.position && (
-            <p className="text-[13px] text-gray-700 mt-0.5">{header.position}</p>
-          )}
 
-          {/* Contact line — phone / email / location */}
-          <p className="text-[11px] text-gray-900 mt-1.5">
-            {[header.phone, header.email, header.location]
-              .filter(Boolean)
-              .join("  •  ")}
-          </p>
-
-          {/* Links — distinguishable clickable links */}
-          {(header.links.linkedin ||
-            header.links.github ||
-            header.links.portfolio) && (
-            <p className="text-[11px] mt-1 flex flex-wrap justify-center gap-x-3 gap-y-0.5">
-              {header.links.linkedin && (
-                <a
-                  href={normalizeHref(header.links.linkedin)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline text-[#1c3fa8] hover:text-[#16409a]"
-                >
-                  {header.links.linkedin}
-                </a>
-              )}
-              {header.links.github && (
-                <a
-                  href={normalizeHref(header.links.github)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline text-[#1c3fa8] hover:text-[#16409a]"
-                >
-                  {header.links.github}
-                </a>
-              )}
-              {header.links.portfolio && (
-                <a
-                  href={normalizeHref(header.links.portfolio)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline text-[#1c3fa8] hover:text-[#16409a]"
-                >
-                  {header.links.portfolio}
-                </a>
-              )}
+          {/* Single unified contact + links line */}
+          {contactParts.length > 0 && (
+            <p style={{ fontSize: "11px", marginTop: "6px", color: "#1f2937" }}>
+              {contactParts.map((part, i) => (
+                <span key={i}>
+                  {i > 0 && <span style={{ margin: "0 4px", color: "#6b7280" }}>|</span>}
+                  {linkFields.has(part) ? (
+                    <a
+                      href={normalizeHref(part)}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "#1c3fa8", textDecoration: "underline" }}
+                    >
+                      {part}
+                    </a>
+                  ) : (
+                    <span>{part}</span>
+                  )}
+                </span>
+              ))}
             </p>
           )}
         </div>
 
-        {/* ===== Education ===== */}
-        {renderSection<typeof education[number]>(
-          "EDUCATION",
-          education,
-          (ed) => (
-            <div>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <p className="text-[12px] font-semibold text-gray-900">
-                  {ed.school || "Institution"}
-                  <span className="font-medium text-gray-700">
-                    {ed.degree && ` — ${ed.degree}`}
-                  </span>
-                </p>
-                <p className="text-[11px] text-gray-700">
-                  {[ed.dates, ed.location].filter(Boolean).join("  |  ")}
-                </p>
-              </div>
-              {ed.coursework && (
-                <p className="text-[11px] text-gray-700 mt-0.5">
-                  <span className="italic">Coursework:</span> {ed.coursework}
-                </p>
-              )}
-            </div>
-          )
-        )}
-
-        {/* ===== Experience ===== */}
-        {renderSection<typeof experience[number]>(
-          "EXPERIENCE",
-          experience,
-          (ex) => (
-            <div>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <p className="text-[12px] font-semibold text-gray-900">
-                  {ex.company || "Company"}
-                  <span className="font-medium text-gray-700">
-                    {ex.title && ` — ${ex.title}`}
-                  </span>
-                </p>
-                <p className="text-[11px] text-gray-700">
-                  {[ex.dates, ex.location].filter(Boolean).join("  |  ")}
-                </p>
-              </div>
-              {ex.bullets.length > 0 && (
-                <ul className="mt-1 list-disc pl-5 space-y-0.5">
-                  {ex.bullets.map((b, i) => (
-                    <li key={i} className="text-[11px] text-gray-800 leading-snug">
-                      {b || "•"}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )
-        )}
-
-        {/* ===== Projects ===== */}
-        {renderSection<typeof projects[number]>(
-          "PROJECTS",
-          projects,
-          (proj) => (
-            <div>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <p className="text-[12px] font-semibold text-gray-900">
-                  {proj.title || "Project"}
-                  {proj.technologies && (
-                    <span className="font-medium text-gray-700">
-                      {" "}
-                      — {proj.technologies}
-                    </span>
+        {/* ===== EDUCATION ===== */}
+        {education.length > 0 && (
+          <>
+            <SectionHeading title="Education" />
+            <div style={{ marginTop: "4px" }}>
+              {education.map((ed) => (
+                <div key={ed.id} style={{ marginBottom: "6px" }}>
+                  {/* Row 1: School (bold left) + Location (right) */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <p style={{ fontSize: "12px", fontWeight: "700", color: "#111827", margin: 0 }}>
+                      {ed.school || "Institution"}
+                    </p>
+                    <p style={{ fontSize: "11px", color: "#374151", margin: 0, whiteSpace: "nowrap", marginLeft: "8px" }}>
+                      {ed.location}
+                    </p>
+                  </div>
+                  {/* Row 2: Degree (italic left) + Dates (right) */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <p style={{ fontSize: "11px", fontStyle: "italic", color: "#374151", margin: 0 }}>
+                      {ed.degree}
+                    </p>
+                    <p style={{ fontSize: "11px", color: "#374151", margin: 0, whiteSpace: "nowrap", marginLeft: "8px" }}>
+                      {ed.dates}
+                    </p>
+                  </div>
+                  {/* Coursework */}
+                  {ed.coursework && (
+                    <p style={{ fontSize: "11px", color: "#374151", margin: "2px 0 0 0" }}>
+                      <em>Coursework: </em>{ed.coursework}
+                    </p>
                   )}
-                </p>
-                {proj.links && (
-                  <a
-                    href={normalizeHref(proj.links)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] underline text-[#1c3fa8] hover:text-[#16409a]"
-                  >
-                    {proj.links}
-                  </a>
-                )}
-              </div>
-              {proj.bullets.length > 0 && (
-                <ul className="mt-1 list-disc pl-5 space-y-0.5">
-                  {proj.bullets.map((b, i) => (
-                    <li key={i} className="text-[11px] text-gray-800 leading-snug">
-                      {b || "•"}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                </div>
+              ))}
             </div>
-          )
+          </>
         )}
 
-        {/* ===== Technical Skills ===== */}
+        {/* ===== EXPERIENCE ===== */}
+        {experience.length > 0 && (
+          <>
+            <SectionHeading title="Experience" />
+            <div style={{ marginTop: "4px" }}>
+              {experience.map((ex) => {
+                const nonEmptyBullets = ex.bullets.filter(Boolean);
+                return (
+                  <div key={ex.id} style={{ marginBottom: "8px" }}>
+                    {/* Row 1: Job Title (bold left) + Dates (right) */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <p style={{ fontSize: "12px", fontWeight: "700", color: "#111827", margin: 0 }}>
+                        {ex.title || "Job Title"}
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#374151", margin: 0, whiteSpace: "nowrap", marginLeft: "8px" }}>
+                        {ex.dates}
+                      </p>
+                    </div>
+                    {/* Row 2: Company (italic left) + Location (right) */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <p style={{ fontSize: "11px", fontStyle: "italic", color: "#374151", margin: 0 }}>
+                        {ex.company}
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#374151", margin: 0, whiteSpace: "nowrap", marginLeft: "8px" }}>
+                        {ex.location}
+                      </p>
+                    </div>
+                    {/* Bullets (non-empty only) */}
+                    {nonEmptyBullets.length > 0 && (
+                      <ul style={{ margin: "3px 0 0 0", paddingLeft: "18px" }}>
+                        {nonEmptyBullets.map((b, i) => (
+                          <li key={i} style={{ fontSize: "11px", color: "#1f2937", lineHeight: "1.5", marginBottom: "1px" }}>
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ===== PROJECTS ===== */}
+        {projects.length > 0 && (
+          <>
+            <SectionHeading title="Projects" />
+            <div style={{ marginTop: "4px" }}>
+              {projects.map((proj) => {
+                const nonEmptyBullets = proj.bullets.filter(Boolean);
+                return (
+                  <div key={proj.id} style={{ marginBottom: "8px" }}>
+                    {/* Row 1: ProjectName | Technologies (left) + Dates (right) */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <p style={{ fontSize: "12px", margin: 0, color: "#111827" }}>
+                        <strong>{proj.title || "Project"}</strong>
+                        {proj.technologies && (
+                          <span style={{ fontWeight: "400", fontStyle: "italic", color: "#374151" }}>
+                            {" "}| {proj.technologies}
+                          </span>
+                        )}
+                        {proj.links && (
+                          <>
+                            {" "}
+                            <a
+                              href={normalizeHref(proj.links)}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ fontSize: "11px", color: "#1c3fa8", textDecoration: "underline", fontWeight: "400", fontStyle: "normal" }}
+                            >
+                              {proj.links}
+                            </a>
+                          </>
+                        )}
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#374151", margin: 0, whiteSpace: "nowrap", marginLeft: "8px" }}>
+                        {proj.dates}
+                      </p>
+                    </div>
+                    {/* Bullets (non-empty only) */}
+                    {nonEmptyBullets.length > 0 && (
+                      <ul style={{ margin: "3px 0 0 0", paddingLeft: "18px" }}>
+                        {nonEmptyBullets.map((b, i) => (
+                          <li key={i} style={{ fontSize: "11px", color: "#1f2937", lineHeight: "1.5", marginBottom: "1px" }}>
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ===== TECHNICAL SKILLS ===== */}
         {skills.length > 0 && skills.some((s) => s.category || s.items) && (
           <>
-            <SectionDivider />
-            <h2
-              className="text-[12px] font-bold text-[#1c3fa8] tracking-wide uppercase"
-              style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif" }}
-            >
-              TECHNICAL SKILLS
-            </h2>
-            <div className="mt-1.5 space-y-0.5">
+            <SectionHeading title="Technical Skills" />
+            <div style={{ marginTop: "4px" }}>
               {skills
                 .filter((s) => s.category || s.items)
                 .map((s: SkillGroup) => (
-                  <p key={s.id} className="text-[11px] text-gray-800 leading-snug">
+                  <p key={s.id} style={{ fontSize: "11px", color: "#1f2937", margin: "1px 0", lineHeight: "1.5" }}>
                     {s.category && (
-                      <span className="font-semibold text-gray-900">{s.category}: </span>
+                      <strong style={{ color: "#111827" }}>{s.category}: </strong>
                     )}
                     {s.items}
                   </p>
@@ -212,6 +247,7 @@ export default function JakeResumePreview({
             </div>
           </>
         )}
+
       </div>
     </div>
   );
@@ -221,36 +257,28 @@ export default function JakeResumePreview({
    LOCAL HELPERS
    ========================================================= */
 
-/** Uppercase, navy-blue, rule-divided section heading used by every section. */
-function SectionDivider() {
+/**
+ * Section heading with small-caps styling and a horizontal rule BELOW the text,
+ * matching Jake's template exactly. Top margin creates spacing from previous section.
+ */
+function SectionHeading({ title }: { title: string }) {
   return (
-    <div className="mt-4 mb-2 border-b border-gray-300" aria-hidden="true" />
-  );
-}
-
-/** Convenience: render a heading + its items (with divider before each except the first rendered section). */
-function renderSection<T>(
-  title: string,
-  items: T[],
-  renderItem: (item: T) => React.ReactNode
-) {
-  if (!items.length) return null;
-
-  return (
-    <>
-      <SectionDivider />
+    <div style={{ marginTop: "12px" }}>
       <h2
-        className="text-[12px] font-bold text-[#1c3fa8] tracking-wide uppercase"
-        style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif" }}
+        style={{
+          fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif",
+          fontSize: "13px",
+          fontVariant: "small-caps",
+          fontWeight: "700",
+          color: "#1c3fa8",
+          letterSpacing: "0.04em",
+          margin: "0 0 2px 0",
+        }}
       >
         {title}
       </h2>
-      <div className="mt-1.5 space-y-3">
-        {items.map((item, i) => (
-          <div key={(item as { id?: string }).id ?? i}>{renderItem(item)}</div>
-        ))}
-      </div>
-    </>
+      <hr style={{ border: "none", borderTop: "1px solid #9ca3af", margin: "0 0 4px 0" }} />
+    </div>
   );
 }
 

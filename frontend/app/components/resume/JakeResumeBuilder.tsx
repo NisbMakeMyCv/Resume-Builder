@@ -121,7 +121,7 @@ export default function JakeResumeBuilder() {
       ...d,
       projects: [
         ...d.projects,
-        { id: uid(), title: "", technologies: "", links: "", bullets: [""] },
+        { id: uid(), title: "", technologies: "", dates: "", links: "", bullets: [""] },
       ],
     }));
   }
@@ -414,6 +414,13 @@ export default function JakeResumeBuilder() {
                     placeholder="React, TypeScript, FastAPI"
                   />
                 </Field>
+                <Field label="Dates">
+                  <TextInput
+                    value={proj.dates}
+                    onChange={(v) => updateItem<Project>("projects", proj.id, { dates: v })}
+                    placeholder="Jan 2024 – Present"
+                  />
+                </Field>
                 <Field label="Links">
                   <TextInput
                     value={proj.links}
@@ -527,9 +534,7 @@ export default function JakeResumeBuilder() {
             </button>
           </div>
         </div>
-        <div className="ambient-card rounded-2xl border border-outline-variant bg-surface-container-low p-4 sm:p-6">
-          <JakeResumePreview data={data} />
-        </div>
+        <JakeResumePreview data={data} />
       </div>
     </div>
   );

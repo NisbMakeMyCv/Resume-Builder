@@ -52,6 +52,7 @@ export type Project = {
   id: string;
   title: string;
   technologies: string;
+  dates: string;
   links: string;
   bullets: string[];
 };
@@ -144,6 +145,7 @@ export function sampleResume(): ResumeData {
         id: uid(),
         title: "GitRater",
         technologies: "React, TypeScript, FastAPI, PostgreSQL",
+        dates: "Jan 2024 – Present",
         links: "github.com/alexmorgan/gitrater",
         bullets: [
           "Analyzes public GitHub repos and generates resume-ready bullets.",
