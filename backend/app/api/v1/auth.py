@@ -224,8 +224,9 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
 from fastapi import UploadFile, File
 import shutil
 import uuid
+import tempfile
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "makemycv_uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/me/photo")

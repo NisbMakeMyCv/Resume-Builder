@@ -48,8 +48,10 @@ app.include_router(ai_github_router, prefix="/api/v1/ai/github", tags=["AI GitHu
 app.include_router(resumes_router, prefix="/api/v1/resumes", tags=["Resumes"])
 
 import os
-os.makedirs("uploads", exist_ok=True)
-app.mount("/api/v1/uploads", StaticFiles(directory="uploads"), name="uploads")
+import tempfile
+UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "makemycv_uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/api/v1/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.get("/")
 def root():
