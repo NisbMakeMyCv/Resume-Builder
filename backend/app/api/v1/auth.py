@@ -142,8 +142,18 @@ def login_user(request: UserLoginRequest, background_tasks: BackgroundTasks, db:
 
 @router.post("/google")
 def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    import requests as http_requests
     try:
-        idinfo = id_token.verify_oauth2_token(request.token, requests.Request(), GOOGLE_CLIENT_ID)
+        # The frontend's useGoogleLogin implicit flow yields an access_token, not a JWT id_token.
+        # We validate it directly with Google's userinfo endpoint.
+        google_response = http_requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {request.token}"}
+        )
+        if google_response.status_code != 200:
+            raise ValueError("Invalid Google Token")
+            
+        idinfo = google_response.json()
         email = idinfo.get("email")
         full_name = idinfo.get("name")
         picture = idinfo.get("picture")
