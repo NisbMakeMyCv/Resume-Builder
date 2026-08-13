@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 // @ts-ignore
 import htmlToDocx from "html-to-docx";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const { html } = await request.json();
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
+    console.error("DOCX Export Error:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

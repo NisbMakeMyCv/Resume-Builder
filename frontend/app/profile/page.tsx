@@ -260,11 +260,10 @@ function ProfileInner() {
                 />
                 <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-primary-fixed relative">
                   {showAvatar ? (
-                    <Image
-                      src={avatarUrl.startsWith("/api") ? `http://localhost:8000${avatarUrl}` : avatarUrl}
+                    <img
+                      src={avatarUrl.startsWith("/api") && process.env.NODE_ENV === "development" ? `http://localhost:8000${avatarUrl}` : avatarUrl}
                       alt={user?.full_name ?? "Profile"}
-                      fill
-                      className="object-cover"
+                      className="object-cover w-full h-full"
                     />
                   ) : (
                     <div className="w-full h-full bg-primary-fixed flex items-center justify-center text-primary text-headline-lg font-bold">

@@ -68,11 +68,24 @@ export default function JakeResumeBuilder() {
   const handleExportPNG = async () => {
     const el = document.getElementById("resume-pdf-content");
     if (!el) return;
-    const canvas = await html2canvas(el, { scale: 2 });
-    const link = document.createElement("a");
-    link.download = "resume.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    
+    const originalWidth = el.style.width;
+    const originalMaxWidth = el.style.maxWidth;
+    el.style.width = "210mm";
+    el.style.maxWidth = "210mm";
+    
+    try {
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+      const link = document.createElement("a");
+      link.download = "resume.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      alert("Failed to export PNG: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      el.style.width = originalWidth;
+      el.style.maxWidth = originalMaxWidth;
+    }
   };
 
   const handleExportPDF = () => {
@@ -204,7 +217,7 @@ export default function JakeResumeBuilder() {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
       {/* ============ LEFT: EDITOR ============ */}
-      <div className="space-y-8">
+      <div className="space-y-8 no-print">
         {/* Header */}
         <Section
           icon="badge"
@@ -503,7 +516,7 @@ export default function JakeResumeBuilder() {
 
       {/* ============ RIGHT: LIVE PREVIEW ============ */}
       <div className="xl:sticky xl:top-24">
-        <div className="mb-3 flex flex-wrap gap-3 items-center justify-between">
+        <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
           <div>
             <p className="text-label-md font-semibold text-on-surface">
               Live Preview

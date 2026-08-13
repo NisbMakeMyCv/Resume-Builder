@@ -28,12 +28,11 @@ export default function JakeResumePreview({
     <div
       id="resume-preview-container"
       className={`bg-surface-container flex justify-center text-gray-900 w-full overflow-auto ${className}`}
-      style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif", padding: "2rem" }}
+      style={{ fontFamily: "'Baskerville', 'Palatino Linotype', Georgia, serif", padding: "1rem" }}
     >
       <div 
         id="resume-pdf-content"
-        className="px-10 py-9 bg-white shadow-xl shrink-0" 
-        style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box" }}
+        className="px-6 py-6 sm:px-10 sm:py-9 bg-white shadow-xl shrink-0 w-full max-w-[800px] transition-all print:w-[210mm] print:min-h-[297mm] print:shadow-none print:p-0"
       >
         {/* ===== Header ===== */}
         <header className="text-center">

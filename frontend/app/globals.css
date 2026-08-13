@@ -657,25 +657,35 @@ body {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  /* Hide sidebars, headers, and any builder controls marked with .no-print */
+  aside, header, footer, .no-print {
+    display: none !important;
   }
-  #resume-pdf-content, #resume-pdf-content * {
-    visibility: visible;
-  }
-  #resume-pdf-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    margin: 0;
-    padding: 0;
-    width: 210mm !important;
-    min-height: 297mm !important;
-    box-shadow: none !important;
-  }
+  
+  /* Reset margins for printing A4 */
   @page {
     size: A4;
     margin: 0;
+  }
+  
+  body, html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Remove padding/margins of parent containers so the preview flows to top */
+  main, .page-enter, .grid, #resume-preview-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  /* Force exact A4 width for the resume itself */
+  #resume-pdf-content {
+    width: 210mm !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
   }
 }
 

@@ -158,7 +158,8 @@ function DashboardInner() {
           </motion.div>
 
           {/* Action Hero Card */}
-          <Reveal>
+          {completion < 100 && (
+            <Reveal>
           <motion.div
             className="ambient-card bg-primary-container text-white p-8 rounded-xl flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden"
             whileHover={{ y: -4, boxShadow: "0 24px 48px rgba(0, 42, 88, 0.24)" }}
@@ -207,8 +208,9 @@ function DashboardInner() {
                 filled
               />
             </motion.div>
-          </motion.div>
-          </Reveal>
+            </motion.div>
+            </Reveal>
+          )}
 
           {/* Recent Activity Table */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
