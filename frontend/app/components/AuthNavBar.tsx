@@ -1,21 +1,17 @@
 import Link from "next/link";
 import Container from "./Container";
+import Logo from "./Logo";
 
 /**
  * Minimal centered-brand navbar used on transactional (auth) pages.
  * Matches the sign_up / otp_verification stitch frames: a fixed bar
- * with only the MakeMyCV wordmark (no nav links).
+ * with only the NISB-MakeMyCV wordmark (no nav links).
  */
 export default function AuthNavBar({ showBackTo = null }: { showBackTo?: string | null }) {
   return (
-    <header className="fixed top-0 w-full z-50 bg-surface-container-lowest border-b border-outline-variant">
+    <header className="fixed top-0 w-full z-50 bg-white border-b border-outline-variant">
       <Container className="h-16 flex items-center justify-center md:justify-between">
-        <Link
-          href="/"
-          className="text-headline-md font-bold text-primary"
-        >
-          MakeMyCV
-        </Link>
+        <Logo />
 
         {showBackTo ? (
           <Link

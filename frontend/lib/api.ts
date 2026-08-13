@@ -1,228 +1,255 @@
 /**
- * MakeMyCV — API Client Library
+ * NISB-MakeMyCV backend API client.
  *
- * Central HTTP client used by all pages/components.
- *
- * Base URL is set via NEXT_PUBLIC_API_URL.
- * Defaults to http://localhost:8000/api/v1 on the server
- * and /api/v1 in the browser.
+ * All calls hit the FastAPI backend directly. The base URL can be
+ * overridden with NEXT_PUBLIC_API_URL (defaults to the local dev backend).
  */
 
-// ---------------------------------------------------------------------------
-// Base URL
-// ---------------------------------------------------------------------------
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
-function getBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
+export const ACCESS_TOKEN_KEY = "makemycv_access_token";
+export const USER_KEY = "makemycv_user";
 
-  // In the browser, use relative path.
-  // This can be routed through Nginx in production.
-  if (typeof window !== "undefined") {
-    return "/api/v1";
-  }
-
-  return "http://localhost:8000/api/v1";
-}
-
-
-// ---------------------------------------------------------------------------
-// Core fetch wrapper
-// ---------------------------------------------------------------------------
-
-interface ApiOptions {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  body?: Record<string, unknown>;
-
-  /**
-   * Bearer token — use when you already have a JWT.
-   */
-  token?: string;
-}
-
-
-/**
- * Makes a typed API request to the FastAPI backend.
- *
- * Throws an Error with the backend's detail message
- * on non-2xx responses.
- */
-export async function apiRequest<T = unknown>(
-  path: string,
-  options: ApiOptions = {}
-): Promise<T> {
-  const {
-    method = "GET",
-    body,
-    token,
-  } = options;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  // Prefer explicitly passed token.
-  // Otherwise use stored session token.
-  const jwt = token ?? getToken();
-
-  if (jwt) {
-    headers["Authorization"] = `Bearer ${jwt}`;
-  }
-
-  // Normalize base URL and path.
-  const baseUrl = getBaseUrl();
-
-  const baseUrlClean = baseUrl.replace(/\/+$/, "");
-
-  const pathClean = path.startsWith("/")
-    ? path
-    : `/${path}`;
-
-  const url = `${baseUrlClean}${pathClean}`;
-
-  const response = await fetch(url, {
-    method,
-    headers,
-    body:
-      body !== undefined
-        ? JSON.stringify(body)
-        : undefined,
-  });
-
-  // ---------------------------------------------------------
-  // Error handling
-  // ---------------------------------------------------------
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-
-    try {
-      const errorData = await response.json();
-
-      if (
-        typeof errorData.detail === "string"
-      ) {
-        message = errorData.detail;
-      } else if (
-        Array.isArray(errorData.detail)
-      ) {
-        // FastAPI validation errors.
-        message = errorData.detail
-          .map(
-            (error: { msg?: string }) =>
-              error.msg ?? JSON.stringify(error)
-          )
-          .join("; ");
-      }
-    } catch {
-      // Response body was not JSON.
-      // Keep the default error message.
-    }
-
-    throw new Error(message);
-  }
-
-  // Some endpoints return 204 No Content.
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
-}
-
-
-// ---------------------------------------------------------------------------
-// Session helpers
-// ---------------------------------------------------------------------------
-
-const TOKEN_KEY = "makemycv_token";
-const USER_KEY = "makemycv_user";
-
-
-export interface StoredUser {
+/** Shape returned by GET /api/v1/auth/me. */
+export type CurrentUser = {
   id: string;
   email: string;
   full_name: string;
-}
+  /** Google profile picture or generated UI-Avatar URL (may be null). */
+  profile_picture: string | null;
+};
 
+/** Shape stored in localStorage by saveSession(). */
+export type StoredUser = CurrentUser;
+
+/** Master Profile — GET/PATCH /api/v1/profile/. */
+export type Profile = {
+  headline: string | null;
+  summary: string | null;
+  location: string | null;
+};
+
+type RequestOptions = {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  body?: unknown;
+  token?: string | null;
+};
 
 /**
- * Persist JWT and user profile after
- * successful login/signup.
+ * Thin fetch wrapper: JSON in, typed JSON out, FastAPI error details surfaced.
  */
-export function saveSession(
-  token: string,
-  user: StoredUser
-): void {
-  if (typeof window === "undefined") {
-    return;
+export async function apiRequest<T>(
+  path: string,
+  { method = "GET", body, token }: RequestOptions = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
   }
 
-  localStorage.setItem(
-    TOKEN_KEY,
-    token
-  );
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
-  localStorage.setItem(
-    USER_KEY,
-    JSON.stringify(user)
-  );
+  const res = await fetch(`${API_URL}${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const detail =
+      typeof data?.detail === "string"
+        ? data.detail
+        : "Something went wrong. Please try again.";
+    throw new Error(detail);
+  }
+
+  return data as T;
 }
 
+/* =========================================================
+   AUTH STORAGE HELPERS
+   ========================================================= */
 
-/**
- * Retrieve the stored JWT.
- */
+export function saveSession(token: string, user: StoredUser) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function clearSession() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
 export function getToken(): string | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  return localStorage.getItem(TOKEN_KEY);
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-
-/**
- * Retrieve the stored user profile.
- */
 export function getStoredUser(): StoredUser | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
+  if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(USER_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
+  if (!raw) return null;
   try {
-    return JSON.parse(raw) as StoredUser;
+    return JSON.parse(raw);
   } catch {
     return null;
   }
 }
 
-
-/**
- * Clear all session data.
- */
-export function clearSession(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+/** Refresh the stored identity (call after /auth/me resolves). */
+export function storeUser(user: CurrentUser) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+/* =========================================================
+   PROFILE (Master Profile) HELPERS
+   ========================================================= */
 
-// ===========================================================================
-// AI — GitHub Repository Analysis
-// ===========================================================================
+/** GET /api/v1/profile/ — headline, summary, location. */
+export function getProfile(token: string): Promise<Profile> {
+  return apiRequest<Profile>("/profile/", { token });
+}
 
-export interface GitHubProjectAnalysis {
+/** PATCH /api/v1/profile/ — partial update, UI auto-save friendly. */
+export function updateProfile(
+  token: string,
+  patch: Partial<Profile>
+): Promise<Profile> {
+  return apiRequest<Profile>("/profile/", {
+    method: "PATCH",
+    token,
+    body: patch,
+  });
+}
+
+/**
+ * DELETE /api/v1/auth/me — GDPR-compliant account deletion.
+ * The backend responds with 204 No Content, so there is no JSON body.
+ */
+export function deleteAccount(token: string): Promise<void> {
+  return apiRequest<void>("/auth/me", { method: "DELETE", token });
+}
+
+/* =========================================================
+   RESUME DATA — Education / Experience / Skills / Projects
+   Each backend router exposes:
+     GET    /            → list
+     POST   /            → create (201)
+     PUT    /{id}        → partial update
+     DELETE /{id}        → 204 No Content
+   Dates are sent as "YYYY-MM-DD"; every response carries the
+   server-assigned id, display_order, created_at and updated_at.
+   ========================================================= */
+
+export type Education = {
+  id: string;
+  institution: string;
+  degree: string;
+  branch: string;
+  start_date: string;
+  end_date: string | null;
+  cgpa: number | null;
+};
+
+export type Experience = {
+  id: string;
+  company: string;
+  designation: string;
+  description: string | null;
+  start_date: string;
+  end_date: string | null;
+};
+
+export const PROFICIENCY_LEVELS = ["Beginner", "Intermediate", "Expert"] as const;
+export type Proficiency = (typeof PROFICIENCY_LEVELS)[number];
+
+export type Skill = {
+  id: string;
+  skill_name: string;
+  proficiency: Proficiency;
+};
+
+export type Project = {
+  id: string;
+  title: string;
+  description: string | null;
+  github_link: string | null;
+};
+
+/**
+ * Minimal per-entity REST helper factory.
+ * `url` is the API path (e.g. "/education") — the auth prefix is omitted.
+ */
+function createCrud<T, C>(url: string) {
+  return {
+    list(token: string): Promise<T[]> {
+      return apiRequest<T[]>(`${url}/`, { token });
+    },
+    create(token: string, payload: C): Promise<T> {
+      return apiRequest<T>(`${url}/`, { method: "POST", token, body: payload });
+    },
+    update(token: string, id: string, patch: Partial<C>): Promise<T> {
+      return apiRequest<T>(`${url}/${id}`, {
+        method: "PUT",
+        token,
+        body: patch,
+      });
+    },
+    remove(token: string, id: string): Promise<void> {
+      return apiRequest<void>(`${url}/${id}`, { method: "DELETE", token });
+    },
+  };
+}
+
+export const educationApi = createCrud<Education, EducationCreateInput>("/education");
+export const experienceApi = createCrud<Experience, ExperienceCreateInput>("/experience");
+export const skillsApi = createCrud<Skill, SkillCreateInput>("/skills");
+export const projectsApi = createCrud<Project, ProjectCreateInput>("/projects");
+
+/** Education create payload — the only required fields. */
+export type EducationCreateInput = {
+  institution: string;
+  degree: string;
+  branch: string;
+  start_date: string;
+  end_date?: string | null;
+  cgpa?: number | null;
+};
+
+/** Experience create payload — the only required fields. */
+export type ExperienceCreateInput = {
+  company: string;
+  designation: string;
+  description?: string | null;
+  start_date: string;
+  end_date?: string | null;
+};
+
+/** Skill create payload — proficiency must be "Beginner" | "Intermediate" | "Expert". */
+export type SkillCreateInput = {
+  skill_name: string;
+  proficiency: Proficiency;
+};
+
+/** Project create payload — the only required field is title. */
+export type ProjectCreateInput = {
+  title: string;
+  description?: string | null;
+  github_link?: string | null;
+};
+
+/* =========================================================
+   AI FEATURES — GitHub Repository Analyzer
+   ========================================================= *//** A GitHub project that has been analyzed into resume-ready content. */
+export type GitHubAnalysis = {
   project_name: string;
   description: string;
   project_type: string;
@@ -230,74 +257,47 @@ export interface GitHubProjectAnalysis {
   features: string[];
   implementation: string[];
   resume_bullets: string[];
-}
+};
 
-
-export interface GitHubAnalyzeResponse {
-  analysis: GitHubProjectAnalysis;
-}
-
+export type GitHubAnalyzeResponse = {
+  analysis: GitHubAnalysis;
+};
 
 /**
- * Analyze a GitHub repository and generate
- * resume-ready project information.
+ * POST /api/v1/ai/github/analyze
+ * Analyzes a public GitHub repository and generates resume content.
  */
-export async function analyzeGitHubRepository(
+export function analyzeGitHubRepo(
+  token: string,
   owner: string,
   repo: string
-): Promise<GitHubProjectAnalysis> {
-  const response =
-    await apiRequest<GitHubAnalyzeResponse>(
-      "/ai/github/analyze",
-      {
-        method: "POST",
-        body: {
-          owner,
-          repo,
-        },
-      }
-    );
-
-  return response.analysis;
+): Promise<GitHubAnalyzeResponse> {
+  return apiRequest<GitHubAnalyzeResponse>("/ai/github/analyze", {
+    method: "POST",
+    token,
+    body: { owner, repo },
+  });
 }
-
-
-// ===========================================================================
-// AI — Improve GitHub Resume Bullets
-// ===========================================================================
-
-export interface ImproveGitHubBulletsResponse {
-  resume_bullets: string[];
-}
-
 
 /**
- * Improve the existing AI-generated resume bullets
- * for a GitHub project.
- *
- * The project information and current bullets are sent
- * to the backend so the AI can improve the wording
- * without changing the actual project facts.
+ * POST /api/v1/ai/github/improve-bullets
+ * Refines existing resume bullets for a project using the LLM.
  */
-export async function improveGitHubResumeBullets(
-  projectName: string,
-  description: string,
-  technologies: string[],
-  currentBullets: string[]
-): Promise<string[]> {
-  const response =
-    await apiRequest<ImproveGitHubBulletsResponse>(
-      "/ai/github/improve-bullets",
-      {
-        method: "POST",
-        body: {
-          project_name: projectName,
-          description,
-          technologies,
-          current_bullets: currentBullets,
-        },
-      }
-    );
-
-  return response.resume_bullets;
+export function improveGitHubBullets(
+  token: string,
+  input: {
+    project_name: string;
+    description: string;
+    technologies: string[];
+    current_bullets: string[];
+  }
+): Promise<{ resume_bullets: string[] }> {
+  return apiRequest<{ resume_bullets: string[] }>(
+    "/ai/github/improve-bullets",
+    {
+      method: "POST",
+      token,
+      body: input,
+    }
+  );
 }

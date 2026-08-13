@@ -1,12 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Logo from "./Logo";
 import MaterialIcon from "./MaterialIcon";
 import { clearSession, getStoredUser } from "@/lib/api";
 import { useSidebar } from "./SidebarContext";
 import { cn } from "@/lib/utils";
+
+const SIDEBAR_MIN = 256; // 16rem — current optimal width
+const SIDEBAR_MAX = 420; // 26.25rem — comfortable maximum
 
 type SidebarItem = {
   label: string;
@@ -18,113 +23,96 @@ type SidebarItem = {
 
 const NAV_ITEMS: SidebarItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
-  {
-    label: "Master Profile",
-    icon: "person_book",
-    disabled: true,
-  },
+  { label: "Master Profile", icon: "person_book", href: "/profile" },
   { label: "My Resumes", icon: "description", href: "/resumes" },
+  { label: "AI Tools", icon: "auto_awesome", href: "/ai-tools" },
   { label: "Settings", icon: "settings", disabled: true },
 ];
 
+/** Shared link treatment — larger text, soft rounded hover states. */
+const LINK_BASE =
+  "flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 ease-in-out";
+const LINK_ACTIVE = "text-blue-600 bg-blue-50 font-semibold";
+
 /**
- * AppSidebar — fixed left sidebar on desktop (≥ lg), slide-over drawer on mobile.
- *
- * Desktop: always visible, 256px wide.
- * Mobile: hidden behind a backdrop; slides in when useSidebar().isOpen is true.
- *         Close by clicking the backdrop or pressing Escape.
+ * Responsive sidebar. On desktop it is a fixed left rail that the user can
+ * drag-resize between SIDEBAR_MIN and SIDEBAR_MAX; on mobile it collapses
+ * into an overlay drawer controlled by the menu toggle.
  */
 export default function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const user = getStoredUser();
-  const { isOpen, close } = useSidebar();
+  const [open, setOpen] = useState(false);
+  const [width, setWidth] = useState(SIDEBAR_MIN);
+  const draggingRef = useRef(false);
 
-  // Close drawer on Escape key.
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) close();
-    },
-    [isOpen, close]
-  );
-
+  // Sync the CSS variable so dashboard/resumes content offsets follow.
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      `${width}px`
+    );
+  }, [width]);
 
-  // Close on route change (mobile).
-  useEffect(() => {
-    close();
-  }, [pathname, close]);
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.preventDefault();
+    draggingRef.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
 
-  // Prevent body scroll when drawer is open on mobile.
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+    const startX = e.clientX;
+    const startWidth = width;
+
+    function handleMove(ev: PointerEvent) {
+      if (!draggingRef.current) return;
+      const next = Math.min(
+        SIDEBAR_MAX,
+        Math.max(SIDEBAR_MIN, startWidth + (ev.clientX - startX))
+      );
+      setWidth(next);
     }
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
+
+    function handleUp() {
+      draggingRef.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    }
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+  }
 
   function handleLogout() {
     clearSession();
     router.push("/");
   }
 
-  const initials = (user?.full_name ?? "U")
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initial = (user?.full_name ?? "U").trim().charAt(0).toUpperCase();
 
-  const sidebarContent = (
-    <aside
-      className={cn(
-        // Base styles
-        "bg-surface h-screen w-64 flex flex-col z-[500]",
-        "border-r border-outline-variant/40 shadow-sm",
-        // Layout
-        "fixed left-0 top-0",
-        // Transitions
-        "transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        // Visibility State (Mobile vs Desktop)
-        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      )}
-      aria-label="Navigation sidebar"
-    >
-      {/* Brand */}
-      <div className="px-6 py-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-headline-md font-bold text-primary">MakeMyCV</h1>
-          <p className="text-label-md text-on-surface-variant">Professional Plan</p>
-        </div>
-        {/* Close button — mobile only */}
-        <button
-          className="lg:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors"
-          onClick={close}
-          aria-label="Close navigation menu"
-        >
-          <span className="material-symbols-outlined text-[20px] text-on-surface-variant">
-            close
-          </span>
-        </button>
+  /** Render a real avatar only when profile_picture is a usable URL. */
+  const avatarSrc = (user?.profile_picture ?? "").trim();
+  const showAvatar = /^(https?:)?\/\//i.test(avatarSrc);
+
+  const sidebarBody = (
+    <div className="flex flex-col h-full" style={{ width }}>
+      <div className="px-6 pt-8 pb-6">
+        <Logo />
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 px-4 space-y-1" aria-label="Main navigation">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const active = Boolean(item.href && pathname?.startsWith(item.href));
           const content = (
             <>
               <MaterialIcon
                 name={item.icon}
-                className={active ? "text-primary" : ""}
+                className={active ? "text-blue-600" : "text-gray-400"}
                 filled={active}
               />
-              <span className="text-label-md">{item.label}</span>
+              <span className="truncate">{item.label}</span>
             </>
           );
 
@@ -132,10 +120,13 @@ export default function AppSidebar() {
             return (
               <div
                 key={item.label}
-                className="flex items-center gap-3 px-4 py-3 text-on-surface-variant/60 cursor-not-allowed rounded-xl"
+                className={`${LINK_BASE} text-gray-300 cursor-not-allowed`}
                 title="Coming soon"
               >
                 {content}
+                <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  Coming Soon
+                </span>
               </div>
             );
           }
@@ -144,12 +135,8 @@ export default function AppSidebar() {
             <Link
               key={item.label}
               href={item.href!}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-                active
-                  ? "text-primary font-bold bg-primary/10 border-l-4 border-primary shadow-sm"
-                  : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
-              )}
+              onClick={() => setOpen(false)}
+              className={`${LINK_BASE} ${active ? LINK_ACTIVE : ""}`}
             >
               {content}
             </Link>
@@ -157,38 +144,102 @@ export default function AppSidebar() {
         })}
       </nav>
 
-      {/* User + Theme toggle */}
-      <div className="p-6 mt-auto border-t border-outline-variant space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0 text-sm">
-            {initials}
+      <button
+        className="px-4 py-3 flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors w-full text-left"
+        onClick={handleLogout}
+      >
+        <MaterialIcon name="logout" />
+        <span className="text-label-md">Log Out</span>
+      </button>
+
+      <Link
+        href="/profile"
+        className="p-6 mt-auto flex items-center gap-3 border-t border-outline-variant hover:bg-surface-container-high cursor-pointer transition-colors"
+        onClick={() => setOpen(false)}
+      >
+        {showAvatar ? (
+          <Image
+            src={avatarSrc}
+            alt={user?.full_name ?? "User"}
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-primary-fixed"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0">
+            {initial}
           </div>
-          <div className="overflow-hidden flex-1">
-            <p className="text-label-md truncate">{user?.full_name ?? "User"}</p>
-            <button
-              className="text-xs text-primary hover:underline cursor-pointer"
-              onClick={handleLogout}
-            >
-              Log Out
-            </button>
-          </div>
+        )}
+        <div className="overflow-hidden flex-1 flex flex-col">
+          <p className="text-label-md truncate">
+            {user?.full_name ?? "User"}
+          </p>
+          <p className="text-xs text-primary hover:underline cursor-pointer mt-1">
+            View Profile
+          </p>
         </div>
-      </div>
-    </aside>
+      </Link>
+    </div>
   );
 
   return (
     <>
-      {/* Backdrop — mobile only */}
-      <div
-        className={cn(
-          "lg:hidden fixed inset-0 bg-black/40 z-[400] transition-opacity duration-300 ease-in-out",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        )}
-        onClick={close}
-        aria-hidden="true"
-      />
-      {sidebarContent}
+      {/* Desktop rail — always visible on lg+, drag-resizable */}
+      <aside
+        className="hidden lg:flex bg-surface-container-low dark:bg-surface-container-lowest h-screen fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex-col z-50"
+        style={{ width }}
+      >
+        {sidebarBody}
+
+        {/* Resize handle */}
+        <div
+          className="absolute top-0 right-0 bottom-0 w-2 cursor-col-resize group z-10"
+          onPointerDown={handlePointerDown}
+          aria-hidden="true"
+        >
+          <div className="absolute inset-y-0 right-0 w-[3px] bg-transparent group-hover:bg-secondary/40 transition-colors" />
+        </div>
+      </aside>
+
+      {/* Mobile overlay backdrop */}
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/40"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`lg:hidden bg-surface-container-low dark:bg-surface-container-lowest w-64 fixed left-0 top-0 h-screen z-50 border-r border-outline-variant dark:border-outline flex-col transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="absolute top-4 right-3 z-10">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-on-surface-variant hover:text-on-surface p-1"
+            aria-label="Close menu"
+          >
+            <MaterialIcon name="close" />
+          </button>
+        </div>
+        {sidebarBody}
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 px-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant z-40">
+        <span className="text-label-md font-bold text-primary">NISB-MakeMyCV</span>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-on-surface-variant hover:text-on-surface p-1"
+          aria-label="Open menu"
+        >
+          <MaterialIcon name="menu" />
+        </button>
+      </header>
     </>
   );
 }

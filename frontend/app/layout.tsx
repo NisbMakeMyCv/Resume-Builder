@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Sora } from "next/font/google";
 import GoogleProvider from "./components/GoogleProvider";
-import { ThemeProvider } from "./providers/ThemeProvider";
-import { ToastProvider } from "./components/ui/Toast";
+import SplashScreen from "./components/SplashScreen";
 import "./globals.css";
 
 const inter = Inter({
@@ -11,10 +10,17 @@ const inter = Inter({
   display: "swap",
 });
 
+const sora = Sora({
+  variable: "--font-sora",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "MakeMyCV — Build Your Dream Resume",
-    template: "%s | MakeMyCV",
+    default: "NISB-MakeMyCV — Build Your Dream Resume",
+    template: "%s | NISB-MakeMyCV",
   },
   description:
     "The clean, AI-assisted resume builder. Pick the Jake template, tell your story, and get hired.",
@@ -26,7 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${sora.variable} h-full antialiased`}
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+    >
       <head>
         {/* Material Symbols Outlined — used by all stitch frames for icons */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -41,11 +52,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>
-          <ToastProvider>
-            <GoogleProvider>{children}</GoogleProvider>
-          </ToastProvider>
-        </ThemeProvider>
+        <SplashScreen />
+        <GoogleProvider>{children}</GoogleProvider>
       </body>
     </html>
   );

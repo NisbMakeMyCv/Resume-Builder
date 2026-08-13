@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Logo from "../components/Logo";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
 import { AuthHeadlineTypewriter } from "../components/AuthHeadlineTypewriter";
@@ -15,7 +16,9 @@ import { apiRequest } from "@/lib/api";
  * Sign Up — coded from the `sign_up` stitch frame.
  *
  * Flow: submit name/email/password → request an OTP → redirect to
- * /verify-email where the account is created with the code.
+ * /verify-email where the account is created with the code. That page
+ * stores the returned JWT and redirects straight to /dashboard — the user
+ * is signed in as soon as they verify, with no separate login step.
  */
 export default function SignUp() {
   const router = useRouter();
@@ -80,219 +83,363 @@ export default function SignUp() {
   }
 
   return (
-    <main className="relative min-h-screen flex flex-col justify-between overflow-x-hidden bg-[#f9f9fc] dark:bg-background">
-      {/* Animated Abstract Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.6, 0.8, 0.6],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-[#d6e3ff]/60 blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.5, 0.8, 0.5],
-            rotate: [0, -90, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-[#7fc5fd]/40 blur-[100px]"
-        />
-      </div>
-
-      {/* Top Nav (Brand) */}
-      <header className="w-full z-50 h-16 sm:h-20 flex items-center px-4 sm:px-8 shrink-0">
-        <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <img
-              src="/logo.png"
-              alt="NISB-MakeMyCV Logo"
-              className="h-8 w-8 sm:h-10 sm:w-10 object-contain rounded-full shrink-0 group-hover:scale-105 transition-transform"
-            />
-            <span className="text-[20px] sm:text-headline-md font-bold text-primary tracking-tight whitespace-nowrap">
-              NISB-MakeMyCV
-            </span>
-          </Link>
+    <main className="page-enter bg-background text-on-background min-h-[100dvh] flex flex-col justify-between">
+      {/* Top Nav Bar (transactional — brand only) */}
+      <header className="w-full shrink-0 bg-white border-b border-outline-variant h-14 sm:h-16 flex items-center">
+        <div className="w-full px-4 sm:px-8 flex justify-between items-center">
+          <Logo />
           <Link
             href="/signin"
-            className="text-label-md font-bold text-primary hover:text-[#004080] hover:underline transition-colors"
+            className="btn-outline inline-flex items-center text-[13px] sm:text-label-md font-semibold px-4 sm:px-5 py-1.5 sm:py-2 rounded-full"
           >
             Log In
           </Link>
         </div>
       </header>
 
-      {/* Main Grid Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center flex-1 py-4 sm:py-8 lg:py-12">
-        
-        {/* Left Column (Parallax Trust Showcase) - 7 Cols */}
-        <div className="hidden lg:flex col-span-7 flex-col justify-center relative min-h-[500px]">
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <AuthHeadlineTypewriter />
-            <p className="text-body-lg text-on-surface-variant max-w-md leading-relaxed">
-              Join thousands of professionals landing interviews at top tech companies using our intelligent LLM-powered resume builder.
-            </p>
-          </motion.div>
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row">
+        {/* ============ LEFT: ABSTRACT ILLUSTRATION (hidden on mobile) ============ */}
+        <section className="hidden lg:flex lg:w-1/2 relative bg-primary items-center justify-center overflow-hidden">
+          {/* Real-world dark/blue background image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('/images/signup-team.jpg')" }}
+          />
+          {/* Dark blue overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
+          <div className="absolute inset-0 opacity-20 hero-gradient" />
 
-          <TestimonialCarousel />
-        </div>
-
-        {/* Right Column (Form Container) - 5 Cols */}
-        <div className="col-span-12 lg:col-span-5 flex justify-center lg:justify-end w-full">
-          {/* Glass Card Container */}
+          {/* Floating ambient orbs */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative z-10 w-full max-w-[440px] mx-auto lg:mx-0"
-          >
-        <div className="bg-white/85 dark:bg-surface-container-lowest/90 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,42,88,0.08)] p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl md:rounded-[32px]">
-          
-          {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
-            <h2 className="text-headline-md font-bold text-on-surface mb-2">
-              Create your account
-            </h2>
-            <p className="text-body-md text-on-surface-variant">
-              Build your career with confidence.
-            </p>
+            className="absolute top-20 -left-16 w-64 h-64 bg-secondary-container/25 rounded-full blur-3xl"
+            animate={{ y: [0, 30, 0], x: [0, 20, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute bottom-24 -right-16 w-72 h-72 bg-white/10 rounded-full blur-3xl"
+            animate={{ y: [0, -30, 0], x: [0, -20, 0] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          {/* Atmospheric glow — breathing so the backdrop never sits still */}
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container/20 blur-[120px] rounded-full animate-breathe" />
+
+          {/* Hero headline — persuasive copy with a live-typing role */}
+          <div className="relative z-10 w-full max-w-2xl px-8 lg:px-12 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <h1 className="font-headline-lg text-[34px] lg:text-[46px] leading-[1.15] font-bold text-white">
+                Build a resume that lands your next{" "}
+                <span className="inline-block text-secondary-container">
+                  <Typewriter words={ROLES} />
+                  <motion.span
+                    className="inline-block w-[3px] h-[0.95em] bg-secondary-container ml-1 align-middle"
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 1] }}
+                  />
+                </span>
+              </h1>
+              <p className="mt-5 text-body-lg text-on-primary-container/90 max-w-lg mx-auto">
+                Pick the Jake template, tell your story, and let our AI polish
+                the details — recruiter-ready in minutes.
+              </p>
+            </motion.div>
           </div>
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="full_name">
-                Full Name
-              </label>
-              <input
-                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
-                id="full_name"
-                placeholder="John Doe"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
+          {/* Atmospheric glow */}
+          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container/20 blur-[120px] rounded-full animate-breathe" />
+        </section>
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="email">
-                Email Address
-              </label>
-              <input
-                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
-                id="email"
-                placeholder="name@company.com"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
+        {/* ============ RIGHT: SIGN UP FORM ============ */}
+        <section className="auth-panel lg:w-1/2 w-full flex flex-col justify-center relative bg-slate-50 overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
+          {/* Subtle grid pattern background */}
+          <div 
+            className="absolute inset-0 opacity-40 pointer-events-none" 
+            style={{
+              backgroundImage: "radial-gradient(#6366f1 1px, transparent 1px)",
+              backgroundSize: "20px 20px"
+            }}
+          />
+          
+          {/* Ambient background blur blobs */}
+          <div className="absolute top-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none animate-drift" />
+          <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none animate-drift-slow" />
 
-            {/* Password Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-              <div className="space-y-1.5">
-                <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="password">
-                  Password
-                </label>
-                <input
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
-                  id="password"
-                  placeholder="••••••••"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  disabled={loading}
-                />
+          <div className="w-full flex items-center justify-center p-3 sm:p-6 md:p-10 relative z-10 my-auto">
+            <div className="ambient-card relative z-10 w-full max-w-md bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl ring-1 ring-black/5 space-y-3 sm:space-y-4 lg:space-y-6">
+              <div className="mb-3 lg:mb-4 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-headline-md text-primary font-semibold mb-1">
+                  Create your account
+                </h2>
+                <p className="text-body-md text-on-surface-variant">
+                  Build your career with confidence.
+                </p>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="confirm_password">
-                  Confirm Password
+
+            <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit}>
+              {/* Full Name */}
+              <div className="space-y-1 sm:space-y-1.5">
+                <label
+                  className="text-label-md text-on-surface font-semibold block"
+                  htmlFor="full_name"
+                >
+                  Full Name
                 </label>
-                <input
-                  className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
-                  id="confirm_password"
-                  placeholder="••••••••"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <input
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="full_name"
+                    placeholder="John Doe"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Error */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="rounded-xl border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container flex items-center gap-2"
-              >
-                <MaterialIcon name="error" className="text-error text-[18px]" />
-                {error}
-              </motion.div>
-            )}
+              {/* Email */}
+              <div className="space-y-1 sm:space-y-1.5">
+                <label
+                  className="text-label-md text-on-surface font-semibold block"
+                  htmlFor="email"
+                >
+                  Email Address
+                </label>
+                <div className="relative">
+                  <input
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="email"
+                    placeholder="name@company.com"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    suppressHydrationWarning
+                  />
+                </div>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="pt-4 space-y-4">
-              <motion.button
-                whileTap={{ scale: loading ? 1 : 0.97 }}
-                className="btn-press btn-shine w-full h-12 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-primary/20"
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="material-symbols-outlined text-[20px] animate-spin">
-                    progress_activity
+              {/* Password Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label
+                    className="text-label-md text-on-surface font-semibold block"
+                    htmlFor="password"
+                  >
+                    Password
+                  </label>
+                  <input
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="password"
+                    placeholder="••••••••"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label
+                    className="text-label-md text-on-surface font-semibold block"
+                    htmlFor="confirm_password"
+                  >
+                    Confirm Password
+                  </label>
+                  <input
+                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    id="confirm_password"
+                    placeholder="••••••••"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="rounded-brand border border-error-container bg-error-container/40 px-4 py-3 text-label-md text-on-error-container">
+                  {error}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-2">
+                <button
+                  className="btn-primary btn-shine btn-magnetic w-full h-10 sm:h-12 rounded-2xl font-label-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  type="submit"
+                  disabled={loading}
+                >
+                  <span>{loading ? "Sending Code..." : "Create Account"}</span>
+                  <MaterialIcon name="arrow_forward" className="text-[20px]" />
+                </button>
+
+                <div className="flex items-center gap-4 text-on-surface-variant my-2 lg:my-3">
+                  <div className="h-px bg-outline-variant flex-1" />
+                  <span className="text-label-sm uppercase tracking-wider text-[10px] sm:text-xs">
+                    or
                   </span>
-                ) : (
-                  <span>Create Account</span>
-                )}
-                {!loading && <MaterialIcon name="arrow_forward" className="text-[20px]" />}
-              </motion.button>
+                  <div className="h-px bg-outline-variant flex-1" />
+                </div>
 
-              <div className="flex items-center gap-4 text-on-surface-variant my-4">
-                <div className="h-px bg-outline-variant/50 flex-1" />
-                <span className="text-[11px] uppercase font-bold tracking-widest text-on-surface-variant/70">
-                  OR
-                </span>
-                <div className="h-px bg-outline-variant/50 flex-1" />
+                <GoogleAuthButton />
+
+                <div className="text-center mt-3">
+                  <span className="text-label-md text-on-surface-variant">
+                    Already have an account?{" "}
+                  </span>
+                  <Link
+                    className="text-label-md text-primary font-bold hover:underline"
+                    href="/signin"
+                  >
+                    Log In
+                  </Link>
+                </div>
               </div>
 
-              <GoogleAuthButton />
+              <p className="text-center text-label-sm text-on-surface-variant mt-6 px-4">
+                By signing up, you agree to our{" "}
+                <a className="text-primary hover:underline" href="#">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a className="text-primary hover:underline" href="#">
+                  Privacy Policy
+                </a>
+                .
+              </p>
+            </form>
             </div>
+          </div>
+        </section>
+      </main>
 
-            <p className="text-center text-xs text-on-surface-variant pt-4">
-              By signing up, you agree to our{" "}
-              <a className="text-primary hover:underline font-medium" href="#">
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a className="text-primary hover:underline font-medium" href="#">
-                Privacy Policy
-              </a>
-              .
-            </p>
-          </form>
+      {/* Footer */}
+      <footer className="shrink-0 bg-surface-container py-3 border-t border-outline-variant">
+        <div className="w-full px-8 flex flex-col md:flex-row justify-between items-center gap-2">
+          <div className="text-label-sm text-on-surface-variant">
+            © 2026 NISB-MakeMyCV. Made by NISB.
+          </div>
+          <div className="flex gap-6">
+            <a
+              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
+              Support
+            </a>
+            <a
+              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
+              Privacy
+            </a>
+            <a
+              className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+              href="#"
+            >
+              Terms
+            </a>
+          </div>
         </div>
-      </motion.div>
-        </div>
-      </div>
+      </footer>
+
+      {/* Removed duplicate form block left by merge conflict */}
     </main>
+  );
+}
+
+/* =========================================================
+   LOCAL HELPERS — hero copy animation + floating badges
+   ========================================================= */
+
+const ROLES = [
+  "UI/UX Design role",
+  "Full-Stack Web Dev job",
+  "Engineering position",
+  "Product Designer role",
+];
+
+/** Typewriter — types a word, pauses, erases, moves to the next. */
+function useTypewriter(
+  words: readonly string[],
+  typeSpeed = 65,
+  deleteSpeed = 35,
+  pause = 1800
+) {
+  const [text, setText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = words[wordIndex % words.length];
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && text === current) {
+      // full word shown — hold, then start deleting
+      timer = setTimeout(() => setIsDeleting(true), pause);
+    } else if (isDeleting && text === "") {
+      // fully erased — move to next word (deferred so the effect never
+      // synchronously writes state)
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+        setWordIndex((i) => (i + 1) % words.length);
+      }, typeSpeed);
+    } else {
+      timer = setTimeout(
+        () =>
+          setText(current.slice(0, text.length + (isDeleting ? -1 : 1))),
+        isDeleting ? deleteSpeed : typeSpeed
+      );
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, wordIndex, words, typeSpeed, deleteSpeed, pause]);
+
+  return text;
+}
+
+function Typewriter({ words }: { words: readonly string[] }) {
+  return <span>{useTypewriter(words)}</span>;
+}
+
+/** Gently bobbing badge — floats up/down forever, fades in first. */
+function FloatBadge({
+  className = "",
+  delay = 0,
+  children,
+}: {
+  className?: string;
+  delay?: number;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      className={`absolute z-20 ${className}`}
+      initial={{ opacity: 0, scale: 0.85, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: [10, -10, 10] }}
+      transition={{
+        opacity: { delay: 0.9, duration: 0.4 },
+        scale: { delay: 0.9, duration: 0.4, type: "spring", stiffness: 220 },
+        y: {
+          delay: delay + 1,
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        },
+      }}
+    >
+      {children}
+    </motion.div>
   );
 }

@@ -1,181 +1,178 @@
 "use client";
 
+import { useState } from "react";
+import { motion } from "framer-motion";
 import AppSidebar from "../components/AppSidebar";
 import Protected from "../components/Protected";
 import MaterialIcon from "../components/MaterialIcon";
 import GitHubAnalyzer from "../components/ai/GitHubAnalyzer";
-import { SidebarProvider, useSidebar } from "../components/SidebarContext";
+import JakeResumeBuilder from "../components/resume/JakeResumeBuilder";
 
 /**
- * My Resumes
+ * My Resumes — grasshopper-free take on the `my_resumes` stitch frame.
  *
- * Resume management page with:
- * - Existing resume empty state
- * - GitHub AI project analyzer
- * - Resume statistics
+ * The builder hosts Jake's Resume Template (frontend-only, persisted to
+ * localStorage) with live preview. The GitHub Analyzer wire's the live
+ * backend AI endpoints (/api/v1/ai/github/analyze + /improve-bullets).
  */
 export default function MyResumes() {
   return (
     <Protected>
-      <SidebarProvider>
-        <MyResumesLayout />
-      </SidebarProvider>
+      <div className="page-enter min-h-screen bg-surface text-on-surface">
+        <AppSidebar />
+        <MyResumesInner />
+      </div>
     </Protected>
   );
 }
 
-function MyResumesLayout() {
-  return (
-    <>
-      <AppSidebar />
-      <MyResumesInner />
-    </>
-  );
-}
-
 function MyResumesInner() {
-  const { toggle } = useSidebar();
+  // Bilingual header: "My Resumes" view and the editor view
+  const [editorOpen, setEditorOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-surface">
       {/* Top App Bar */}
-      <header className="fixed top-0 left-0 w-full lg:left-64 lg:w-[calc(100%-16rem)] h-16 px-4 sm:px-8 flex justify-between items-center bg-surface border-b border-outline-variant z-[300]">
-        {/* Hamburger + title */}
-        <div className="flex items-center gap-3">
-          <button
-            className="lg:hidden w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors"
-            onClick={toggle}
-            aria-label="Open navigation menu"
-          >
-            <span className="material-symbols-outlined text-[24px] text-on-surface-variant">
-              menu
-            </span>
-          </button>
-          <h1 className="text-headline-md font-bold text-primary">My Resumes</h1>
-        </div>
-
+      <header className="fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-14 lg:top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))] bg-surface border-b border-outline-variant">
+        <h1 className="text-headline-md font-bold text-primary">
+          {editorOpen ? "Resume Editor" : "My Resumes"}
+        </h1>
         <button
           type="button"
-          className="bg-primary text-on-primary px-4 sm:px-6 py-2 rounded-full text-label-md flex items-center gap-2 hover:bg-secondary transition-all active:scale-95 cursor-not-allowed"
-          title="Resume creation is coming soon"
+          onClick={() => setEditorOpen((v) => !v)}
+          className={`btn-${editorOpen ? "outline" : "primary"} btn-shine px-4 lg:px-6 py-2 rounded-full text-label-md flex items-center gap-2`}
         >
-          <MaterialIcon name="add" />
-          <span className="hidden sm:inline">Create New Resume</span>
-          <span className="sm:hidden">New</span>
+          <MaterialIcon
+            name={editorOpen ? "grid_view" : "edit"}
+            className="text-[18px]"
+          />
+          {editorOpen ? "View Library" : "Create New Resume"}
         </button>
       </header>
 
       {/* Main Content Canvas */}
-      <main className="ml-0 lg:ml-64 pt-24 pb-12 px-4 sm:px-8 min-h-screen">
+      <main className="pt-28 lg:pt-24 lg:ml-[var(--sidebar-width)] pb-12 px-4 lg:px-8 min-h-screen">
         <div className="max-w-[1280px] mx-auto">
-          {/* Page Title */}
-          <div className="mb-8">
-            <h2 className="text-headline-md text-on-surface">My Resumes</h2>
-            <p className="text-body-md text-on-surface-variant">
-              Manage, download, and track your tailored CVs.
-            </p>
-          </div>
-
-          {/* Resume Grid — existing empty state */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
-            <div className="flex flex-col group cursor-pointer">
-              <div className="relative aspect-[3/4] bg-surface-container rounded-[20px] border-2 border-dashed border-outline-variant overflow-hidden flex flex-col items-center justify-center gap-4 hover:bg-surface-container-high hover:border-primary transition-all active:scale-[0.98]">
-                <div className="w-16 h-16 bg-surface-container-lowest rounded-full flex items-center justify-center text-primary shadow-sm border border-outline-variant group-hover:scale-110 transition-transform duration-200">
-                  <MaterialIcon name="add_circle" className="text-4xl" />
-                </div>
-                <div className="text-center px-6">
-                  <p className="font-bold text-on-surface">New Template</p>
-                  <p className="text-label-sm text-on-surface-variant mt-1">
-                    Start from a professional base
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 px-2">
-                <p className="text-label-sm text-primary font-bold">
-                  Standard Resume Format
-                </p>
-                <p className="text-label-sm text-on-surface-variant">
-                  Free for all users
+          {editorOpen ? (
+            <>
+              <div className="mb-8">
+                <h2 className="text-headline-md text-on-surface">
+                  Jake&apos;s Resume Builder
+                </h2>
+                <p className="text-body-md text-on-surface-variant">
+                  Fill in the sections on the left and watch the live ATS-ready
+                  preview on the right. AI Enhance turns plain achievements
+                  into strong action-verb bullets.
                 </p>
               </div>
-            </div>
-          </div>
+              <JakeResumeBuilder />
+            </>
+          ) : (
+            <>
+              {/* Page Title */}
+              <div className="mb-8">
+                <h2 className="text-headline-md text-on-surface">My Resumes</h2>
+                <p className="text-body-md text-on-surface-variant">
+                  Manage, download, and track your tailored CVs.
+                </p>
+              </div>
 
-          {/* ---------------------------------------------------------- */}
-          {/* AI Resume Tools                                             */}
-          {/* ---------------------------------------------------------- */}
-
-          <section className="mt-12">
-            <div className="mb-6">
-              <h2 className="text-headline-md font-bold text-on-surface">
-                AI Resume Tools
-              </h2>
-              <p className="text-body-md text-on-surface-variant mt-1">
-                AI-powered tools to create and improve professional resume content.
-              </p>
-            </div>
-
-            {/* GitHub Project Analyzer */}
-            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 sm:p-6 shadow-sm">
-              <div className="mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                    <MaterialIcon name="code" />
+              {/* Resume Grid — empty state with New Template card */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <motion.div
+                  className="flex flex-col group cursor-pointer"
+                  initial={{ opacity: 0, y: 26 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, type: "spring", stiffness: 100, damping: 18 }}
+                  onClick={() => setEditorOpen(true)}
+                >
+                  <div className="ambient-card relative aspect-[3/4] bg-surface-container rounded-[20px] border-2 border-dashed border-outline-variant overflow-hidden flex flex-col items-center justify-center gap-4 hover:bg-surface-container-high hover:border-primary transition-all active:scale-[0.98]">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-primary shadow-sm border border-outline-variant group-hover:scale-110 transition-transform">
+                      <MaterialIcon name="add_circle" className="text-4xl" />
+                    </div>
+                    <div className="text-center px-6">
+                      <p className="font-bold text-on-surface">New Template</p>
+                      <p className="text-label-sm text-on-surface-variant mt-1">
+                        Start from a professional base
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-on-surface text-base sm:text-lg">
-                      GitHub Project Analyzer → Resume Description Generator
-                    </h3>
-                    <p className="text-label-sm text-on-surface-variant mt-0.5">
-                      Analyze your GitHub project and generate professional,
-                      resume-ready descriptions, technologies, and bullet points.
+                  <div className="mt-4 px-2">
+                    <p className="text-label-sm text-primary font-bold">
+                      Jake&apos;s Resume
+                    </p>
+                    <p className="text-label-sm text-on-surface-variant">
+                      Recruiter-approved classic template
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </div>
-              <GitHubAnalyzer />
+
+              {/* Stats Bar */}
+              <motion.div
+                className="mt-10 bg-surface-container-lowest border border-outline-variant rounded-2xl p-8 shadow-sm"
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
+              >
+                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
+                  <div className="text-center md:text-left">
+                    <div className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">
+                      Total Resumes
+                    </div>
+                    <div className="text-headline-md font-bold text-on-surface">
+                      0
+                    </div>
+                  </div>
+                  <div className="hidden md:block w-px h-12 bg-outline-variant" />
+                  <div className="text-center md:text-left">
+                    <div className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">
+                      Avg. ATS Score
+                    </div>
+                    <div className="text-headline-md font-bold text-primary">
+                      —
+                    </div>
+                  </div>
+                  <div className="flex-grow" />
+                  <div className="w-full md:w-64">
+                    <div className="flex justify-between text-[10px] font-bold text-on-surface-variant mb-2">
+                      <span>Storage Capacity</span>
+                      <span>(0%)</span>
+                    </div>
+                    <div className="h-2 bg-surface-container rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full w-0" />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+
+          {/* AI Resume Tools */}
+          <div className="mt-12">
+            <div className="mb-6">
+              <div className="flex items-center gap-2">
+                <MaterialIcon name="smart_toy" className="text-primary" filled />
+                <h2 className="text-headline-md text-on-surface">
+                  AI Resume Tools
+                </h2>
+              </div>
+              <p className="text-body-md text-on-surface-variant mt-1">
+                Turn any public GitHub repository into resume-ready content.
+              </p>
             </div>
-          </section>
-
-          {/* Stats Bar */}
-          <div className="mt-10 bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 sm:p-8 shadow-sm">
-            <div className="flex flex-wrap items-center gap-6 sm:gap-16">
-              <div className="text-center sm:text-left">
-                <div className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">
-                  Total Resumes
-                </div>
-                <div className="text-headline-md font-bold text-on-surface">0</div>
-              </div>
-
-              <div className="hidden sm:block w-px h-12 bg-outline-variant" />
-
-              <div className="text-center sm:text-left">
-                <div className="text-[10px] uppercase font-bold text-on-surface-variant mb-1">
-                  Avg. ATS Score
-                </div>
-                <div className="text-headline-md font-bold text-primary">—</div>
-              </div>
-
-              <div className="flex-grow" />
-
-              <div className="w-full sm:w-64">
-                <div className="flex justify-between text-[10px] font-bold text-on-surface-variant mb-2">
-                  <span>Storage Capacity</span>
-                  <span>(0%)</span>
-                </div>
-                <div className="h-2 bg-surface-container rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full w-0" />
-                </div>
-              </div>
-            </div>
+            <GitHubAnalyzer />
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="ml-0 lg:ml-64 flex flex-col sm:flex-row justify-between items-center px-4 sm:px-8 py-6 sm:py-8 bg-surface-container-lowest border-t border-outline-variant gap-3">
-        <div className="flex items-center gap-6 sm:gap-8">
-          <span className="text-label-md font-bold text-on-surface">MakeMyCV</span>
+      <footer className="lg:ml-[var(--sidebar-width)] lg:w-[calc(100%-var(--sidebar-width))] w-full flex flex-col lg:flex-row gap-4 justify-between items-center px-4 lg:px-8 py-8 bg-surface-container-lowest border-t border-outline-variant">
+        <div className="flex items-center gap-8">
+          <span className="text-label-md font-bold text-on-surface">
+            NISB-MakeMyCV
+          </span>
           <div className="flex gap-4">
             <a
               className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
@@ -192,7 +189,7 @@ function MyResumesInner() {
           </div>
         </div>
         <p className="text-label-sm text-on-surface-variant">
-          © 2026 MakeMyCV. Made by NISB.
+          © 2026 NISB-MakeMyCV. Made by NISB.
         </p>
       </footer>
     </div>

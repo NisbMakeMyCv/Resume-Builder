@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =========================================================
-   MakeMyCV — "Standard Professional" Design System
+   NISB-MakeMyCV — "Standard Professional" Design System
    Source: stitch_remix_makemycv/standard_professional/DESIGN.md
    Colors are the Material-style token set used by every stitch frame.
    ========================================================= */
@@ -9,6 +9,7 @@
 :root {
   --background: #f9f9fc;
   --foreground: #1a1c1e;
+  --sidebar-width: 256px;
 }
 
 @theme inline {
@@ -65,6 +66,7 @@
   --radius-brand: 20px;
 
   --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-display: var(--font-sora), var(--font-inter), Arial, sans-serif;
 
   /* Type scale (from DESIGN.md) */
   --text-headline-lg: 32px;
@@ -141,6 +143,16 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Neutralize injected attributes/styles from browser extensions that
+   mutate <html> (e.g. "QuestionBase"/temp-mail helpers). Without this,
+   their added height/fixed styles can break layout and trigger
+   hydration warnings. */
+html[data-qb-installed] {
+  position: initial;
+  height: auto;
+  min-height: 100%;
 }
 
 body {
@@ -284,55 +296,358 @@ body {
 }
 
 /* =========================================================
-   STAGGERED ENTRANCE UTILITIES
+   SPLASH SCREEN
    ========================================================= */
-
-.stagger-1 { animation-delay: 0ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 200ms; }
-.stagger-4 { animation-delay: 300ms; }
-.stagger-5 { animation-delay: 400ms; }
-.stagger-6 { animation-delay: 500ms; }
-
-/* Both fill-mode: backwards so the element is invisible before its delay fires */
-.stagger-1, .stagger-2, .stagger-3,
-.stagger-4, .stagger-5, .stagger-6 {
-  animation-fill-mode: both;
+@keyframes splash-fade-out {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
-
-/* =========================================================
-   SKELETON LOADER
-   ========================================================= */
-
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
-}
-
-.skeleton {
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
   background: linear-gradient(
-    90deg,
-    var(--color-surface-container-high) 25%,
-    var(--color-surface-container-highest) 50%,
-    var(--color-surface-container-high) 75%
+    160deg,
+    var(--color-primary) 0%,
+    #0a3d78 55%,
+    var(--color-secondary) 100%
   );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-brand);
+  animation: splash-fade-out 1.1s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes splash-logo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.splash-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+  animation: splash-logo-pop 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes splash-wordmark {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.splash-wordmark {
+  animation: splash-wordmark 0.6s ease 0.15s forwards;
+  opacity: 0;
+}
+
+@keyframes splash-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.splash-ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #ffffff;
+  animation: splash-ring 0.8s linear infinite;
 }
 
 /* =========================================================
-   FOCUS VISIBLE — global interactive element baseline
+   PAGE TRANSITION — soft fade-in for every route
    ========================================================= */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.page-enter {
+  animation: page-fade-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-[tabindex]:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+/* =========================================================
+   SCROLL-REVEAL
+   ========================================================= */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+/* Ambient, slow-drift blobs — keeps backgrounds feeling alive without
+   touching layout or the established palette. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(18px, -24px, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-14px, 16px, 0) scale(0.95);
+  }
+}
+.animate-drift {
+  animation: drift 16s ease-in-out infinite;
+}
+.animate-drift-slow {
+  animation: drift 22s ease-in-out infinite reverse;
+}
+
+/* Gentle opacity breathe for soft glow orbs (no layout shift). */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+.animate-breathe {
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* Magnetic-style scale on primary CTAs — pure motion, layer-safe. */
+.btn-magnetic {
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+  will-change: transform;
+}
+.btn-magnetic:hover {
+  transform: translateY(-3px) scale(1.03);
+}
+.btn-magnetic:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Hover glow + shadow expansion for cards / bento elements. */
+.ambient-card {
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  will-change: transform, box-shadow;
+}
+
+/* =========================================================
+   BUTTON POLISH — built on the existing Material tokens.
+   Adds depth + glow + motion without changing the palette.
+   ========================================================= */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0a3d78 100%);
+  color: var(--color-on-primary);
+  box-shadow:
+    0 10px 22px -8px rgba(0, 42, 88, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 16px 30px -8px rgba(0, 42, 88, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.btn-primary:active {
+  transform: translateY(-1px) scale(0.97);
+  box-shadow: 0 6px 16px -6px rgba(0, 42, 88, 0.5);
+}
+
+/* Raised 3-D lower edge that "presses down" on click */
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: auto 6px 6px 6px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.22);
+  filter: blur(2px);
+  opacity: 0.55;
+  transition:
+    opacity 0.2s ease,
+    inset 0.2s ease;
+}
+.btn-primary:hover::after {
+  opacity: 0.4;
+}
+.btn-primary:active::after {
+  inset: auto 8px 2px 8px;
+  height: 2px;
+  opacity: 0.3;
+}
+
+/* Soft sheen sweep that complements the existing .btn-shine */
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    115deg,
+    transparent,
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.55s ease;
+}
+.btn-primary:hover::before {
+  left: 130%;
+}
+
+/* Secondary / ghost style — outlined, lifts on hover */
+.btn-outline {
+  position: relative;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+}
+.btn-outline:hover {
+  background: var(--color-primary-fixed);
+  color: var(--color-on-primary-fixed);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px -10px rgba(0, 42, 88, 0.35);
+}
+.btn-outline:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Soft-pulse glow used on the primary CTA after auth success */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 100, 150, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(0, 100, 150, 0);
+  }
+}
+.btn-glow {
+  animation: glow-pulse 1.6s ease-in-out infinite;
+}
+
+/* =========================================================
+   AUTH SUCCESS — celebratory ring burst
+   ========================================================= */
+@keyframes ring-burst {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.ring-burst {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid var(--color-secondary-container);
+  animation: ring-burst 0.9s ease-out forwards;
+}
+.ring-burst.delay-1 {
+  animation-delay: 0.18s;
+}
+.ring-burst.delay-2 {
+  animation-delay: 0.36s;
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.check-pop {
+  animation: check-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+/* =========================================================
+   MOBILE — hide full sidebar, use a top bar instead
+   ========================================================= */
+@media (max-width: 1024px) {
+  .sidebar-desktop {
+    display: none;
+  }
+}
+@media (min-width: 1025px) {
+  .sidebar-mobile {
+    display: none;
+  }
 }
 
 /* =========================================================
@@ -350,7 +665,44 @@ select:focus-visible,
   }
 }
 
-@keyframes cursor-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+/* =========================================================
+   TYPOGRAPHY — professional display font for headings
+   (Sora) while keeping Inter for body copy.
+   ========================================================= */
+.font-headline-lg,
+.font-headline-md,
+.text-headline-lg,
+.text-headline-md,
+.text-headline-md--font-weight {
+  font-family: var(--font-display);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* =========================================================
+   AUTH SPLIT-SCREEN — right panel: slate base + faint dot
+   grid + soft mesh gradient. Keeps the form card readable
+   while killing the stark-white dead space.
+   ========================================================= */
+.auth-panel {
+  position: relative;
+  background-color: #f8fafc; /* slate-50 */
+  background-image:
+    radial-gradient(circle at 18% 20%, rgba(0, 64, 128, 0.07), transparent 34%),
+    radial-gradient(circle at 85% 10%, rgba(0, 100, 150, 0.06), transparent 30%),
+    radial-gradient(circle at 80% 90%, rgba(127, 197, 253, 0.12), transparent 36%),
+    radial-gradient(circle at 6% 84%, rgba(0, 42, 88, 0.05), transparent 28%);
+}
+.auth-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(0, 42, 88, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, black, transparent 82%);
+  mask-image: radial-gradient(circle at 50% 40%, black, transparent 82%);
 }

@@ -1,22 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Logo from "../components/Logo";
 import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
-import { AuthHeadlineTypewriter } from "../components/AuthHeadlineTypewriter";
-import { TestimonialCarousel } from "../components/TestimonialCarousel";
+import SuccessBurst from "../components/SuccessBurst";
 import { useToast } from "../components/ui/Toast";
-import { apiRequest, saveSession } from "@/lib/api";
+import { apiRequest, saveSession } from "../../lib/api";
 
 /**
  * Sign In — coded from the `sign_in` stitch frame.
  *
- * The backend requires an OTP for login (2FA): after submitting
- * credentials we request a code and reveal an inline OTP field to
- * complete the sign-in.
+ * Single-step email + password login: POST /auth/login returns a JWT
+ * immediately, which is stored and the user is sent to /profile.
+ * No verification-code step on sign-in.
  */
 export default function SignIn() {
   const router = useRouter();
@@ -26,16 +26,12 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
 
-  /** Step 1 — send the 6-digit code to the user's inbox. */
-  async function handleRequestOtp(e?: FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) {
-    if (e) e.preventDefault();
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError("");
 
     if (!email.trim() || !password) {
@@ -43,31 +39,6 @@ export default function SignIn() {
       return;
     }
 
-    setOtpLoading(true);
-    try {
-      await apiRequest("/auth/request-otp", {
-        method: "POST",
-        body: { email: email.trim() },
-      });
-      setOtpSent(true);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to send code.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setOtpLoading(false);
-    }
-  }
-
-  /** Step 2 — verify the code and sign in. */
-  async function handleVerify() {
-    const code = otp.join("");
-    if (code.length !== 6) {
-      setError("Please enter the 6-digit verification code.");
-      return;
-    }
-
-    setError("");
     setLoading(true);
     try {
       const res = await apiRequest<{
@@ -78,7 +49,6 @@ export default function SignIn() {
         body: {
           email: email.trim(),
           password,
-          otp_code: code,
         },
       });
 
@@ -87,10 +57,12 @@ export default function SignIn() {
         id: string;
         email: string;
         full_name: string;
+        profile_picture: string | null;
       }>("/auth/me", { token: res.access_token });
 
       saveSession(res.access_token, user);
-      router.push("/dashboard");
+      setCelebrate(true);
+      setTimeout(() => router.push("/profile"), 1400);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed.";
       setError(msg);
@@ -100,133 +72,179 @@ export default function SignIn() {
     }
   }
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (!/^\d?$/.test(value)) return;
-    const updated = [...otp];
-    updated[index] = value;
-    setOtp(updated);
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      document.getElementById(`otp-${index - 1}`)?.focus();
-    }
-  };
-
   return (
-    <main className="relative min-h-screen flex flex-col justify-between overflow-x-hidden bg-[#f9f9fc] dark:bg-background">
-      {/* Animated Abstract Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.6, 0.8, 0.6],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-[#d6e3ff]/60 blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.5, 0.8, 0.5],
-            rotate: [0, -90, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-[#7fc5fd]/40 blur-[100px]"
-        />
-      </div>
-
-      {/* Top Nav (Brand) */}
-      <header className="w-full z-50 h-16 sm:h-20 flex items-center px-4 sm:px-8 shrink-0">
-        <div className="w-full max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <img
-              src="/logo.png"
-              alt="NISB-MakeMyCV Logo"
-              className="h-8 w-8 sm:h-10 sm:w-10 object-contain rounded-full shrink-0 group-hover:scale-105 transition-transform"
-            />
-            <span className="text-[20px] sm:text-headline-md font-bold text-primary tracking-tight whitespace-nowrap">
-              NISB-MakeMyCV
-            </span>
-          </Link>
+    <main className="page-enter flex min-h-[100dvh] bg-surface-bright text-on-surface antialiased flex-col">
+      {/* Top Nav Bar (transactional — brand only) */}
+      <header className="shrink-0 bg-white border-b border-outline-variant h-14 sm:h-16 flex items-center relative z-50">
+        <div className="w-full px-4 sm:px-8 flex justify-between items-center">
+          <Logo />
           <Link
             href="/signup"
-            className="text-label-md font-bold text-primary hover:text-[#004080] hover:underline transition-colors"
+            className="btn-outline inline-flex items-center text-[13px] sm:text-label-md font-semibold px-4 sm:px-5 py-1.5 sm:py-2 rounded-full"
           >
             Sign Up
           </Link>
         </div>
       </header>
 
-      {/* Main Grid Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center flex-1 py-4 sm:py-8 lg:py-12">
-        
-        {/* Left Column (Parallax Trust Showcase) - 7 Cols */}
-        <div className="hidden lg:flex col-span-7 flex-col justify-center relative min-h-[500px]">
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+      <div className="flex-1 min-h-0 flex">
+      {/* ============ LEFT: ABSTRACT ILLUSTRATION & BRANDING ============ */}
+      <section className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary">
+        {/* Real-world dark/blue background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/images/signin-desk.jpg')" }}
+        />
+        {/* Dark blue overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
+        <div className="absolute inset-0 opacity-40 mix-blend-overlay hero-gradient" />
+
+        {/* Floating decorative orbs */}
+        <motion.div
+          className="absolute top-16 -left-16 w-72 h-72 bg-secondary-container/30 rounded-full blur-3xl"
+          animate={{ y: [0, 30, 0], x: [0, 20, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-40 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"
+          animate={{ y: [0, -30, 0], x: [0, -20, 0] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        <div className="relative z-10 p-16 flex flex-col justify-between w-full h-full">
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            <AuthHeadlineTypewriter />
-            <p className="text-body-lg text-on-surface-variant max-w-md leading-relaxed">
-              Join thousands of professionals landing interviews at top tech companies using our intelligent LLM-powered resume builder.
+            <h1 className="text-headline-lg text-on-primary-container tracking-tight font-bold">
+              NISB-MakeMyCV
+            </h1>
+            <p className="mt-4 text-body-lg text-on-primary-container opacity-80 max-w-md">
+              One clean, recruiter-approved template. Write your story, let the
+              AI polish the details, and get hired.
             </p>
           </motion.div>
 
-          <TestimonialCarousel />
-        </div>
+          {/* Sleek, dynamic feature showcase instead of the static resume */}
+          <div className="my-auto py-8">
+            <motion.div
+              className="text-left space-y-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+            >
+              <h2 className="text-2xl lg:text-3xl text-white font-bold tracking-tight">
+                Empowering your career growth:
+              </h2>
+              <div className="h-16 flex items-center">
+                <span className="text-xl lg:text-2xl text-secondary-container font-semibold">
+                  <Typewriter words={VALUE_PROPS} />
+                  <motion.span
+                    className="inline-block w-[3px] h-[0.95em] bg-secondary-container ml-1 align-middle"
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, times: [0, 0.5, 1] }}
+                  />
+                </span>
+              </div>
+            </motion.div>
+          </div>
 
-        {/* Right Column (Form Container) - 5 Cols */}
-        <div className="col-span-12 lg:col-span-5 flex justify-center lg:justify-end w-full">
-          {/* Glass Card Container */}
           <motion.div
+            className="space-y-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="relative z-10 w-full max-w-md mx-auto lg:mx-0"
+            transition={{ delay: 0.5, duration: 0.7, ease: "easeOut" }}
           >
-            <div className="bg-white/85 dark:bg-surface-container-lowest/90 backdrop-blur-xl border border-white/60 dark:border-white/10 shadow-[0_20px_60px_rgba(0,42,88,0.08)] p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl md:rounded-[32px]">
-          
+            <div className="flex items-center gap-4 bg-primary/20 p-6 rounded-brand backdrop-blur-sm border border-white/10">
+              <MaterialIcon
+                name="verified"
+                className="text-on-primary-container text-4xl"
+                filled
+              />
+              <div>
+                <p className="text-label-md text-on-primary-container">
+                  ATS-Friendly
+                </p>
+                <p className="text-body-md text-on-primary-container opacity-70">
+                  Your resume reads perfectly for both machines and recruiters.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Atmospheric glow */}
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary-container blur-[120px] rounded-full opacity-20 animate-breathe" />
+      </section>
+
+      {/* ============ RIGHT: SIGN IN FORM ============ */}
+      <section className="auth-panel w-full lg:w-1/2 flex flex-col justify-center relative bg-slate-50 overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
+        {/* Subtle grid pattern background */}
+        <div 
+          className="absolute inset-0 opacity-40 pointer-events-none" 
+          style={{
+            backgroundImage: "radial-gradient(#6366f1 1px, transparent 1px)",
+            backgroundSize: "20px 20px"
+          }}
+        />
+        
+        {/* Ambient background blur blobs */}
+        <div className="absolute top-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none animate-drift" />
+        <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none animate-drift-slow" />
+
+        <div className="w-full flex items-center justify-center p-3 sm:p-6 md:p-10 relative z-10 my-auto">
+          {/* Elevate the login form on an entrance-animated card */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative z-10 w-full max-w-[440px] px-2 sm:px-0"
+          >
+          <div className="space-y-4 lg:space-y-6">
           {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
-            <h2 className="text-headline-md font-bold text-on-surface mb-2">
-              Welcome back
-            </h2>
-            <p className="text-body-md text-on-surface-variant">
-              Log in to your professional dashboard.
+          <div className="text-center lg:text-left">
+            <h2 className="text-2xl sm:text-headline-md text-on-surface font-semibold">Sign In</h2>
+            <p className="text-body-md text-on-surface-variant mt-1.5">
+              Enter your credentials to access your professional dashboard.
             </p>
           </div>
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={(e) => { e.preventDefault(); }}>
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label className="text-label-sm font-semibold text-primary ml-1" htmlFor="email">
+          {/* Sign In Card — elevated off the new background */}
+          <div className="ambient-card bg-white/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 space-y-3 sm:space-y-4 lg:space-y-6 shadow-2xl ring-1 ring-black/5">
+            {/* Email Field */}
+            <div className="space-y-1 sm:space-y-2">
+              <label
+                className="text-label-md text-on-surface-variant block"
+                htmlFor="email"
+              >
                 Email Address
               </label>
-              <input
-                className="w-full h-12 px-4 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
-                id="email"
-                placeholder="name@company.com"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={otpSent}
-              />
+              <div className="relative">
+                <MaterialIcon
+                  name="mail"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
+                />
+                <input
+                  className="w-full pl-12 pr-4 py-2.5 sm:py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all duration-200"
+                  id="email"
+                  placeholder="name@company.com"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  suppressHydrationWarning
+                />
+              </div>
             </div>
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-label-sm font-semibold text-primary" htmlFor="password">
+            {/* Password Field */}
+            <div className="space-y-1 sm:space-y-2">
+              <div className="flex justify-between items-center">
+                <label
+                  className="text-label-md text-on-surface-variant block"
+                  htmlFor="password"
+                >
                   Password
                 </label>
                 <a href="#" className="text-[11px] font-bold text-secondary hover:text-[#004080] hover:underline transition-colors">
@@ -235,15 +253,13 @@ export default function SignIn() {
               </div>
               <div className="relative">
                 <input
-                  className="w-full h-12 pl-4 pr-12 rounded-xl border border-outline-variant/50 bg-white/50 dark:bg-surface/50 text-on-surface focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all outline-none shadow-sm"
+                  className="w-full pl-12 pr-12 py-2.5 sm:py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all duration-200"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  disabled={otpSent}
+                  disabled={loading}
                 />
                 <button
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
@@ -259,44 +275,6 @@ export default function SignIn() {
               </div>
             </div>
 
-            {/* OTP Field (revealed after requesting a code) */}
-            {otpSent && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="space-y-2 pt-2"
-              >
-                <div className="flex justify-between items-center ml-1">
-                  <label className="text-label-sm font-semibold text-primary block">
-                    Verification Code
-                  </label>
-                  <button
-                    type="button"
-                    className="text-[11px] font-bold text-secondary hover:text-[#004080] transition-colors"
-                    onClick={() => setOtpSent(false)}
-                  >
-                    Change email
-                  </button>
-                </div>
-                <div className="grid grid-cols-6 gap-2">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      className="w-full aspect-square text-center text-headline-sm font-bold border border-outline-variant/50 rounded-xl bg-white/50 dark:bg-surface/50 focus:bg-white focus:border-[#004080] focus:ring-2 focus:ring-[#004080]/20 transition-all duration-200 shadow-sm"
-                      maxLength={1}
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      type="text"
-                      value={digit}
-                      onChange={(e) => handleOtpChange(e.target.value, index)}
-                      onKeyDown={(e) => handleOtpKeyDown(e, index)}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
             {/* Error */}
             {error && (
               <motion.div
@@ -310,46 +288,28 @@ export default function SignIn() {
             )}
 
             {/* Action Buttons */}
-            <div className="pt-4 space-y-4">
-              {otpSent ? (
-                <motion.button
-                  whileTap={{ scale: loading ? 1 : 0.97 }}
-                  className="btn-press btn-shine w-full h-12 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-primary/20"
-                  type="button"
-                  onClick={handleVerify}
+            <div className="space-y-3 pt-1 sm:pt-2">
+              <form onSubmit={handleSubmit}>
+                <button
+                  className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  type="submit"
                   disabled={loading}
                 >
+                  <span>{loading ? "Signing In..." : "Sign In"}</span>
                   {loading ? (
-                    <span className="material-symbols-outlined text-[20px] animate-spin">
-                      progress_activity
-                    </span>
+                    <MaterialIcon
+                      name="sync"
+                      className="animate-spin text-[18px]"
+                    />
                   ) : (
-                    <span>Verify & Sign In</span>
+                    <MaterialIcon name="arrow_forward" className="text-[18px]" />
                   )}
-                  {!loading && <MaterialIcon name="arrow_forward" className="text-[20px]" />}
-                </motion.button>
-              ) : (
-                <motion.button
-                  whileTap={{ scale: otpLoading ? 1 : 0.97 }}
-                  className="btn-press btn-shine w-full h-12 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-md shadow-primary/20"
-                  type="button"
-                  onClick={handleRequestOtp}
-                  disabled={otpLoading}
-                >
-                  {otpLoading ? (
-                    <span className="material-symbols-outlined text-[20px] animate-spin">
-                      progress_activity
-                    </span>
-                  ) : (
-                    <span>Send Verification Code</span>
-                  )}
-                  {!otpLoading && <MaterialIcon name="arrow_forward" className="text-[20px]" />}
-                </motion.button>
-              )}
+                </button>
+              </form>
 
-              <div className="flex items-center gap-4 text-on-surface-variant my-4">
-                <div className="h-px bg-outline-variant/50 flex-1" />
-                <span className="text-[11px] uppercase font-bold tracking-widest text-on-surface-variant/70">
+              <div className="relative flex items-center py-1 sm:py-1.5">
+                <div className="flex-grow border-t border-outline-variant" />
+                <span className="flex-shrink mx-4 text-[10px] text-on-surface-variant uppercase tracking-widest">
                   or
                 </span>
                 <div className="h-px bg-outline-variant/50 flex-1" />
@@ -364,11 +324,118 @@ export default function SignIn() {
                 Sign Up
               </Link>
             </p>
-          </form>
+          </div>
         </div>
-      </motion.div>
+        </motion.div>
         </div>
+
+        {/* Bottom footer pinned to the bottom of the page */}
+        <footer className="px-8 py-5 border-t border-outline-variant flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2 text-center">
+          <a
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+            href="#"
+          >
+            Privacy Policy
+          </a>
+          <a
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+            href="#"
+          >
+            Terms of Service
+          </a>
+          <a
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+            href="#"
+          >
+            Contact
+          </a>
+        </footer>
+      </section>
       </div>
+
+      {celebrate && <SuccessBurst message="Welcome back!" />}
     </main>
+  );
+}
+
+/* =========================================================
+   LOCAL HELPERS — stats cycler typewriter + floating badges
+   ========================================================= */
+
+const VALUE_PROPS = [
+  "⚡ 10k+ Resumes Generated",
+  "🎯 98% ATS Pass Rate",
+  "💼 Land Interviews 2x Faster",
+  "⭐ 4.9/5 User Rating",
+];
+
+function useTypewriter(
+  words: readonly string[],
+  typeSpeed = 60,
+  deleteSpeed = 30,
+  pause = 2000
+) {
+  const [text, setText] = useState("");
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = words[wordIndex % words.length];
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && text === current) {
+      timer = setTimeout(() => setIsDeleting(true), pause);
+    } else if (isDeleting && text === "") {
+      // fully erased — move to next word (deferred so the effect never
+      // synchronously writes state)
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+        setWordIndex((i) => (i + 1) % words.length);
+      }, deleteSpeed);
+    } else {
+      timer = setTimeout(
+        () =>
+          setText(current.slice(0, text.length + (isDeleting ? -1 : 1))),
+        isDeleting ? deleteSpeed : typeSpeed
+      );
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, wordIndex, words, typeSpeed, deleteSpeed, pause]);
+
+  return text;
+}
+
+function Typewriter({ words }: { words: readonly string[] }) {
+  return <span>{useTypewriter(words)}</span>;
+}
+
+function FloatBadge({
+  className = "",
+  delay = 0,
+  children,
+}: {
+  className?: string;
+  delay?: number;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      className={`absolute z-20 ${className}`}
+      initial={{ opacity: 0, scale: 0.85, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: [10, -10, 10] }}
+      transition={{
+        opacity: { delay: 0.9, duration: 0.4 },
+        scale: { delay: 0.9, duration: 0.4, type: "spring", stiffness: 220 },
+        y: {
+          delay: delay + 1,
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        },
+      }}
+    >
+      {children}
+    </motion.div>
   );
 }
