@@ -14,7 +14,6 @@ import {
   type ResumeData,
   type SkillGroup,
 } from "../../../lib/resume";
-} from "../../../lib/resume";
 import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
 import html2canvas from "html2canvas";
 
@@ -84,27 +83,18 @@ export default function JakeResumeBuilder() {
     const el = document.getElementById("resume-pdf-content");
     if (!el) return;
     
-    // We dynamically import html-to-docx to avoid SSR issues
     try {
-      const htmlToDocx = (await import("html-to-docx")).default;
-      const htmlString = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { font-family: 'Baskerville', 'Palatino Linotype', Georgia, serif; }
-            </style>
-          </head>
-          <body>${el.outerHTML}</body>
-        </html>
-      `;
-      const fileBuffer = await htmlToDocx(htmlString, null, {
-        table: { row: { cantSplit: true } },
-        footer: true,
-        pageNumber: true,
+      const res = await fetch("/api/export-docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: el.outerHTML }),
       });
-      const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+      if (!res.ok) {
+        throw new Error("Failed to generate DOCX");
+      }
+
+      const blob = await res.blob();
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "resume.docx";

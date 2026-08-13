@@ -4,6 +4,7 @@ sqlalchemy
 psycopg2-binary
 pydantic[email]
 bcrypt
+python-multipart
 python-jose[cryptography]
 google-auth
 requests
