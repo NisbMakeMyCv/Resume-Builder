@@ -3,142 +3,70 @@
  *
  * Central HTTP client used by all pages/components.
  *
- * Base URL is set via NEXT_PUBLIC_API_URL.
- * Defaults to http://localhost:8000/api/v1 on the server
- * and /api/v1 in the browser.
+ * Backend:
+ * http://127.0.0.1:8000/api/v1
+ *
+ * All frontend API calls should use paths such as:
+ *
+ *   /auth/request-otp
+ *   /auth/login
+ *   /auth/me
+ *   /ai/resume/chat
+ *   /ai/resume/conversations
  */
 
-// ---------------------------------------------------------------------------
-// Base URL
-// ---------------------------------------------------------------------------
-
 function getBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  /*
+   * If NEXT_PUBLIC_API_URL is defined, use it.
+   *
+   * Example:
+   * NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api/v1
+   */
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, "");
   }
 
-  // In the browser, use relative path.
-  // This can be routed through Nginx in production.
+  /*
+   * Browser:
+   *
+   * We use the FastAPI backend directly during local development.
+   */
   if (typeof window !== "undefined") {
-    return "/api/v1";
+    return "http://127.0.0.1:8000/api/v1";
   }
 
-  return "http://localhost:8000/api/v1";
+  /*
+   * Server-side fallback.
+   */
+  return "http://127.0.0.1:8000/api/v1";
 }
 
-
-// ---------------------------------------------------------------------------
-// Core fetch wrapper
-// ---------------------------------------------------------------------------
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
   body?: Record<string, unknown>;
 
-  /**
-   * Bearer token — use when you already have a JWT.
+  /*
+   * Optional JWT.
+   *
+   * If this isn't provided, the token stored in localStorage
+   * will automatically be used.
    */
   token?: string;
 }
 
-
-/**
- * Makes a typed API request to the FastAPI backend.
- *
- * Throws an Error with the backend's detail message
- * on non-2xx responses.
- */
-export async function apiRequest<T = unknown>(
-  path: string,
-  options: ApiOptions = {}
-): Promise<T> {
-  const {
-    method = "GET",
-    body,
-    token,
-  } = options;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  // Prefer explicitly passed token.
-  // Otherwise use stored session token.
-  const jwt = token ?? getToken();
-
-  if (jwt) {
-    headers["Authorization"] = `Bearer ${jwt}`;
-  }
-
-  // Normalize base URL and path.
-  const baseUrl = getBaseUrl();
-
-  const baseUrlClean = baseUrl.replace(/\/+$/, "");
-
-  const pathClean = path.startsWith("/")
-    ? path
-    : `/${path}`;
-
-  const url = `${baseUrlClean}${pathClean}`;
-
-  const response = await fetch(url, {
-    method,
-    headers,
-    body:
-      body !== undefined
-        ? JSON.stringify(body)
-        : undefined,
-  });
-
-  // ---------------------------------------------------------
-  // Error handling
-  // ---------------------------------------------------------
-
-  if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-
-    try {
-      const errorData = await response.json();
-
-      if (
-        typeof errorData.detail === "string"
-      ) {
-        message = errorData.detail;
-      } else if (
-        Array.isArray(errorData.detail)
-      ) {
-        // FastAPI validation errors.
-        message = errorData.detail
-          .map(
-            (error: { msg?: string }) =>
-              error.msg ?? JSON.stringify(error)
-          )
-          .join("; ");
-      }
-    } catch {
-      // Response body was not JSON.
-      // Keep the default error message.
-    }
-
-    throw new Error(message);
-  }
-
-  // Some endpoints return 204 No Content.
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
-}
-
-
-// ---------------------------------------------------------------------------
-// Session helpers
-// ---------------------------------------------------------------------------
+/* =========================================================
+   SESSION STORAGE
+========================================================= */
 
 const TOKEN_KEY = "makemycv_token";
 const USER_KEY = "makemycv_user";
-
 
 export interface StoredUser {
   id: string;
@@ -146,34 +74,10 @@ export interface StoredUser {
   full_name: string;
 }
 
+/* =========================================================
+   GET TOKEN
+========================================================= */
 
-/**
- * Persist JWT and user profile after
- * successful login/signup.
- */
-export function saveSession(
-  token: string,
-  user: StoredUser
-): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  localStorage.setItem(
-    TOKEN_KEY,
-    token
-  );
-
-  localStorage.setItem(
-    USER_KEY,
-    JSON.stringify(user)
-  );
-}
-
-
-/**
- * Retrieve the stored JWT.
- */
 export function getToken(): string | null {
   if (typeof window === "undefined") {
     return null;
@@ -182,10 +86,10 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+/* =========================================================
+   GET STORED USER
+========================================================= */
 
-/**
- * Retrieve the stored user profile.
- */
 export function getStoredUser(): StoredUser | null {
   if (typeof window === "undefined") {
     return null;
@@ -204,10 +108,29 @@ export function getStoredUser(): StoredUser | null {
   }
 }
 
+/* =========================================================
+   SAVE SESSION
+========================================================= */
 
-/**
- * Clear all session data.
- */
+export function saveSession(
+  token: string,
+  user: StoredUser
+): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(
+    USER_KEY,
+    JSON.stringify(user)
+  );
+}
+
+/* =========================================================
+   CLEAR SESSION
+========================================================= */
+
 export function clearSession(): void {
   if (typeof window === "undefined") {
     return;
@@ -217,87 +140,206 @@ export function clearSession(): void {
   localStorage.removeItem(USER_KEY);
 }
 
+/* =========================================================
+   API REQUEST
+========================================================= */
 
-// ===========================================================================
-// AI — GitHub Repository Analysis
-// ===========================================================================
+export async function apiRequest<T = unknown>(
+  path: string,
+  options: ApiOptions = {}
+): Promise<T> {
+  const {
+    method = "GET",
+    body,
+    token,
+  } = options;
 
-export interface GitHubProjectAnalysis {
-  project_name: string;
-  description: string;
-  project_type: string;
-  technologies: string[];
-  features: string[];
-  implementation: string[];
-  resume_bullets: string[];
+  /* -------------------------------------------------------
+     HEADERS
+  ------------------------------------------------------- */
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  /* -------------------------------------------------------
+     AUTH TOKEN
+  ------------------------------------------------------- */
+
+  /*
+   * Priority:
+   *
+   * 1. Explicit token passed to apiRequest()
+   * 2. Token stored in localStorage
+   */
+
+  const jwt = token ?? getToken();
+
+  if (jwt) {
+    headers["Authorization"] = `Bearer ${jwt}`;
+  }
+
+  /* -------------------------------------------------------
+     BUILD URL
+  ------------------------------------------------------- */
+
+  const baseUrl = getBaseUrl();
+
+  const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
+
+  const cleanPath = path.startsWith("/")
+    ? path
+    : `/${path}`;
+
+  const url = `${cleanBaseUrl}${cleanPath}`;
+
+  /* -------------------------------------------------------
+     REQUEST
+  ------------------------------------------------------- */
+
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      method,
+      headers,
+      body:
+        body !== undefined
+          ? JSON.stringify(body)
+          : undefined,
+    });
+  } catch (error) {
+    console.error(
+      "API connection failed:",
+      error
+    );
+
+    throw new Error(
+      "Unable to connect to the MakeMyCV backend. Make sure FastAPI is running on port 8000."
+    );
+  }
+
+  /* -------------------------------------------------------
+     HANDLE 401
+  ------------------------------------------------------- */
+
+  if (response.status === 401) {
+    /*
+     * Don't immediately redirect here.
+     *
+     * Some pages need to handle the 401 themselves.
+     *
+     * We only throw a useful error.
+     */
+
+    throw new Error(
+      "Your session has expired. Please log in again."
+    );
+  }
+
+  /* -------------------------------------------------------
+     HANDLE OTHER ERRORS
+  ------------------------------------------------------- */
+
+  if (!response.ok) {
+    let message =
+      `Request failed with status ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+
+      if (
+        typeof errorData.detail === "string"
+      ) {
+        message = errorData.detail;
+      } else if (
+        Array.isArray(errorData.detail)
+      ) {
+        message = errorData.detail
+          .map(
+            (
+              error: {
+                msg?: string;
+              }
+            ) =>
+              error.msg ??
+              JSON.stringify(error)
+          )
+          .join("; ");
+      } else if (
+        typeof errorData.message === "string"
+      ) {
+        message = errorData.message;
+      }
+    } catch {
+      /*
+       * Response wasn't JSON.
+       * Keep default error.
+       */
+    }
+
+    throw new Error(message);
+  }
+
+  /* -------------------------------------------------------
+     NO CONTENT
+  ------------------------------------------------------- */
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  /* -------------------------------------------------------
+     JSON RESPONSE
+  ------------------------------------------------------- */
+
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new Error(
+      "The server returned an invalid response."
+    );
+  }
 }
 
+/* =========================================================
+   OPTIONAL GITHUB HELPERS
+========================================================= */
 
-export interface GitHubAnalyzeResponse {
-  analysis: GitHubProjectAnalysis;
-}
-
-
-/**
- * Analyze a GitHub repository and generate
- * resume-ready project information.
- */
 export async function analyzeGitHubRepository(
   owner: string,
   repo: string
-): Promise<GitHubProjectAnalysis> {
-  const response =
-    await apiRequest<GitHubAnalyzeResponse>(
-      "/ai/github/analyze",
-      {
-        method: "POST",
-        body: {
-          owner,
-          repo,
-        },
-      }
-    );
+) {
+  const response = await apiRequest<{
+    analysis: unknown;
+  }>("/ai/github/analyze", {
+    method: "POST",
+    body: {
+      owner,
+      repo,
+    },
+  });
 
   return response.analysis;
 }
 
-
-// ===========================================================================
-// AI — Improve GitHub Resume Bullets
-// ===========================================================================
-
-export interface ImproveGitHubBulletsResponse {
-  resume_bullets: string[];
-}
-
-
-/**
- * Improve the existing AI-generated resume bullets
- * for a GitHub project.
- *
- * The project information and current bullets are sent
- * to the backend so the AI can improve the wording
- * without changing the actual project facts.
- */
 export async function improveGitHubResumeBullets(
   projectName: string,
   description: string,
   technologies: string[],
   currentBullets: string[]
-): Promise<string[]> {
-  const response =
-    await apiRequest<ImproveGitHubBulletsResponse>(
-      "/ai/github/improve-bullets",
-      {
-        method: "POST",
-        body: {
-          project_name: projectName,
-          description,
-          technologies,
-          current_bullets: currentBullets,
-        },
-      }
-    );
+) {
+  const response = await apiRequest<{
+    resume_bullets: string[];
+  }>("/ai/github/improve-bullets", {
+    method: "POST",
+    body: {
+      project_name: projectName,
+      description,
+      technologies,
+      current_bullets: currentBullets,
+    },
+  });
 
   return response.resume_bullets;
 }

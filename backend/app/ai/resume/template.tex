@@ -1,0 +1,368 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+\vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+\pdfgentounicode=1
+
+
+% =========================================================
+% CUSTOM COMMANDS
+% =========================================================
+
+\newcommand{\resumeItem}[1]{
+\item\small{
+{#1 \vspace{-2pt}}
+}
+}
+
+\newcommand{\resumeSubheading}[4]{
+\vspace{-2pt}\item
+\begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+\textbf{#1} & #2 \\
+\textit{\small#3} & \textit{\small #4} \\
+\end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+\item
+\begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+\small#1 & #2 \\
+\end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{
+\resumeItem{#1}\vspace{-4pt}
+}
+
+\renewcommand\labelitemii{
+$\vcenter{\hbox{\tiny$\bullet$}}$
+}
+
+\newcommand{\resumeSubHeadingListStart}{
+\begin{itemize}[leftmargin=0.15in, label={}]
+}
+
+\newcommand{\resumeSubHeadingListEnd}{
+\end{itemize}
+}
+
+\newcommand{\resumeItemListStart}{
+\begin{itemize}
+}
+
+\newcommand{\resumeItemListEnd}{
+\end{itemize}\vspace{-5pt}
+}
+
+
+% =========================================================
+% RESUME
+% =========================================================
+
+\begin{document}
+
+
+% =========================================================
+% PERSONAL INFORMATION
+% =========================================================
+
+\begin{center}
+
+\textbf{\Huge \scshape << personal.name >>} \\ \vspace{1pt}
+
+\small
+<< personal.phone >>
+
+<% if personal.email %>
+$|$
+\href{mailto:<< personal.email >>}
+{\underline{<< personal.email >>}}
+<% endif %>
+
+<% if personal.linkedin %>
+$|$
+\href{https://linkedin.com/in/<< personal.linkedin >>}
+{\underline{linkedin.com/in/<< personal.linkedin >>}}
+<% endif %>
+
+<% if personal.github %>
+$|$
+\href{https://github.com/<< personal.github >>}
+{\underline{github.com/<< personal.github >>}}
+<% endif %>
+
+\end{center}
+
+
+% =========================================================
+% EDUCATION
+% =========================================================
+
+<% if education %>
+
+\section{Education}
+
+\resumeSubHeadingListStart
+
+<% for edu in education %>
+
+\resumeSubheading
+{<< edu.institution >>}
+{<< edu.location >>}
+{<< edu.degree >>}
+{<< edu.dates >>}
+
+<% endfor %>
+
+\resumeSubHeadingListEnd
+
+<% endif %>
+
+
+% =========================================================
+% EXPERIENCE
+% =========================================================
+
+<% if experience %>
+
+\section{Experience}
+
+\resumeSubHeadingListStart
+
+<% for exp in experience %>
+
+\resumeSubheading
+{<< exp.job_title >>}
+{<< exp.dates >>}
+{<< exp.company >>}
+{<< exp.location >>}
+
+<% if exp.bullets %>
+
+\resumeItemListStart
+
+<% for bullet in exp.bullets %>
+\resumeItem{<< bullet >>}
+<% endfor %>
+
+\resumeItemListEnd
+
+<% endif %>
+
+<% endfor %>
+
+\resumeSubHeadingListEnd
+
+<% endif %>
+
+
+% =========================================================
+% PROJECTS
+% =========================================================
+
+<% if projects %>
+
+\section{Projects}
+
+\resumeSubHeadingListStart
+
+<% for project in projects %>
+
+\resumeProjectHeading
+{
+\textbf{<< project.name >>}
+$|$
+\emph{<< project.technologies | join(', ') >>}
+}
+{<< project.dates >>}
+
+<% if project.project_link %>
+
+\small
+\href{<< project.project_link >>}
+{\underline{Project Link}}
+\normalsize
+
+<% endif %>
+
+<% if project.github_link %>
+
+\small
+\href{<< project.github_link >>}
+{\underline{GitHub}}
+\normalsize
+
+<% endif %>
+
+<% if project.bullets %>
+
+\resumeItemListStart
+
+<% for bullet in project.bullets %>
+\resumeItem{<< bullet >>}
+<% endfor %>
+
+\resumeItemListEnd
+
+<% endif %>
+
+<% endfor %>
+
+\resumeSubHeadingListEnd
+
+<% endif %>
+
+
+% =========================================================
+% TECHNICAL SKILLS
+% =========================================================
+
+<% if technical_skills.languages
+or technical_skills.frameworks
+or technical_skills.developer_tools
+or technical_skills.libraries %>
+
+\section{Technical Skills}
+
+\begin{itemize}[leftmargin=0.15in, label={}]
+
+\small{\item{
+
+<% if technical_skills.languages %>
+\textbf{Languages}{:
+<< technical_skills.languages | join(', ') >>
+} \\
+<% endif %>
+
+<% if technical_skills.frameworks %>
+\textbf{Frameworks}{:
+<< technical_skills.frameworks | join(', ') >>
+} \\
+<% endif %>
+
+<% if technical_skills.developer_tools %>
+\textbf{Developer Tools}{:
+<< technical_skills.developer_tools | join(', ') >>
+} \\
+<% endif %>
+
+<% if technical_skills.libraries %>
+\textbf{Libraries}{:
+<< technical_skills.libraries | join(', ') >>
+} \\
+<% endif %>
+
+}}
+
+\end{itemize}
+
+<% endif %>
+
+
+% =========================================================
+% CERTIFICATIONS
+% =========================================================
+
+<% if certifications %>
+
+\section{Certifications}
+
+\resumeSubHeadingListStart
+
+<% for certification in certifications %>
+
+\resumeSubheading
+{<< certification.name >>}
+{<< certification.issue_date >>}
+{<< certification.organization >>}
+{<< certification.credential_id >>}
+
+<% if certification.credential_url %>
+
+\small
+\href{<< certification.credential_url >>}
+{\underline{Credential Link}}
+\normalsize
+
+<% endif %>
+
+<% endfor %>
+
+\resumeSubHeadingListEnd
+
+<% endif %>
+
+
+% =========================================================
+% ACHIEVEMENTS
+% =========================================================
+
+<% if achievements %>
+
+\section{Achievements}
+
+\resumeSubHeadingListStart
+
+<% for achievement in achievements %>
+
+\resumeSubheading
+{<< achievement.title >>}
+{<< achievement.date >>}
+{<< achievement.organization >>}
+{}
+
+<% if achievement.description %>
+
+\resumeItemListStart
+
+\resumeItem{<< achievement.description >>}
+
+\resumeItemListEnd
+
+<% endif %>
+
+<% endfor %>
+
+\resumeSubHeadingListEnd
+
+<% endif %>
+
+
+% =========================================================
+% END
+% =========================================================
+
+\end{document}

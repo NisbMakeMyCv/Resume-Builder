@@ -9,13 +9,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.ai.github import router as github_ai_router
+from app.api.v1.ai.resume import router as resume_ai_router
 
 from app.core.database import engine
 from app.models import user
 
 
+# ============================================================
+# DATABASE
+# ============================================================
+
 user.Base.metadata.create_all(bind=engine)
 
+
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
 
 app = FastAPI(
     title="MakeMyCV Backend API",
@@ -24,21 +33,23 @@ app = FastAPI(
 )
 
 
+# ============================================================
+# CORS
+# ============================================================
+
 allowed_origins_raw = os.getenv(
     "ALLOWED_ORIGINS",
     "*",
 )
 
-origins = (
-    [
+if allowed_origins_raw == "*":
+    origins = ["*"]
+else:
+    origins = [
         origin.strip()
         for origin in allowed_origins_raw.split(",")
         if origin.strip()
     ]
-    if allowed_origins_raw != "*"
-    else ["*"]
-)
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -49,7 +60,10 @@ app.add_middleware(
 )
 
 
-# Existing authentication routes
+# ============================================================
+# AUTHENTICATION ROUTES
+# ============================================================
+
 app.include_router(
     auth_router,
     prefix="/api/v1/auth",
@@ -57,13 +71,31 @@ app.include_router(
 )
 
 
-# AI GitHub analysis routes
+# ============================================================
+# AI - GITHUB ANALYZER
+# ============================================================
+
 app.include_router(
     github_ai_router,
     prefix="/api/v1/ai/github",
     tags=["AI - GitHub"],
 )
 
+
+# ============================================================
+# AI - RESUME CHATBOT
+# ============================================================
+
+app.include_router(
+    resume_ai_router,
+    prefix="/api/v1/ai/resume",
+    tags=["AI - Resume"],
+)
+
+
+# ============================================================
+# ROOT ENDPOINT
+# ============================================================
 
 @app.get("/")
 def root():
