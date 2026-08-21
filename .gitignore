@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Local databases
+*.db
+
+# Node
+node_modules/
+.next/
+out/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,782 @@
+@import "tailwindcss";
+
+/* =========================================================
+   NISB-MakeMyCV — "Standard Professional" Design System
+   Source: stitch_remix_makemycv/standard_professional/DESIGN.md
+   Colors are the Material-style token set used by every stitch frame.
+   ========================================================= */
+
+:root {
+  --background: #f9f9fc;
+  --foreground: #1a1c1e;
+  --sidebar-width: 256px;
+}
+
+@theme inline {
+  --color-background: #f9f9fc;
+  --color-surface: #f9f9fc;
+  --color-surface-bright: #f9f9fc;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f6;
+  --color-surface-container: #eeeef0;
+  --color-surface-container-high: #e8e8ea;
+  --color-surface-container-highest: #e2e2e5;
+  --color-surface-dim: #dadadc;
+  --color-surface-variant: #e2e2e5;
+
+  --color-on-surface: #1a1c1e;
+  --color-on-surface-variant: #424750;
+  --color-on-background: #1a1c1e;
+
+  --color-primary: #002a58;
+  --color-primary-container: #004080;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #83aef5;
+  --color-primary-fixed: #d6e3ff;
+  --color-primary-fixed-dim: #a9c7ff;
+  --color-on-primary-fixed: #001b3d;
+  --color-on-primary-fixed-variant: #0e4686;
+
+  --color-secondary: #006496;
+  --color-secondary-container: #7fc5fd;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #00517b;
+  --color-secondary-fixed: #cce5ff;
+  --color-secondary-fixed-dim: #90cdff;
+  --color-on-secondary-fixed: #001e31;
+  --color-on-secondary-fixed-variant: #004b72;
+
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #93000a;
+
+  --color-outline: #737781;
+  --color-outline-variant: #c3c6d2;
+
+  --color-inverse-surface: #2f3133;
+  --color-inverse-on-surface: #f0f0f3;
+  --color-inverse-primary: #a9c7ff;
+
+  --color-tertiary: #242c2f;
+  --color-tertiary-container: #3a4245;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #a6aeb2;
+
+  --radius-brand: 20px;
+
+  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-display: var(--font-sora), var(--font-inter), Arial, sans-serif;
+
+  /* Type scale (from DESIGN.md) */
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 700;
+
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--letter-spacing: -0.01em;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 500;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 600;
+
+  /* Layout tokens */
+  --spacing-container-max: 1280px;
+  --spacing-margin: 32px;
+  --spacing-gutter: 24px;
+  --spacing-base: 4px;
+
+  /* ── Animation tokens ── */
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+
+  --ease-out-cubic: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  --animate-cursor-blink: cursor-blink 1s step-end infinite;
+
+  /* ── Shadow elevation scale ── */
+  --shadow-elev-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-elev-2: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-elev-3: 0 10px 15px rgba(0, 0, 0, 0.10);
+  --shadow-elev-4: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-elev-5: 0 25px 50px rgba(0, 0, 0, 0.25);
+
+  /* ── Focus rings ── */
+  --focus-ring: 0 0 0 3px rgba(0, 102, 153, 0.3);
+  --focus-ring-error: 0 0 0 3px rgba(186, 26, 26, 0.3);
+
+  /* ── Z-index scale ── */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+}
+
+/* =========================================================
+   GLOBAL BASE
+   ========================================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Neutralize injected attributes/styles from browser extensions that
+   mutate <html> (e.g. "QuestionBase"/temp-mail helpers). Without this,
+   their added height/fixed styles can break layout and trigger
+   hydration warnings. */
+html[data-qb-installed] {
+  position: initial;
+  height: auto;
+  min-height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   COMPONENT-LEVEL HELPERS
+   (Matches micro-interactions in the stitch frames)
+   ========================================================= */
+
+/* Pressable button feedback */
+.btn-press {
+  transition: transform 0.15s ease;
+}
+.btn-press:active {
+  transform: scale(0.95);
+}
+
+/* Shine sweep across a button on hover (primary CTAs) */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+}
+.btn-shine:hover::after {
+  left: 130%;
+}
+
+/* Floating hero elements */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Entrance fade-up (used on OTP page) */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.entrance-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* OTP input pulse on focus (from otp_verification frame) */
+@keyframes otp-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 64, 128, 0.2);
+    border-color: #004080;
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(0, 64, 128, 0.1);
+    border-color: #006699;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 64, 128, 0.2);
+    border-color: #004080;
+  }
+}
+.otp-input:focus {
+  animation: otp-pulse 2s infinite ease-in-out;
+  outline: none;
+}
+
+/* Ripple button (landing page) */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover lift for feature cards (landing page) */
+.tilt-card {
+  transition:
+    transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+}
+.tilt-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 42, 88, 0.08);
+}
+
+/* Glass card (landing hero mockup) */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Hero background glow (landing page) */
+.hero-gradient {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(214, 227, 255, 0.3) 0%,
+    rgba(249, 249, 252, 0) 70%
+  );
+}
+
+/* Input focus ring (sign_in frame) */
+.input-focus-ring:focus {
+  outline: none;
+  border-color: #006699;
+  box-shadow: 0 0 0 2px rgba(0, 102, 153, 0.1);
+}
+
+/* Floating resume card shadow (sign_up frame) */
+.resume-shadow {
+  box-shadow: 0 20px 50px rgba(0, 42, 88, 0.1);
+}
+
+/* =========================================================
+   SPLASH SCREEN
+   ========================================================= */
+@keyframes splash-fade-out {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: linear-gradient(
+    160deg,
+    var(--color-primary) 0%,
+    #0a3d78 55%,
+    var(--color-secondary) 100%
+  );
+  animation: splash-fade-out 1.1s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes splash-logo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.splash-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+  animation: splash-logo-pop 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes splash-wordmark {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.splash-wordmark {
+  animation: splash-wordmark 0.6s ease 0.15s forwards;
+  opacity: 0;
+}
+
+@keyframes splash-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.splash-ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #ffffff;
+  animation: splash-ring 0.8s linear infinite;
+}
+
+/* =========================================================
+   PAGE TRANSITION — soft fade-in for every route
+   ========================================================= */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.page-enter {
+  animation: page-fade-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* =========================================================
+   SCROLL-REVEAL
+   ========================================================= */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+/* Ambient, slow-drift blobs — keeps backgrounds feeling alive without
+   touching layout or the established palette. */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(18px, -24px, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-14px, 16px, 0) scale(0.95);
+  }
+}
+.animate-drift {
+  animation: drift 16s ease-in-out infinite;
+}
+.animate-drift-slow {
+  animation: drift 22s ease-in-out infinite reverse;
+}
+
+/* Gentle opacity breathe for soft glow orbs (no layout shift). */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+.animate-breathe {
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* Magnetic-style scale on primary CTAs — pure motion, layer-safe. */
+.btn-magnetic {
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+  will-change: transform;
+}
+.btn-magnetic:hover {
+  transform: translateY(-3px) scale(1.03);
+}
+.btn-magnetic:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Hover glow + shadow expansion for cards / bento elements. */
+.ambient-card {
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  will-change: transform, box-shadow;
+}
+
+/* =========================================================
+   BUTTON POLISH — built on the existing Material tokens.
+   Adds depth + glow + motion without changing the palette.
+   ========================================================= */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0a3d78 100%);
+  color: var(--color-on-primary);
+  box-shadow:
+    0 10px 22px -8px rgba(0, 42, 88, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 16px 30px -8px rgba(0, 42, 88, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.btn-primary:active {
+  transform: translateY(-1px) scale(0.97);
+  box-shadow: 0 6px 16px -6px rgba(0, 42, 88, 0.5);
+}
+
+/* Raised 3-D lower edge that "presses down" on click */
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: auto 6px 6px 6px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.22);
+  filter: blur(2px);
+  opacity: 0.55;
+  transition:
+    opacity 0.2s ease,
+    inset 0.2s ease;
+}
+.btn-primary:hover::after {
+  opacity: 0.4;
+}
+.btn-primary:active::after {
+  inset: auto 8px 2px 8px;
+  height: 2px;
+  opacity: 0.3;
+}
+
+/* Soft sheen sweep that complements the existing .btn-shine */
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    115deg,
+    transparent,
+    rgba(255, 255, 255, 0.22),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.55s ease;
+}
+.btn-primary:hover::before {
+  left: 130%;
+}
+
+/* Secondary / ghost style — outlined, lifts on hover */
+.btn-outline {
+  position: relative;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s ease;
+}
+.btn-outline:hover {
+  background: var(--color-primary-fixed);
+  color: var(--color-on-primary-fixed);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px -10px rgba(0, 42, 88, 0.35);
+}
+.btn-outline:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* Soft-pulse glow used on the primary CTA after auth success */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 100, 150, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(0, 100, 150, 0);
+  }
+}
+.btn-glow {
+  animation: glow-pulse 1.6s ease-in-out infinite;
+}
+
+/* =========================================================
+   AUTH SUCCESS — celebratory ring burst
+   ========================================================= */
+@keyframes ring-burst {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.ring-burst {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid var(--color-secondary-container);
+  animation: ring-burst 0.9s ease-out forwards;
+}
+.ring-burst.delay-1 {
+  animation-delay: 0.18s;
+}
+.ring-burst.delay-2 {
+  animation-delay: 0.36s;
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.check-pop {
+  animation: check-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+/* =========================================================
+   MOBILE — hide full sidebar, use a top bar instead
+   ========================================================= */
+@media (max-width: 1024px) {
+  .sidebar-desktop {
+    display: none;
+  }
+}
+@media (min-width: 1025px) {
+  .sidebar-mobile {
+    display: none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media print {
+  /* Hide the app chrome — sidebar nav, page topbar, page footer, and builder controls */
+  .no-print,
+  nav,
+  aside,
+  footer:not(#resume-pdf-content footer) {
+    display: none !important;
+  }
+
+  /* Also hide the fixed topbar header (the app header, not the resume header) */
+  body > div header,
+  main > div > header,
+  .page-enter > header {
+    display: none !important;
+  }
+
+  /* A4 page */
+  @page {
+    size: A4;
+    margin: 12mm 15mm;
+  }
+
+  body, html {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Remove padding/margins of parent containers */
+  main, .page-enter, #resume-preview-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    background: white !important;
+  }
+
+  /* Collapse the two-column editor/preview grid to single column */
+  /* Only target the top-level builder grid, not grids inside the resume content */
+  .xl\:sticky {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* The editor left panel and toolbar are hidden; the preview fills the page */
+  .space-y-8.no-print {
+    display: none !important;
+  }
+
+  /* Reset the builder grid wrapper */
+  .grid.grid-cols-1 {
+    display: block !important;
+  }
+
+  /* Resume content: preserve padding for proper A4 margins within the page */
+  #resume-pdf-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 24px 32px !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+  }
+}
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================================
+   TYPOGRAPHY — professional display font for headings
+   (Sora) while keeping Inter for body copy.
+   ========================================================= */
+.font-headline-lg,
+.font-headline-md,
+.text-headline-lg,
+.text-headline-md,
+.text-headline-md--font-weight {
+  font-family: var(--font-display);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* =========================================================
+   AUTH SPLIT-SCREEN — right panel: slate base + faint dot
+   grid + soft mesh gradient. Keeps the form card readable
+   while killing the stark-white dead space.
+   ========================================================= */
+.auth-panel {
+  position: relative;
+  background-color: #f8fafc; /* slate-50 */
+  background-image:
+    radial-gradient(circle at 18% 20%, rgba(0, 64, 128, 0.07), transparent 34%),
+    radial-gradient(circle at 85% 10%, rgba(0, 100, 150, 0.06), transparent 30%),
+    radial-gradient(circle at 80% 90%, rgba(127, 197, 253, 0.12), transparent 36%),
+    radial-gradient(circle at 6% 84%, rgba(0, 42, 88, 0.05), transparent 28%);
+}
+.auth-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(0, 42, 88, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, black, transparent 82%);
+  mask-image: radial-gradient(circle at 50% 40%, black, transparent 82%);
+}

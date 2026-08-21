@@ -1,0 +1,18 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+pydantic[email]
+bcrypt
+python-multipart
+python-jose[cryptography]
+google-auth
+requests
+python-dotenv
+
+# ─── Testing ──────────────────────────────────────────────────────────────────
+pytest
+pytest-asyncio
+httpx
+groq
+
