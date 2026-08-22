@@ -242,6 +242,7 @@ jobs:
           GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
           TOKEN_GITHUB=${{ secrets.TOKEN_GITHUB }}
           ALLOWED_ORIGINS=*
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
           EOF
           
           # Remove leading whitespace caused by heredoc indentation
