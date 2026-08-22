@@ -32,17 +32,56 @@ def get_drive_service():
 
     return build('drive', 'v3', credentials=creds)
 
-def upload_encrypted_file(file_bytes: bytes, filename: str, mime_type: str = 'application/octet-stream') -> str:
+def get_or_create_user_folder(user_id: str) -> str:
     """
-    Uploads an encrypted file (bytes) to Google Drive.
+    Finds or creates a specific folder for the user inside the main GOOGLE_DRIVE_FOLDER_ID.
+    """
+    service = get_drive_service()
+    main_folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+    if not main_folder_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="GOOGLE_DRIVE_FOLDER_ID is not set in environment."
+        )
+
+    folder_name = f"User_{user_id}"
+    
+    # 1. Search for existing folder
+    query = f"name='{folder_name}' and '{main_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    try:
+        response = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+        files = response.get('files', [])
+        if files:
+            return files[0].get('id')
+            
+        # 2. If not found, create it
+        folder_metadata = {
+            'name': folder_name,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [main_folder_id]
+        }
+        folder = service.files().create(body=folder_metadata, fields='id').execute()
+        return folder.get('id')
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to setup user directory in Google Drive: {str(e)}"
+        )
+
+def upload_encrypted_file(file_bytes: bytes, filename: str, user_id: str, mime_type: str = 'application/octet-stream') -> str:
+    """
+    Uploads an encrypted file (bytes) to the specific user's folder in Google Drive.
     Returns the Google Drive File ID.
     """
     service = get_drive_service()
-    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
     
-    file_metadata = {'name': filename}
-    if folder_id:
-        file_metadata['parents'] = [folder_id]
+    # Get the specific folder for this user
+    user_folder_id = get_or_create_user_folder(user_id)
+    
+    file_metadata = {
+        'name': filename,
+        'parents': [user_folder_id]
+    }
 
     media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=mime_type, resumable=True)
     

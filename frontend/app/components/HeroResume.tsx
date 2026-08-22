@@ -227,10 +227,9 @@ export default function HeroResume() {
   const float = reduced
     ? { animate: undefined, transition: undefined }
     : {
-        animate: { y: [0, -10, 0] },
+        animate: { y: [0, -15, 0] },
         transition: {
-          delay: 1.8,
-          duration: 6,
+          duration: 8,
           repeat: Infinity,
           ease: "easeInOut" as const,
         },

@@ -82,7 +82,7 @@ export default function JakeResumePreview({
   return (
     <div
       id="resume-preview-container"
-      className={`bg-surface-container flex justify-center text-gray-900 w-full overflow-auto ${className}`}
+      className={`bg-surface-container flex justify-center items-start text-gray-900 w-full overflow-auto ${className}`}
       style={{
         fontFamily:
           "'Baskerville', 'Palatino Linotype', Georgia, serif",

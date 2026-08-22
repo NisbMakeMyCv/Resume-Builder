@@ -243,6 +243,8 @@ jobs:
           TOKEN_GITHUB=${{ secrets.TOKEN_GITHUB }}
           ALLOWED_ORIGINS=*
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+          GOOGLE_DRIVE_CREDENTIALS_JSON=${{ secrets.GOOGLE_DRIVE_CREDENTIALS_JSON }}
+          GOOGLE_DRIVE_FOLDER_ID=${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           EOF
           
           # Remove leading whitespace caused by heredoc indentation

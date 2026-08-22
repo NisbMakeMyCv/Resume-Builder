@@ -35,12 +35,20 @@ async def create_resume(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new resume document by uploading an encrypted file to Google Drive."""
+    import uuid
+    import time
     
     # Read the encrypted bytes
     file_bytes = await file.read()
     
-    # Upload to Google Drive
-    drive_file_id = upload_encrypted_file(file_bytes, filename=f"resume_{current_user.id}_{title}.enc")
+    # Generate unique filename
+    safe_title = "".join([c for c in title if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+    unique_id = str(uuid.uuid4())[:8]
+    timestamp = int(time.time())
+    filename = f"resume_{safe_title}_{timestamp}_{unique_id}.enc"
+    
+    # Upload to Google Drive (nested in User's folder)
+    drive_file_id = upload_encrypted_file(file_bytes, filename=filename, user_id=str(current_user.id))
     
     new_resume = ResumeDocument(
         user_id=current_user.id,
@@ -98,12 +106,21 @@ async def update_resume(
         resume.title = title
         
     if file is not None:
+        import uuid
+        import time
         # Delete old file from Drive if it exists
         if resume.drive_file_id:
             delete_encrypted_file(resume.drive_file_id)
             
         file_bytes = await file.read()
-        drive_file_id = upload_encrypted_file(file_bytes, filename=f"resume_{current_user.id}_{resume.title}.enc")
+        
+        # Generate unique filename
+        safe_title = "".join([c for c in resume.title if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+        unique_id = str(uuid.uuid4())[:8]
+        timestamp = int(time.time())
+        filename = f"resume_{safe_title}_{timestamp}_{unique_id}.enc"
+        
+        drive_file_id = upload_encrypted_file(file_bytes, filename=filename, user_id=str(current_user.id))
         resume.drive_file_id = drive_file_id
 
     db.commit()
