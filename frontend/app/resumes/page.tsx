@@ -7,10 +7,16 @@ import JakeResumeBuilder from "../components/resume/JakeResumeBuilder";
 import { resumesApi, getToken, type ResumeDocument } from "../../lib/api";
 import { emptyResume } from "../../lib/resume";
 
+import { decryptData } from "../../lib/crypto";
+import { useCrypto } from "../providers/CryptoProvider";
+import PassphraseModal from "../components/PassphraseModal";
+
 export default function ResumesPage() {
+  const { passphrase, isUnlocked } = useCrypto();
   const [editorOpen, setEditorOpen] = useState(false);
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   // This state holds the raw JSON string if a user opens a saved resume
   const [selectedResumeJson, setSelectedResumeJson] = useState<string | null>(null);
@@ -35,10 +41,26 @@ export default function ResumesPage() {
     }
   };
 
-  const handleOpenResume = (doc: ResumeDocument) => {
-    // Pass the saved content so the builder can load it
-    setSelectedResumeJson(doc.content);
-    setEditorOpen(true);
+  const handleOpenResume = async (doc: ResumeDocument) => {
+    if (!passphrase) {
+      alert("Encryption passphrase is required to decrypt this resume.");
+      return;
+    }
+    const token = getToken();
+    if (!token) return;
+
+    setIsDownloading(true);
+    try {
+      const blob = await resumesApi.download(token, doc.id);
+      const jsonString = await decryptData(blob, passphrase);
+      setSelectedResumeJson(jsonString);
+      setEditorOpen(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to decrypt resume. Did you enter the correct passphrase?");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleDeleteResume = async (e: React.MouseEvent, id: string) => {
@@ -65,6 +87,7 @@ export default function ResumesPage() {
 
   return (
     <div className="flex-1 w-full min-h-[100vh] bg-surface relative">
+      <PassphraseModal />
       <AnimatePresence mode="wait">
         {!editorOpen ? (
           <motion.div

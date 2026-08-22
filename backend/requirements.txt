@@ -7,6 +7,8 @@ bcrypt
 python-multipart
 python-jose[cryptography]
 google-auth
+google-api-python-client
+google-auth-httplib2
 requests
 python-dotenv
 

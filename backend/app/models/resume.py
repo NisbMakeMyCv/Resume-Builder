@@ -81,6 +81,6 @@ class ResumeDocument(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False, default="Untitled Resume")
-    content = Column(Text, nullable=False) # JSON serialized resume data
+    drive_file_id = Column(String, nullable=True) # ID of the encrypted file in Google Drive
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -141,14 +141,13 @@ class ProjectResponse(ProjectBase):
 # RESUME DOCUMENT
 class ResumeDocumentBase(BaseModel):
     title: str
-    content: str
+    drive_file_id: Optional[str] = None
 
-class ResumeDocumentCreate(ResumeDocumentBase):
-    pass
+class ResumeDocumentCreate(BaseModel):
+    title: str
 
 class ResumeDocumentUpdate(BaseModel):
     title: Optional[str] = None
-    content: Optional[str] = None
 
 class ResumeDocumentResponse(ResumeDocumentBase):
     id: UUID

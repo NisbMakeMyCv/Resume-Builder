@@ -245,17 +245,66 @@ export const projectsApi = createCrud<Project, ProjectCreateInput>("/projects");
 export type ResumeDocument = {
   id: string;
   title: string;
-  content: string; // JSON string of resume data
+  drive_file_id?: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type ResumeDocumentCreateInput = {
-  title: string;
-  content: string;
+export const resumesApi = {
+  list(token: string): Promise<ResumeDocument[]> {
+    return apiRequest<ResumeDocument[]>("/resumes/", { token });
+  },
+  
+  async create(token: string, title: string, fileBlob: Blob): Promise<ResumeDocument> {
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("file", fileBlob, "resume.enc");
+    
+    const res = await fetch(`${API_URL}/resumes/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      throw new Error("Failed to create resume");
+    }
+    return res.json();
+  },
+  
+  async update(token: string, id: string, title?: string, fileBlob?: Blob): Promise<ResumeDocument> {
+    const formData = new FormData();
+    if (title) formData.append("title", title);
+    if (fileBlob) formData.append("file", fileBlob, "resume.enc");
+    
+    const res = await fetch(`${API_URL}/resumes/${id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    
+    if (!res.ok) {
+      throw new Error("Failed to update resume");
+    }
+    return res.json();
+  },
+  
+  remove(token: string, id: string): Promise<void> {
+    return apiRequest<void>(`/resumes/${id}`, { method: "DELETE", token });
+  },
+  
+  async download(token: string, id: string): Promise<Blob> {
+    const res = await fetch(`${API_URL}/resumes/${id}/download`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    if (!res.ok) {
+      throw new Error("Failed to download resume file");
+    }
+    
+    return res.blob();
+  }
 };
-
-export const resumesApi = createCrud<ResumeDocument, ResumeDocumentCreateInput>("/resumes");
 
 /** Education create payload — the only required fields. */
 export type EducationCreateInput = {

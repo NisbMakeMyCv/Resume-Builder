@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
 import GoogleProvider from "./components/GoogleProvider";
 import SplashScreen from "./components/SplashScreen";
+import { CryptoProvider } from "./providers/CryptoProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -53,7 +54,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <SplashScreen />
-        <GoogleProvider>{children}</GoogleProvider>
+        <GoogleProvider>
+          <CryptoProvider>{children}</CryptoProvider>
+        </GoogleProvider>
       </body>
     </html>
   );

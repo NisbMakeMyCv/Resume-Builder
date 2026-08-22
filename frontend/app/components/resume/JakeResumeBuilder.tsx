@@ -19,6 +19,10 @@ import {
 } from "../../../lib/resume";
 import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
 
+import { encryptData } from "../../../lib/crypto";
+import { useCrypto } from "../../providers/CryptoProvider";
+import PassphraseModal from "../PassphraseModal";
+
 /**
  * Jake's Resume Builder — the resume editor for the `editor` stitch frame.
  *
@@ -31,6 +35,8 @@ import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
  * to localStorage — no resume endpoints exist on the backend yet.
  */
 export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?: string | null }) {
+  const { passphrase, isUnlocked } = useCrypto();
+  
   const [data, setData] = useState<ResumeData>(() => {
     if (initialDataStr) {
       try {
@@ -55,17 +61,24 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
       alert("Please log in to save your resume to the cloud.");
       return;
     }
+    if (!passphrase) {
+      alert("Encryption passphrase is required to save.");
+      return;
+    }
+    
     setSaving(true);
     try {
-      const payload = {
-        title: data.header.fullName ? `${data.header.fullName}'s Resume` : "My Resume",
-        content: JSON.stringify(data),
-      };
+      const title = data.header.fullName ? `${data.header.fullName}'s Resume` : "My Resume";
+      const jsonString = JSON.stringify(data);
+      
+      // Zero-knowledge encryption: encrypt the JSON string into a binary Blob
+      const encryptedBlob = await encryptData(jsonString, passphrase);
+
       if (resumeId) {
-        await resumesApi.update(token, resumeId, payload);
+        await resumesApi.update(token, resumeId, title, encryptedBlob);
         alert("Resume updated in cloud!");
       } else {
-        const created = await resumesApi.create(token, payload);
+        const created = await resumesApi.create(token, title, encryptedBlob);
         setResumeId(created.id);
         alert("Resume saved to cloud!");
       }
@@ -258,480 +271,481 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             ? { ...i, bullets: i.bullets.filter((_, k) => k !== index) }
             : i
       ),
-    }));
-
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-      {/* ============ LEFT: EDITOR ============ */}
-      <div className="space-y-8 no-print">
-        {/* Header */}
-        <Section
-          icon="badge"
-          title="Header"
-          subtitle="Your name, contact details, and profile links."
-        >
-          <Field label="Full Name">
-            <TextInput
-              value={data.header.fullName}
-              onChange={(v) => updateHeader({ fullName: v })}
-              placeholder="Alex Morgan"
-            />
-          </Field>
-          <Field label="Job Title / Position">
-            <TextInput
-              value={data.header.position}
-              onChange={(v) => updateHeader({ position: v })}
-              placeholder="Full-Stack Engineer"
-            />
-          </Field>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Phone">
+    }));  return (
+    <>
+      <PassphraseModal />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+        {/* ============ LEFT: EDITOR ============ */}
+        <div className="space-y-8 no-print">
+          {/* Header */}
+          <Section
+            icon="badge"
+            title="Header"
+            subtitle="Your name, contact details, and profile links."
+          >
+            <Field label="Full Name">
               <TextInput
-                value={data.header.phone}
-                onChange={(v) => updateHeader({ phone: v })}
-                placeholder="(555) 867-5309"
+                value={data.header.fullName}
+                onChange={(v) => updateHeader({ fullName: v })}
+                placeholder="Alex Morgan"
               />
             </Field>
-            <Field label="Email">
+            <Field label="Job Title / Position">
               <TextInput
-                value={data.header.email}
-                onChange={(v) => updateHeader({ email: v })}
-                placeholder="alex@email.com"
+                value={data.header.position}
+                onChange={(v) => updateHeader({ position: v })}
+                placeholder="Full-Stack Engineer"
               />
             </Field>
-          </div>
-          <Field label="Location">
-            <TextInput
-              value={data.header.location}
-              onChange={(v) => updateHeader({ location: v })}
-              placeholder="San Francisco, CA"
-            />
-          </Field>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Field label="LinkedIn">
-              <TextInput
-                value={data.header.links.linkedin}
-                onChange={(v) =>
-                  updateHeader({ links: { ...data.header.links, linkedin: v } })
-                }
-                placeholder="linkedin.com/in/you"
-              />
-            </Field>
-            <Field label="GitHub">
-              <TextInput
-                value={data.header.links.github}
-                onChange={(v) =>
-                  updateHeader({ links: { ...data.header.links, github: v } })
-                }
-                placeholder="github.com/you"
-              />
-            </Field>
-            <Field label="Portfolio">
-              <TextInput
-                value={data.header.links.portfolio}
-                onChange={(v) =>
-                  updateHeader({ links: { ...data.header.links, portfolio: v } })
-                }
-                placeholder="yourdomain.dev"
-              />
-            </Field>
-          </div>
-        </Section>
-
-        {/* Education */}
-        <Section
-          icon="school"
-          title="Education"
-          subtitle="Institutions, degrees, dates, and relevant coursework."
-          action={
-            <AddButton onClick={addEducation} label="Add Education" />
-          }
-        >
-          {data.education.length === 0 && <EmptyRow onAdd={addEducation} />}
-          {data.education.map((ed) => (
-            <EditableCard
-              key={ed.id}
-              title={ed.school || "Education Entry"}
-              onRemove={() => removeItem<Education>("education", ed.id)}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Institution">
-                  <TextInput
-                    value={ed.school}
-                    onChange={(v) => updateItem<Education>("education", ed.id, { school: v })}
-                    placeholder="University of California"
-                  />
-                </Field>
-                <Field label="Degree">
-                  <TextInput
-                    value={ed.degree}
-                    onChange={(v) => updateItem<Education>("education", ed.id, { degree: v })}
-                    placeholder="B.S. Computer Science"
-                  />
-                </Field>
-                <Field label="Dates">
-                  <TextInput
-                    value={ed.dates}
-                    onChange={(v) => updateItem<Education>("education", ed.id, { dates: v })}
-                    placeholder="2018 – 2022"
-                  />
-                </Field>
-                <Field label="Location">
-                  <TextInput
-                    value={ed.location}
-                    onChange={(v) => updateItem<Education>("education", ed.id, { location: v })}
-                    placeholder="Berkeley, CA"
-                  />
-                </Field>
-              </div>
-              <Field label="Coursework">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Phone">
                 <TextInput
-                  value={ed.coursework}
-                  onChange={(v) => updateItem<Education>("education", ed.id, { coursework: v })}
-                  placeholder="Data Structures, Algorithms, …"
+                  value={data.header.phone}
+                  onChange={(v) => updateHeader({ phone: v })}
+                  placeholder="(555) 867-5309"
                 />
               </Field>
-            </EditableCard>
-          ))}
-        </Section>
-
-        {/* Experience */}
-        <Section
-          icon="work"
-          title="Experience"
-          subtitle="Roles with strong action-verb bullet points."
-          action={<AddButton onClick={addExperience} label="Add Experience" />}
-        >
-          {data.experience.length === 0 && <EmptyRow onAdd={addExperience} />}
-          {data.experience.map((ex) => (
-            <EditableCard
-              key={ex.id}
-              title={ex.company || "Experience Entry"}
-              onRemove={() => removeItem<Experience>("experience", ex.id)}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Company">
-                  <TextInput
-                    value={ex.company}
-                    onChange={(v) => updateItem<Experience>("experience", ex.id, { company: v })}
-                    placeholder="Northwind Systems"
-                  />
-                </Field>
-                <Field label="Job Title">
-                  <TextInput
-                    value={ex.title}
-                    onChange={(v) => updateItem<Experience>("experience", ex.id, { title: v })}
-                    placeholder="Full-Stack Engineer"
-                  />
-                </Field>
-                <Field label="Dates">
-                  <TextInput
-                    value={ex.dates}
-                    onChange={(v) => updateItem<Experience>("experience", ex.id, { dates: v })}
-                    placeholder="2022 – Present"
-                  />
-                </Field>
-                <Field label="Location">
-                  <TextInput
-                    value={ex.location}
-                    onChange={(v) => updateItem<Experience>("experience", ex.id, { location: v })}
-                    placeholder="San Francisco, CA"
-                  />
-                </Field>
-              </div>
-              <BulletList
-                label="Action Bullet Points"
-                bullets={ex.bullets}
-                onChange={(idx, v) => setBullet<Experience>("experience", ex.id, idx, v)}
-                onAdd={() => addBullet("experience", ex.id)}
-                onRemove={(idx) => removeBullet("experience", ex.id, idx)}
-                value={{
-                  project_name: ex.company || ex.title || "Work Experience",
-                  description: `${ex.title || "Role"} at ${ex.company || "Company"}`,
-                  technologies: [],
-                }}
+              <Field label="Email">
+                <TextInput
+                  value={data.header.email}
+                  onChange={(v) => updateHeader({ email: v })}
+                  placeholder="alex@email.com"
+                />
+              </Field>
+            </div>
+            <Field label="Location">
+              <TextInput
+                value={data.header.location}
+                onChange={(v) => updateHeader({ location: v })}
+                placeholder="San Francisco, CA"
               />
-            </EditableCard>
-          ))}
-        </Section>
+            </Field>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="LinkedIn">
+                <TextInput
+                  value={data.header.links.linkedin}
+                  onChange={(v) =>
+                    updateHeader({ links: { ...data.header.links, linkedin: v } })
+                  }
+                  placeholder="linkedin.com/in/you"
+                />
+              </Field>
+              <Field label="GitHub">
+                <TextInput
+                  value={data.header.links.github}
+                  onChange={(v) =>
+                    updateHeader({ links: { ...data.header.links, github: v } })
+                  }
+                  placeholder="github.com/you"
+                />
+              </Field>
+              <Field label="Portfolio">
+                <TextInput
+                  value={data.header.links.portfolio}
+                  onChange={(v) =>
+                    updateHeader({ links: { ...data.header.links, portfolio: v } })
+                  }
+                  placeholder="yourdomain.dev"
+                />
+              </Field>
+            </div>
+          </Section>
 
-        {/* Projects */}
-        <Section
-          icon="code"
-          title="Projects"
-          subtitle="Personal or professional work worth highlighting."
-          action={<AddButton onClick={addProject} label="Add Project" />}
-        >
-          {data.projects.length === 0 && <EmptyRow onAdd={addProject} />}
-          {data.projects.map((proj) => (
-            <EditableCard
-              key={proj.id}
-              title={proj.title || "Project Entry"}
-              onRemove={() => removeItem<Project>("projects", proj.id)}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Project Title">
-                  <TextInput
-                    value={proj.title}
-                    onChange={(v) => updateItem<Project>("projects", proj.id, { title: v })}
-                    placeholder="GitRater"
-                  />
-                </Field>
-                <Field label="Technologies">
-                  <TextInput
-                    value={proj.technologies}
-                    onChange={(v) => updateItem<Project>("projects", proj.id, { technologies: v })}
-                    placeholder="React, TypeScript, FastAPI"
-                  />
-                </Field>
-                <Field label="Dates">
-                  <TextInput
-                    value={proj.dates}
-                    onChange={(v) => updateItem<Project>("projects", proj.id, { dates: v })}
-                    placeholder="Jan 2024 – Present"
-                  />
-                </Field>
-                <Field label="Links">
-                  <TextInput
-                    value={proj.links}
-                    onChange={(v) => updateItem<Project>("projects", proj.id, { links: v })}
-                    placeholder="github.com/you/project"
-                  />
-                </Field>
-              </div>
-              <BulletList
-                label="Bullet Points"
-                bullets={proj.bullets}
-                onChange={(idx, v) => setBullet<Project>("projects", proj.id, idx, v)}
-                onAdd={() => addBullet("projects", proj.id)}
-                onRemove={(idx) => removeBullet("projects", proj.id, idx)}
-                value={{
-                  project_name: proj.title || "Project",
-                  description: "A personal or professional project.",
-                  technologies: (proj.technologies || "")
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                }}
-              />
-            </EditableCard>
-          ))}
-        </Section>
-
-        {/* Technical Skills */}
-        <Section
-          icon="bolt"
-          title="Technical Skills"
-          subtitle="Languages, frameworks, developer tools, and libraries."
-          action={<AddButton onClick={addSkillGroup} label="Add Skill Group" />}
-        >
-          {data.skills.length === 0 && <EmptyRow onAdd={addSkillGroup} />}
-          {data.skills.map((s) => (
-            <EditableCard
-              key={s.id}
-              title={s.category || "Skill Group"}
-              onRemove={() => removeItem<SkillGroup>("skills", s.id)}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="Category">
-                  <TextInput
-                    value={s.category}
-                    onChange={(v) => updateItem<SkillGroup>("skills", s.id, { category: v })}
-                    placeholder="Languages"
-                  />
-                </Field>
-                <div className="sm:col-span-2">
-                  <Field label="Skills">
+          {/* Education */}
+          <Section
+            icon="school"
+            title="Education"
+            subtitle="Institutions, degrees, dates, and relevant coursework."
+            action={
+              <AddButton onClick={addEducation} label="Add Education" />
+            }
+          >
+            {data.education.length === 0 && <EmptyRow onAdd={addEducation} />}
+            {data.education.map((ed) => (
+              <EditableCard
+                key={ed.id}
+                title={ed.school || "Education Entry"}
+                onRemove={() => removeItem<Education>("education", ed.id)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Institution">
                     <TextInput
-                      value={s.items}
-                      onChange={(v) => updateItem<SkillGroup>("skills", s.id, { items: v })}
-                      placeholder="TypeScript, Python, SQL"
+                      value={ed.school}
+                      onChange={(v) => updateItem<Education>("education", ed.id, { school: v })}
+                      placeholder="University of California"
+                    />
+                  </Field>
+                  <Field label="Degree">
+                    <TextInput
+                      value={ed.degree}
+                      onChange={(v) => updateItem<Education>("education", ed.id, { degree: v })}
+                      placeholder="B.S. Computer Science"
+                    />
+                  </Field>
+                  <Field label="Dates">
+                    <TextInput
+                      value={ed.dates}
+                      onChange={(v) => updateItem<Education>("education", ed.id, { dates: v })}
+                      placeholder="2018 – 2022"
+                    />
+                  </Field>
+                  <Field label="Location">
+                    <TextInput
+                      value={ed.location}
+                      onChange={(v) => updateItem<Education>("education", ed.id, { location: v })}
+                      placeholder="Berkeley, CA"
                     />
                   </Field>
                 </div>
-              </div>
-            </EditableCard>
-          ))}
-        </Section>
-
-        {/* Custom Sections */}
-        <Section
-          icon="add_circle"
-          title="Custom Sections"
-          subtitle="Add any other details (Certifications, Awards, Languages)."
-          action={<AddButton onClick={addCustomSection} label="Add Section" />}
-        >
-          {(!data.customSections || data.customSections.length === 0) && (
-            <EmptyRow onAdd={addCustomSection} />
-          )}
-          {(data.customSections || []).map((s) => (
-            <EditableCard
-              key={s.id}
-              title={s.title || "Custom Section"}
-              onRemove={() => removeItem<CustomSection>("customSections", s.id)}
-            >
-              <div className="space-y-4">
-                <Field label="Section Title">
+                <Field label="Coursework">
                   <TextInput
-                    value={s.title}
-                    onChange={(v) =>
-                      updateItem<CustomSection>("customSections", s.id, { title: v })
-                    }
-                    placeholder="E.g., Certifications"
+                    value={ed.coursework}
+                    onChange={(v) => updateItem<Education>("education", ed.id, { coursework: v })}
+                    placeholder="Data Structures, Algorithms, …"
                   />
                 </Field>
-                
-                {s.fields.length > 0 && (
-                  <div className="space-y-3 pt-2">
-                    {s.fields.map((f) => (
-                      <div key={f.id} className="relative bg-surface-container-low border border-outline-variant rounded-xl p-4">
-                        <button
-                          onClick={() => removeCustomField(s.id, f.id)}
-                          className="absolute top-3 right-3 text-on-surface-variant hover:text-error"
-                          title="Remove Field"
-                        >
-                          <MaterialIcon name="close" className="text-[18px]" />
-                        </button>
-                        
-                        <div className="pr-6 space-y-3">
-                          <div className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
-                            {f.type} Field
-                          </div>
+              </EditableCard>
+            ))}
+          </Section>
+
+          {/* Experience */}
+          <Section
+            icon="work"
+            title="Experience"
+            subtitle="Roles with strong action-verb bullet points."
+            action={<AddButton onClick={addExperience} label="Add Experience" />}
+          >
+            {data.experience.length === 0 && <EmptyRow onAdd={addExperience} />}
+            {data.experience.map((ex) => (
+              <EditableCard
+                key={ex.id}
+                title={ex.company || "Experience Entry"}
+                onRemove={() => removeItem<Experience>("experience", ex.id)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Company">
+                    <TextInput
+                      value={ex.company}
+                      onChange={(v) => updateItem<Experience>("experience", ex.id, { company: v })}
+                      placeholder="Northwind Systems"
+                    />
+                  </Field>
+                  <Field label="Job Title">
+                    <TextInput
+                      value={ex.title}
+                      onChange={(v) => updateItem<Experience>("experience", ex.id, { title: v })}
+                      placeholder="Full-Stack Engineer"
+                    />
+                  </Field>
+                  <Field label="Dates">
+                    <TextInput
+                      value={ex.dates}
+                      onChange={(v) => updateItem<Experience>("experience", ex.id, { dates: v })}
+                      placeholder="2022 – Present"
+                    />
+                  </Field>
+                  <Field label="Location">
+                    <TextInput
+                      value={ex.location}
+                      onChange={(v) => updateItem<Experience>("experience", ex.id, { location: v })}
+                      placeholder="San Francisco, CA"
+                    />
+                  </Field>
+                </div>
+                <BulletList
+                  label="Action Bullet Points"
+                  bullets={ex.bullets}
+                  onChange={(idx, v) => setBullet<Experience>("experience", ex.id, idx, v)}
+                  onAdd={() => addBullet("experience", ex.id)}
+                  onRemove={(idx) => removeBullet("experience", ex.id, idx)}
+                  value={{
+                    project_name: ex.company || ex.title || "Work Experience",
+                    description: `${ex.title || "Role"} at ${ex.company || "Company"}`,
+                    technologies: [],
+                  }}
+                />
+              </EditableCard>
+            ))}
+          </Section>
+
+          {/* Projects */}
+          <Section
+            icon="code"
+            title="Projects"
+            subtitle="Personal or professional work worth highlighting."
+            action={<AddButton onClick={addProject} label="Add Project" />}
+          >
+            {data.projects.length === 0 && <EmptyRow onAdd={addProject} />}
+            {data.projects.map((proj) => (
+              <EditableCard
+                key={proj.id}
+                title={proj.title || "Project Entry"}
+                onRemove={() => removeItem<Project>("projects", proj.id)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field label="Project Title">
+                    <TextInput
+                      value={proj.title}
+                      onChange={(v) => updateItem<Project>("projects", proj.id, { title: v })}
+                      placeholder="GitRater"
+                    />
+                  </Field>
+                  <Field label="Technologies">
+                    <TextInput
+                      value={proj.technologies}
+                      onChange={(v) => updateItem<Project>("projects", proj.id, { technologies: v })}
+                      placeholder="React, TypeScript, FastAPI"
+                    />
+                  </Field>
+                  <Field label="Dates">
+                    <TextInput
+                      value={proj.dates}
+                      onChange={(v) => updateItem<Project>("projects", proj.id, { dates: v })}
+                      placeholder="Jan 2024 – Present"
+                    />
+                  </Field>
+                  <Field label="Links">
+                    <TextInput
+                      value={proj.links}
+                      onChange={(v) => updateItem<Project>("projects", proj.id, { links: v })}
+                      placeholder="github.com/you/project"
+                    />
+                  </Field>
+                </div>
+                <BulletList
+                  label="Bullet Points"
+                  bullets={proj.bullets}
+                  onChange={(idx, v) => setBullet<Project>("projects", proj.id, idx, v)}
+                  onAdd={() => addBullet("projects", proj.id)}
+                  onRemove={(idx) => removeBullet("projects", proj.id, idx)}
+                  value={{
+                    project_name: proj.title || "Project",
+                    description: "A personal or professional project.",
+                    technologies: (proj.technologies || "")
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  }}
+                />
+              </EditableCard>
+            ))}
+          </Section>
+
+          {/* Technical Skills */}
+          <Section
+            icon="bolt"
+            title="Technical Skills"
+            subtitle="Languages, frameworks, developer tools, and libraries."
+            action={<AddButton onClick={addSkillGroup} label="Add Skill Group" />}
+          >
+            {data.skills.length === 0 && <EmptyRow onAdd={addSkillGroup} />}
+            {data.skills.map((s) => (
+              <EditableCard
+                key={s.id}
+                title={s.category || "Skill Group"}
+                onRemove={() => removeItem<SkillGroup>("skills", s.id)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Field label="Category">
+                    <TextInput
+                      value={s.category}
+                      onChange={(v) => updateItem<SkillGroup>("skills", s.id, { category: v })}
+                      placeholder="Languages"
+                    />
+                  </Field>
+                  <div className="sm:col-span-2">
+                    <Field label="Skills">
+                      <TextInput
+                        value={s.items}
+                        onChange={(v) => updateItem<SkillGroup>("skills", s.id, { items: v })}
+                        placeholder="TypeScript, Python, SQL"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </EditableCard>
+            ))}
+          </Section>
+
+          {/* Custom Sections */}
+          <Section
+            icon="add_circle"
+            title="Custom Sections"
+            subtitle="Add any other details (Certifications, Awards, Languages)."
+            action={<AddButton onClick={addCustomSection} label="Add Section" />}
+          >
+            {(!data.customSections || data.customSections.length === 0) && (
+              <EmptyRow onAdd={addCustomSection} />
+            )}
+            {(data.customSections || []).map((s) => (
+              <EditableCard
+                key={s.id}
+                title={s.title || "Custom Section"}
+                onRemove={() => removeItem<CustomSection>("customSections", s.id)}
+              >
+                <div className="space-y-4">
+                  <Field label="Section Title">
+                    <TextInput
+                      value={s.title}
+                      onChange={(v) =>
+                        updateItem<CustomSection>("customSections", s.id, { title: v })
+                      }
+                      placeholder="E.g., Certifications"
+                    />
+                  </Field>
+                  
+                  {s.fields.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      {s.fields.map((f) => (
+                        <div key={f.id} className="relative bg-surface-container-low border border-outline-variant rounded-xl p-4">
+                          <button
+                            onClick={() => removeCustomField(s.id, f.id)}
+                            className="absolute top-3 right-3 text-on-surface-variant hover:text-error"
+                            title="Remove Field"
+                          >
+                            <MaterialIcon name="close" className="text-[18px]" />
+                          </button>
                           
-                          <Field label="Label">
-                            <TextInput
-                              value={f.label}
-                              onChange={(v) => updateCustomField(s.id, f.id, { label: v })}
-                              placeholder="E.g., AWS Certified"
-                            />
-                          </Field>
-                          
-                          {f.type === "text" && (
-                            <Field label="Value">
+                          <div className="pr-6 space-y-3">
+                            <div className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-2">
+                              {f.type} Field
+                            </div>
+                            
+                            <Field label="Label">
                               <TextInput
-                                value={f.value}
-                                onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
-                                placeholder="E.g., Solutions Architect"
+                                value={f.label}
+                                onChange={(v) => updateCustomField(s.id, f.id, { label: v })}
+                                placeholder="E.g., AWS Certified"
                               />
                             </Field>
-                          )}
-                          
-                          {f.type === "textarea" && (
-                            <Field label="Value">
-                              <TextAreaInput
-                                value={f.value}
-                                onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
-                                placeholder="E.g., Description of the award..."
-                                rows={3}
-                              />
-                            </Field>
-                          )}
-                          
-                          {f.type === "link" && (
-                            <>
-                              <Field label="Display Text">
+                            
+                            {f.type === "text" && (
+                              <Field label="Value">
                                 <TextInput
                                   value={f.value}
                                   onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
-                                  placeholder="E.g., view credential"
+                                  placeholder="E.g., Solutions Architect"
                                 />
                               </Field>
-                              <Field label="URL">
-                                <TextInput
-                                  value={f.href || ""}
-                                  onChange={(v) => updateCustomField(s.id, f.id, { href: v })}
-                                  placeholder="https://..."
+                            )}
+                            
+                            {f.type === "textarea" && (
+                              <Field label="Value">
+                                <TextAreaInput
+                                  value={f.value}
+                                  onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
+                                  placeholder="E.g., Description of the award..."
+                                  rows={3}
                                 />
                               </Field>
-                            </>
-                          )}
+                            )}
+                            
+                            {f.type === "link" && (
+                              <>
+                                <Field label="Display Text">
+                                  <TextInput
+                                    value={f.value}
+                                    onChange={(v) => updateCustomField(s.id, f.id, { value: v })}
+                                    placeholder="E.g., view credential"
+                                  />
+                                </Field>
+                                <Field label="URL">
+                                  <TextInput
+                                    value={f.href || ""}
+                                    onChange={(v) => updateCustomField(s.id, f.id, { href: v })}
+                                    placeholder="https://..."
+                                  />
+                                </Field>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="pt-2 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => addCustomField(s.id, "text")}
+                      className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                    >
+                      <MaterialIcon name="short_text" className="text-[16px]" />
+                      Add Text
+                    </button>
+                    <button
+                      onClick={() => addCustomField(s.id, "textarea")}
+                      className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                    >
+                      <MaterialIcon name="notes" className="text-[16px]" />
+                      Add Paragraph
+                    </button>
+                    <button
+                      onClick={() => addCustomField(s.id, "link")}
+                      className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                    >
+                      <MaterialIcon name="link" className="text-[16px]" />
+                      Add Link
+                    </button>
                   </div>
-                )}
-                
-                <div className="pt-2 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => addCustomField(s.id, "text")}
-                    className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
-                  >
-                    <MaterialIcon name="short_text" className="text-[16px]" />
-                    Add Text
-                  </button>
-                  <button
-                    onClick={() => addCustomField(s.id, "textarea")}
-                    className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
-                  >
-                    <MaterialIcon name="notes" className="text-[16px]" />
-                    Add Paragraph
-                  </button>
-                  <button
-                    onClick={() => addCustomField(s.id, "link")}
-                    className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
-                  >
-                    <MaterialIcon name="link" className="text-[16px]" />
-                    Add Link
-                  </button>
                 </div>
-              </div>
-            </EditableCard>
-          ))}
-        </Section>
+              </EditableCard>
+            ))}
+          </Section>
 
-        {/* Reset */}
-        <div className="flex justify-start pt-2">
-          <button
-            type="button"
-            onClick={() => setData(emptyResume())}
-            className="btn-outline px-4 py-2.5 rounded-full text-label-md flex items-center gap-2"
-          >
-            <MaterialIcon name="refresh" className="text-[18px]" />
-            Reset Resume
-          </button>
-        </div>
-      </div>
-
-      {/* ============ RIGHT: LIVE PREVIEW ============ */}
-      <div className="xl:sticky xl:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8">
-        <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
-          <div>
-            <p className="text-label-md font-semibold text-on-surface">
-              Live Preview
-            </p>
-            <span className="text-label-sm text-on-surface-variant">
-              Jake&apos;s Resume Template
-            </span>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Reset */}
+          <div className="flex justify-start pt-2">
             <button
-              onClick={handleCloudSave}
-              disabled={saving}
-              className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+              type="button"
+              onClick={() => setData(emptyResume())}
+              className="btn-outline px-4 py-2.5 rounded-full text-label-md flex items-center gap-2"
             >
-              <MaterialIcon name="cloud_upload" className="text-[16px]" />
-              {saving ? "Saving..." : "Save to Cloud"}
-            </button>
-            <button
-              onClick={handleExportPDF}
-              className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
-            >
-              <MaterialIcon name="picture_as_pdf" className="text-[16px]" />
-              PDF
-            </button>
-            <button
-              onClick={handleExportDOCX}
-              className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
-            >
-              <MaterialIcon name="description" className="text-[16px]" />
-              DOCX
+              <MaterialIcon name="refresh" className="text-[18px]" />
+              Reset Resume
             </button>
           </div>
         </div>
-        <JakeResumePreview data={data} />
+
+        {/* ============ RIGHT: LIVE PREVIEW ============ */}
+        <div className="xl:sticky xl:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8">
+          <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
+            <div>
+              <p className="text-label-md font-semibold text-on-surface">
+                Live Preview
+              </p>
+              <span className="text-label-sm text-on-surface-variant">
+                Jake&apos;s Resume Template
+              </span>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleCloudSave}
+                disabled={saving}
+                className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+              >
+                <MaterialIcon name="cloud_upload" className="text-[16px]" />
+                {saving ? "Saving..." : "Save to Cloud"}
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+              >
+                <MaterialIcon name="picture_as_pdf" className="text-[16px]" />
+                PDF
+              </button>
+              <button
+                onClick={handleExportDOCX}
+                className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+              >
+                <MaterialIcon name="description" className="text-[16px]" />
+                DOCX
+              </button>
+            </div>
+          </div>
+          <JakeResumePreview data={data} />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
