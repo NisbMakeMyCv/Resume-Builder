@@ -44,6 +44,7 @@ export default function AppSidebar() {
   const user = getStoredUser();
   const [open, setOpen] = useState(false);
   const [width, setWidth] = useState(SIDEBAR_MIN);
+  const [imgError, setImgError] = useState(false);
   const draggingRef = useRef(false);
 
   // Sync the CSS variable so dashboard/resumes content offsets follow.
@@ -156,13 +157,12 @@ export default function AppSidebar() {
         className="p-6 mt-auto flex items-center gap-3 border-t border-outline-variant hover:bg-surface-container-high cursor-pointer transition-colors"
         onClick={() => setOpen(false)}
       >
-        {showAvatar ? (
-          <Image
+        {showAvatar && !imgError ? (
+          <img
             src={avatarSrc}
             alt={user?.full_name ?? "User"}
-            width={40}
-            height={40}
             className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-primary-fixed"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0">
