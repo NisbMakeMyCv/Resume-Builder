@@ -1,59 +1,23 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-dist/
-downloads/
-eggs/
-.eggs/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Virtual Environments
-.venv/
-venv/
-ENV/
-
-# Environment Variables
-# .env is intentionally tracked — it holds only non-sensitive defaults.
-# Put real local credentials in .env.local (never committed).
+# Environment / secrets
+.env
 .env.local
 .env.*.local
-env.local
-# Local secret snapshot downloaded for reference — never commit (contains real GOOGLE_CLIENT_ID + SMTP creds).
-backend/env.download
 
-# IDEs
-.idea/
-.vscode/
-*.swp
-*.swo
+# Local databases
+*.db
 
-# Docker
-postgres_data/
-docker-compose.override.yml
+# Node
+node_modules/
+.next/
+out/
 
-# OS Files
+# Logs
+*.log
+
+# OS files
 .DS_Store
 Thumbs.db
-
-# AI coding tooling / harness session data
-.claude/
-frontend/.claude/
-.opencode/
-.aider/
-.cursor/
-.windsurf/
-.continue/
-.frontmatter/
-**/.env
