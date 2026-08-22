@@ -13,24 +13,39 @@ def get_drive_service():
     creds_json = os.environ.get("GOOGLE_DRIVE_CREDENTIALS_JSON")
     
     if creds_json:
-        # Load credentials from environment variable (useful for Docker/Vercel)
-        creds_dict = json.loads(creds_json)
-        creds = service_account.Credentials.from_service_account_info(
-            creds_dict, scopes=SCOPES
-        )
+        try:
+            creds_dict = json.loads(creds_json)
+            creds = service_account.Credentials.from_service_account_info(
+                creds_dict, scopes=SCOPES
+            )
+        except json.JSONDecodeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"GOOGLE_DRIVE_CREDENTIALS_JSON environment variable contains invalid JSON: {str(e)}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to initialize Google Drive service account credentials: {str(e)}"
+            )
     else:
         # Fallback to default application credentials (e.g., local file)
-        # Note: Set GOOGLE_APPLICATION_CREDENTIALS env var to the file path
         try:
             import google.auth
             creds, _ = google.auth.default(scopes=SCOPES)
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google Drive credentials not configured properly."
+                detail="Google Drive credentials not configured. Please set GOOGLE_DRIVE_CREDENTIALS_JSON in .env"
             )
 
-    return build('drive', 'v3', credentials=creds)
+    try:
+        return build('drive', 'v3', credentials=creds)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to build Google Drive API client: {str(e)}"
+        )
 
 def get_or_create_user_folder(user_id: str) -> str:
     """

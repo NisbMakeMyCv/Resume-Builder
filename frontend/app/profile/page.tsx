@@ -179,6 +179,13 @@ function ProfileInner() {
     return name.charAt(0).toUpperCase();
   }, [user?.full_name]);
 
+  const [imgError, setImgError] = useState(false);
+
+  // Reset imgError if the avatar URL changes
+  useEffect(() => {
+    setImgError(false);
+  }, [avatarUrl]);
+
   return (
     <div className="page-enter min-h-screen bg-surface text-on-surface">
       <AppSidebar />
@@ -230,11 +237,12 @@ function ProfileInner() {
                   onChange={handlePhotoUpload}
                 />
                 <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-primary-fixed relative">
-                  {showAvatar ? (
+                  {showAvatar && !imgError ? (
                     <img
                       src={avatarUrl}
                       alt={user?.full_name ?? "Profile"}
                       className="object-cover w-full h-full"
+                      onError={() => setImgError(true)}
                     />
                   ) : (
                     <div className="w-full h-full bg-primary-fixed flex items-center justify-center text-primary text-headline-lg font-bold">

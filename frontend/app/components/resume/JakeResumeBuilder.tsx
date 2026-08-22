@@ -53,6 +53,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string>("Header");
+  const [activeTab, setActiveTab] = useState<"editor" | "github">("editor");
 
   // Apply operations received from NISBot
   const applyResumeOperations = (operations: any[]) => {
@@ -327,28 +328,38 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     <>
       <PassphraseModal />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start relative">
-        {/* Border Chatbot Toggle (Visible on xl screens) */}
-        <div className="hidden xl:flex absolute left-1/2 top-32 -translate-x-1/2 z-30 no-print">
-          <button
-            onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-            className="w-14 h-14 bg-primary text-on-primary rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
-            title="Toggle NISBot"
-          >
-            <span className="text-2xl leading-none">🤖</span>
-          </button>
-          
-          {isChatbotOpen && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 w-[360px] h-[500px] bg-surface rounded-2xl shadow-[0_20px_50px_rgb(0,0,0,0.15)] border border-outline-variant overflow-hidden z-40 flex flex-col animate-in zoom-in-95 duration-300">
-              <ResumeChatbot 
-                resumeData={data} 
-                onResumeUpdate={applyResumeOperations} 
-                onClose={() => setIsChatbotOpen(false)}
-              />
-            </div>
-          )}
-        </div>
-        {/* ============ LEFT: EDITOR ============ */}
-        <div className="space-y-8 no-print">
+        {/* ============ LEFT: EDITOR & TOOLS PANEL ============ */}
+        <div className="space-y-6 no-print">
+          {/* Tab Navigation */}
+          <div className="flex items-center p-1.5 bg-surface-container-low border border-outline-variant rounded-2xl shadow-sm">
+            <button
+              type="button"
+              onClick={() => setActiveTab("editor")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-label-md transition-all duration-200 ${
+                activeTab === "editor"
+                  ? "bg-surface text-primary shadow-sm font-bold"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest"
+              }`}
+            >
+              <MaterialIcon name="edit_note" className="text-[20px]" />
+              Resume Content
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("github")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-label-md transition-all duration-200 ${
+                activeTab === "github"
+                  ? "bg-surface text-primary shadow-sm font-bold"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest"
+              }`}
+            >
+              <MaterialIcon name="auto_awesome" className="text-[20px]" />
+              GitHub AI Analyzer
+            </button>
+          </div>
+
+          {activeTab === "editor" && (
+            <div className="space-y-6 animate-in fade-in duration-300">
           {/* Header */}
           <Section
             icon="badge"
@@ -776,19 +787,31 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             ))}
           </Section>
 
-          {/* Reset */}
-          <div className="flex justify-start pt-2">
-            <button
-              type="button"
-              onClick={() => setData(emptyResume())}
-              className="btn-outline px-4 py-2.5 rounded-full text-label-md flex items-center gap-2"
-            >
-              <MaterialIcon name="refresh" className="text-[18px]" />
-              Reset Resume
-            </button>
-          </div>
+              {/* Reset */}
+              <div className="flex justify-start pt-2">
+                <button
+                  type="button"
+                  onClick={() => setData(emptyResume())}
+                  className="btn-outline px-4 py-2.5 rounded-full text-label-md flex items-center gap-2"
+                >
+                  <MaterialIcon name="refresh" className="text-[18px]" />
+                  Reset Resume
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* AI Tools embedded in left column removed to avoid clutter */}
+          {activeTab === "github" && (
+            <div className="animate-in fade-in duration-300">
+              <Section
+                icon="auto_awesome"
+                title="GitHub Repository Analyzer"
+                subtitle="Provide a public GitHub repository link to extract technologies, purpose, and draft bullet points."
+              >
+                <GitHubAnalyzer />
+              </Section>
+            </div>
+          )}
         </div>
 
         {/* ============ RIGHT: LIVE PREVIEW ============ */}
@@ -830,37 +853,34 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
           </div>
           <div className="relative">
             <JakeResumePreview data={data} />
-            
-            {/* Mobile Chatbot Toggle (Visible on smaller screens only) */}
-            <button
-              onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-              className="xl:hidden absolute bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-10 no-print"
-              aria-label="Toggle NISBot"
-            >
-              <span className="text-2xl leading-none">{isChatbotOpen ? "✖" : "🤖"}</span>
-            </button>
-
-            {isChatbotOpen && (
-              <div className="xl:hidden absolute bottom-24 right-6 w-[360px] h-[500px] max-w-[calc(100vw-3rem)] bg-surface rounded-2xl shadow-xl border border-outline-variant overflow-hidden z-20 flex flex-col no-print animate-in slide-in-from-bottom-10 fade-in duration-300">
-                <ResumeChatbot 
-                  resumeData={data} 
-                  onResumeUpdate={applyResumeOperations} 
-                  onClose={() => setIsChatbotOpen(false)}
-                />
-              </div>
-            )}
-          </div>
-          
-          <div className="mt-8 no-print">
-            <Section
-              icon="auto_awesome"
-              title="GitHub Analyzer"
-              subtitle="Extract projects and skills from a GitHub repository."
-            >
-              <GitHubAnalyzer />
-            </Section>
           </div>
         </div>
+      </div>
+
+      {/* ============ VIEWPORT-FIXED NISBOT FLOATING WIDGET ============ */}
+      <div className="fixed bottom-6 right-6 z-50 no-print flex flex-col items-end gap-3 pointer-events-auto">
+        {isChatbotOpen && (
+          <div className="w-[380px] h-[520px] max-w-[calc(100vw-2rem)] bg-surface rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-outline-variant overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
+            <ResumeChatbot 
+              resumeData={data} 
+              onResumeUpdate={applyResumeOperations} 
+              onClose={() => setIsChatbotOpen(false)}
+            />
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+          className="relative group w-14 h-14 bg-gradient-to-tr from-primary to-primary-container text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-4 ring-primary/20"
+          aria-label="Toggle NISBot AI Assistant"
+        >
+          <span className="text-2xl leading-none animate-bounce">🤖</span>
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-tertiary"></span>
+          </span>
+        </button>
       </div>
     </>
   );
