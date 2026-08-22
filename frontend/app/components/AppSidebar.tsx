@@ -25,7 +25,6 @@ const NAV_ITEMS: SidebarItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
   { label: "Master Profile", icon: "person_book", href: "/profile" },
   { label: "My Resumes", icon: "description", href: "/resumes" },
-  { label: "AI Tools", icon: "auto_awesome", href: "/ai-tools" },
   { label: "Settings", icon: "settings", href: "/settings" },
 ];
 

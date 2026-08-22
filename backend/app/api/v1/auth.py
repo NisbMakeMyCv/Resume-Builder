@@ -235,10 +235,12 @@ def upload_profile_photo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not file.content_type.startswith("image/"):
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    filename_str = file.filename or ""
+    ext = filename_str.split(".")[-1] if "." in filename_str else "png"
     filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     

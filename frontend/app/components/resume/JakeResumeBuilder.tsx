@@ -22,6 +22,8 @@ import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
 import { encryptData } from "../../../lib/crypto";
 import { useCrypto } from "../../providers/CryptoProvider";
 import PassphraseModal from "../PassphraseModal";
+import ResumeChatbot from "../ai/ResumeChatbot";
+import GitHubAnalyzer from "../ai/GitHubAnalyzer";
 
 /**
  * Jake's Resume Builder — the resume editor for the `editor` stitch frame.
@@ -49,6 +51,55 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   });
   const [saving, setSaving] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+
+  // Apply operations received from NISBot
+  const applyResumeOperations = (operations: any[]) => {
+    setData((prev) => {
+      let next = { ...prev };
+      operations.forEach((op) => {
+        const sec = op.section === "personal" ? "header" : op.section;
+        if (!next[sec as keyof ResumeData]) return;
+
+        if (op.action === "add" && Array.isArray(next[sec as keyof ResumeData])) {
+          const newItem = { id: uid(), ...op.data };
+          (next[sec as keyof ResumeData] as any[]) = [...(next[sec as keyof ResumeData] as any[]), newItem];
+        } else if (op.action === "update" && Array.isArray(next[sec as keyof ResumeData])) {
+          if (op.index != null) {
+            (next[sec as keyof ResumeData] as any[]) = (next[sec as keyof ResumeData] as any[]).map((item, i) =>
+              i === op.index ? { ...item, ...op.data } : item
+            );
+          }
+        } else if (op.action === "delete" && Array.isArray(next[sec as keyof ResumeData])) {
+          if (op.index != null) {
+            (next[sec as keyof ResumeData] as any[]) = (next[sec as keyof ResumeData] as any[]).filter((_, i) => i !== op.index);
+          }
+        } else if (sec === "header" && (op.action === "update" || op.action === "replace")) {
+          if (op.field === "name") next.header.fullName = op.data;
+          else if (op.field === "email") next.header.email = op.data;
+          else if (op.field === "phone") next.header.phone = op.data;
+          else if (op.field === "linkedin") next.header.links.linkedin = op.data;
+          else if (op.field === "github") next.header.links.github = op.data;
+          else if (op.data) {
+            next.header = {
+              ...next.header,
+              fullName: op.data.name ?? next.header.fullName,
+              email: op.data.email ?? next.header.email,
+              phone: op.data.phone ?? next.header.phone,
+              links: {
+                ...next.header.links,
+                linkedin: op.data.linkedin ?? next.header.links.linkedin,
+                github: op.data.github ?? next.header.links.github,
+              },
+            };
+          }
+        } else if (op.action === "replace") {
+          (next[sec as keyof ResumeData] as any) = op.data;
+        }
+      });
+      return next;
+    });
+  };
 
   // Persist on every change to local storage
   useEffect(() => {
@@ -703,6 +754,19 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
               Reset Resume
             </button>
           </div>
+
+          {/* AI Tools Embedded */}
+          <Section
+            icon="auto_awesome"
+            title="AI Tools"
+            subtitle="Analyze a GitHub repository to automatically draft projects and skills."
+          >
+            <div className="text-body-sm text-on-surface-variant mb-4">
+              <strong>GitHub Analyzer:</strong> Provide a public repository link and our AI will extract the tech stack, purpose, and draft bullet points you can copy directly into your resume.<br/><br/>
+              <strong>NISBot:</strong> Use the floating chat button on the right to have an AI Copilot modify your resume in real time!
+            </div>
+            <GitHubAnalyzer />
+          </Section>
         </div>
 
         {/* ============ RIGHT: LIVE PREVIEW ============ */}
@@ -742,7 +806,29 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
               </button>
             </div>
           </div>
-          <JakeResumePreview data={data} />
+          <div className="relative">
+            <JakeResumePreview data={data} />
+            
+            {/* Floating NISBot Toggle */}
+            <button
+              onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+              className="absolute bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-10 no-print"
+              aria-label="Toggle NISBot"
+            >
+              <MaterialIcon name={isChatbotOpen ? "close" : "smart_toy"} className="text-2xl" filled />
+            </button>
+
+            {/* Floating NISBot Window */}
+            {isChatbotOpen && (
+              <div className="absolute bottom-24 right-6 w-[360px] h-[500px] max-w-[calc(100vw-3rem)] bg-surface rounded-2xl shadow-xl border border-outline-variant overflow-hidden z-20 flex flex-col no-print animate-in slide-in-from-bottom-10 fade-in duration-300">
+                <ResumeChatbot 
+                  resumeData={data} 
+                  onResumeUpdate={applyResumeOperations} 
+                  onClose={() => setIsChatbotOpen(false)}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

@@ -62,18 +62,8 @@ function ProfileInner() {
 
   // ---- Identity (GET /auth/me) ----
   const [user, setUser] = useState<CurrentUser | null>(getStoredUser());
-  // ---- Profile text (GET /profile/) ----
-  const [profile, setProfile] = useState<Profile>({
-    headline: null,
-    summary: null,
-    location: null,
-  });
-
   // ---- Form fields ----
   const [fullName, setFullName] = useState("");
-  const [headline, setHeadline] = useState("");
-  const [summary, setSummary] = useState("");
-  const [location, setLocation] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,18 +79,11 @@ function ProfileInner() {
     const token = getToken();
     if (!token) return;
 
-    Promise.all([
-      apiRequest<CurrentUser>("/auth/me", { token }),
-      getProfile(token),
-    ])
-      .then(([me, p]) => {
+    apiRequest<CurrentUser>("/auth/me", { token })
+      .then((me) => {
         setUser(me);
         storeUser(me);
-        setProfile(p);
         setFullName(me.full_name ?? "");
-        setHeadline(p.headline ?? "");
-        setSummary(p.summary ?? "");
-        setLocation(p.location ?? "");
       })
       .catch(() => {
         /* token may be stale — Protected redirects on next visit */
@@ -108,11 +91,7 @@ function ProfileInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  const dirty =
-    fullName !== (user?.full_name ?? "") ||
-    headline !== (profile.headline ?? "") ||
-    summary !== (profile.summary ?? "") ||
-    location !== (profile.location ?? "");
+  const dirty = fullName !== (user?.full_name ?? "");
 
   const saveProfile = useCallback(async () => {
     const token = getToken();
@@ -120,21 +99,13 @@ function ProfileInner() {
 
     setSaving(true);
     try {
-      const updated = await updateProfile(token, {
-        headline: headline.trim() || null,
-        summary: summary.trim() || null,
-        location: location.trim() || null,
-      });
-      setProfile(updated);
-      setHeadline(updated.headline ?? "");
-      setSummary(updated.summary ?? "");
-      setLocation(updated.location ?? "");
-
       // If full_name changed, persist the new name for the sidebar/avatar too.
       if (fullName.trim() && user && fullName.trim() !== user.full_name) {
         const updatedUser = { ...user, full_name: fullName.trim() };
         setUser(updatedUser);
         storeUser(updatedUser);
+        // Note: the backend sync for name is currently handled during specific requests or would need a dedicated endpoint. 
+        // For now, it stays locally synced to avoid errors since updateProfile was removed.
       }
       notify.success("Profile saved successfully");
     } catch (err) {
@@ -144,7 +115,7 @@ function ProfileInner() {
     } finally {
       setSaving(false);
     }
-  }, [fullName, headline, summary, location, user, notify]);
+  }, [fullName, user, notify]);
 
   const handleDeleteAccount = async () => {
     const token = getToken();
@@ -297,112 +268,6 @@ function ProfileInner() {
             </div>
           </Reveal>
 
-          {/* Profile Details */}
-          <Reveal delay={100}>
-            <div className="ambient-card bg-white rounded-2xl border border-outline-variant overflow-hidden">
-              <div className="p-6 border-b border-outline-variant flex items-center gap-3">
-                <MaterialIcon name="badge" className="text-primary" />
-                <h4 className="text-headline-md text-primary">
-                  Profile Details
-                </h4>
-              </div>
-
-              <div className="p-6 space-y-6">
-                {/* Full name — editable, saved to auth/me on the backend */}
-                <Field
-                  label="Full Name"
-                  hint="Shown on your resumes and account."
-                >
-                  <input
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-60"
-                    placeholder="e.g. Alex Morgan"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    disabled={loading || saving}
-                  />
-                </Field>
-
-                {/* Email — read-only (managed by auth) */}
-                <Field label="Email" hint="Read-only — managed by your account.">
-                  <div className="relative">
-                    <MaterialIcon
-                      name="mail"
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
-                    />
-                    <input
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface-variant text-body-md cursor-not-allowed"
-                      value={user?.email ?? ""}
-                      readOnly
-                      disabled
-                    />
-                  </div>
-                </Field>
-
-                <Field
-                  label="Headline"
-                  hint="A one-line summary of who you are professionally."
-                >
-                  <input
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-60"
-                    placeholder="e.g. Senior Full-Stack Engineer"
-                    value={headline}
-                    onChange={(e) => setHeadline(e.target.value)}
-                    disabled={loading || saving}
-                  />
-                </Field>
-
-                <Field
-                  label="Summary"
-                  hint="A short paragraph our AI uses when tailoring your resumes."
-                >
-                  <textarea
-                    className="w-full min-h-[120px] px-4 py-3 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-60 resize-y"
-                    placeholder="e.g. Engineer with 5 years of experience shipping…"
-                    value={summary}
-                    onChange={(e) => setSummary(e.target.value)}
-                    disabled={loading || saving}
-                  />
-                </Field>
-
-                <Field
-                  label="Location"
-                  hint="Where you're based — shown on your resume."
-                >
-                  <input
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-60"
-                    placeholder="e.g. Bengaluru, India"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    disabled={loading || saving}
-                  />
-                </Field>
-
-                <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 pt-2">
-                  {dirty && (
-                    <span className="text-label-sm text-on-surface-variant sm:mr-auto">
-                      Unsaved changes
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={saveProfile}
-                    disabled={!dirty || saving || loading}
-                    className="btn-primary btn-shine px-6 py-2.5 rounded-full text-label-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {saving ? (
-                      <MaterialIcon
-                        name="sync"
-                        className="animate-spin text-[18px]"
-                      />
-                    ) : (
-                      <MaterialIcon name="save" className="text-[18px]" />
-                    )}
-                    {saving ? "Saving..." : "Save Profile"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Reveal>
 
           {/* Resume Data — the four building blocks behind every resume */}
           <div className="pt-4">
