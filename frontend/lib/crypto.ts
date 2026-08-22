@@ -28,7 +28,7 @@ export async function deriveKey(passphrase: string, salt?: Uint8Array): Promise<
   const key = await window.crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: activeSalt,
+      salt: activeSalt as any,
       iterations: 100000,
       hash: "SHA-256",
     },
