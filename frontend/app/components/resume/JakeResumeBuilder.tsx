@@ -52,6 +52,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   const [saving, setSaving] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string>("Header");
 
   // Apply operations received from NISBot
   const applyResumeOperations = (operations: any[]) => {
@@ -325,7 +326,27 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));  return (
     <>
       <PassphraseModal />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start relative">
+        {/* Border Chatbot Toggle (Visible on xl screens) */}
+        <div className="hidden xl:flex absolute left-1/2 top-32 -translate-x-1/2 z-30 no-print">
+          <button
+            onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+            className="w-14 h-14 bg-primary text-on-primary rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300"
+            title="Toggle NISBot"
+          >
+            <span className="text-2xl leading-none">🤖</span>
+          </button>
+          
+          {isChatbotOpen && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 w-[360px] h-[500px] bg-surface rounded-2xl shadow-[0_20px_50px_rgb(0,0,0,0.15)] border border-outline-variant overflow-hidden z-40 flex flex-col animate-in zoom-in-95 duration-300">
+              <ResumeChatbot 
+                resumeData={data} 
+                onResumeUpdate={applyResumeOperations} 
+                onClose={() => setIsChatbotOpen(false)}
+              />
+            </div>
+          )}
+        </div>
         {/* ============ LEFT: EDITOR ============ */}
         <div className="space-y-8 no-print">
           {/* Header */}
@@ -333,6 +354,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             icon="badge"
             title="Header"
             subtitle="Your name, contact details, and profile links."
+            isOpen={openSection === "Header"}
+            onToggle={() => setOpenSection(openSection === "Header" ? "" : "Header")}
           >
             <Field label="Full Name">
               <TextInput
@@ -410,6 +433,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             action={
               <AddButton onClick={addEducation} label="Add Education" />
             }
+            isOpen={openSection === "Education"}
+            onToggle={() => setOpenSection(openSection === "Education" ? "" : "Education")}
           >
             {data.education.length === 0 && <EmptyRow onAdd={addEducation} />}
             {data.education.map((ed) => (
@@ -465,6 +490,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             title="Experience"
             subtitle="Roles with strong action-verb bullet points."
             action={<AddButton onClick={addExperience} label="Add Experience" />}
+            isOpen={openSection === "Experience"}
+            onToggle={() => setOpenSection(openSection === "Experience" ? "" : "Experience")}
           >
             {data.experience.length === 0 && <EmptyRow onAdd={addExperience} />}
             {data.experience.map((ex) => (
@@ -525,6 +552,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             title="Projects"
             subtitle="Personal or professional work worth highlighting."
             action={<AddButton onClick={addProject} label="Add Project" />}
+            isOpen={openSection === "Projects"}
+            onToggle={() => setOpenSection(openSection === "Projects" ? "" : "Projects")}
           >
             {data.projects.length === 0 && <EmptyRow onAdd={addProject} />}
             {data.projects.map((proj) => (
@@ -588,6 +617,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             title="Technical Skills"
             subtitle="Languages, frameworks, developer tools, and libraries."
             action={<AddButton onClick={addSkillGroup} label="Add Skill Group" />}
+            isOpen={openSection === "Skills"}
+            onToggle={() => setOpenSection(openSection === "Skills" ? "" : "Skills")}
           >
             {data.skills.length === 0 && <EmptyRow onAdd={addSkillGroup} />}
             {data.skills.map((s) => (
@@ -624,6 +655,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             title="Custom Sections"
             subtitle="Add any other details (Certifications, Awards, Languages)."
             action={<AddButton onClick={addCustomSection} label="Add Section" />}
+            isOpen={openSection === "Custom"}
+            onToggle={() => setOpenSection(openSection === "Custom" ? "" : "Custom")}
           >
             {(!data.customSections || data.customSections.length === 0) && (
               <EmptyRow onAdd={addCustomSection} />
@@ -755,18 +788,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             </button>
           </div>
 
-          {/* AI Tools Embedded */}
-          <Section
-            icon="auto_awesome"
-            title="AI Tools"
-            subtitle="Analyze a GitHub repository to automatically draft projects and skills."
-          >
-            <div className="text-body-sm text-on-surface-variant mb-4">
-              <strong>GitHub Analyzer:</strong> Provide a public repository link and our AI will extract the tech stack, purpose, and draft bullet points you can copy directly into your resume.<br/><br/>
-              <strong>NISBot:</strong> Use the floating chat button on the right to have an AI Copilot modify your resume in real time!
-            </div>
-            <GitHubAnalyzer />
-          </Section>
+          {/* AI Tools embedded in left column removed to avoid clutter */}
         </div>
 
         {/* ============ RIGHT: LIVE PREVIEW ============ */}
@@ -809,18 +831,17 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
           <div className="relative">
             <JakeResumePreview data={data} />
             
-            {/* Floating NISBot Toggle */}
+            {/* Mobile Chatbot Toggle (Visible on smaller screens only) */}
             <button
               onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-              className="absolute bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-10 no-print"
+              className="xl:hidden absolute bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-10 no-print"
               aria-label="Toggle NISBot"
             >
-              <MaterialIcon name={isChatbotOpen ? "close" : "smart_toy"} className="text-2xl" filled />
+              <span className="text-2xl leading-none">{isChatbotOpen ? "✖" : "🤖"}</span>
             </button>
 
-            {/* Floating NISBot Window */}
             {isChatbotOpen && (
-              <div className="absolute bottom-24 right-6 w-[360px] h-[500px] max-w-[calc(100vw-3rem)] bg-surface rounded-2xl shadow-xl border border-outline-variant overflow-hidden z-20 flex flex-col no-print animate-in slide-in-from-bottom-10 fade-in duration-300">
+              <div className="xl:hidden absolute bottom-24 right-6 w-[360px] h-[500px] max-w-[calc(100vw-3rem)] bg-surface rounded-2xl shadow-xl border border-outline-variant overflow-hidden z-20 flex flex-col no-print animate-in slide-in-from-bottom-10 fade-in duration-300">
                 <ResumeChatbot 
                   resumeData={data} 
                   onResumeUpdate={applyResumeOperations} 
@@ -828,6 +849,16 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                 />
               </div>
             )}
+          </div>
+          
+          <div className="mt-8 no-print">
+            <Section
+              icon="auto_awesome"
+              title="GitHub Analyzer"
+              subtitle="Extract projects and skills from a GitHub repository."
+            >
+              <GitHubAnalyzer />
+            </Section>
           </div>
         </div>
       </div>
@@ -845,26 +876,46 @@ function Section({
   subtitle,
   action,
   children,
+  isOpen = true,
+  onToggle,
 }: {
   icon: string;
   title: string;
   subtitle: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }) {
   return (
-    <section className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
-      <div className="p-5 flex flex-wrap items-center gap-3 border-b border-outline-variant">
-        <div className="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center">
+    <section className="bg-white rounded-2xl border border-outline-variant overflow-hidden transition-all duration-200">
+      <div 
+        className={`p-5 flex flex-wrap items-center gap-3 ${isOpen ? 'border-b border-outline-variant' : ''} ${onToggle ? 'cursor-pointer hover:bg-surface-container-lowest transition-colors' : ''}`}
+        onClick={onToggle}
+      >
+        <div className="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
           <MaterialIcon name={icon} className="text-primary text-[20px]" filled />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-headline-md text-on-surface">{title}</h3>
-          <p className="text-label-sm text-on-surface-variant">{subtitle}</p>
+          <p className="text-label-sm text-on-surface-variant truncate">{subtitle}</p>
         </div>
-        {action}
+        {action && (
+          <div onClick={(e) => e.stopPropagation()}>
+            {action}
+          </div>
+        )}
+        {onToggle && (
+          <div className="ml-2 shrink-0">
+            <MaterialIcon name={isOpen ? "expand_less" : "expand_more"} className="text-on-surface-variant text-[24px]" />
+          </div>
+        )}
       </div>
-      <div className="p-5 space-y-5">{children}</div>
+      {isOpen && (
+        <div className="p-5 space-y-5 animate-in slide-in-from-top-2 fade-in duration-300">
+          {children}
+        </div>
+      )}
     </section>
   );
 }

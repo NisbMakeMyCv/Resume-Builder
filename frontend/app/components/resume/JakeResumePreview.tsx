@@ -91,8 +91,8 @@ export default function JakeResumePreview({
     >
       <div
         id="resume-pdf-content"
-        className="px-10 py-8 bg-white shadow-xl shrink-0 w-full max-w-[800px] transition-all print:shadow-none"
-        style={{ minHeight: "297mm" }}
+        className="px-8 py-8 bg-white shadow-xl shrink-0 transition-all print:shadow-none mx-auto"
+        style={{ width: "210mm", minHeight: "297mm", overflow: "hidden", boxSizing: "border-box" }}
       >
         {/* =========================================================
             NAME / HEADER
@@ -113,19 +113,25 @@ export default function JakeResumePreview({
           </h1>
 
           {contactParts.length > 0 && (
-            <p
+            <div
               style={{
                 fontSize: "11px",
                 marginTop: "6px",
                 color: "#1f2937",
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                alignItems: "center",
+                columnGap: "8px",
+                rowGap: "2px"
               }}
             >
               {contactParts.map((part, i) => (
-                <span key={`contact-${i}-${part}`}>
+                <span key={`contact-${i}-${part}`} style={{ display: "flex", alignItems: "center" }}>
                   {i > 0 && (
                     <span
                       style={{
-                        margin: "0 4px",
+                        marginRight: "8px",
                         color: "#6b7280",
                       }}
                     >
@@ -150,7 +156,7 @@ export default function JakeResumePreview({
                   )}
                 </span>
               ))}
-            </p>
+            </div>
           )}
         </div>
 

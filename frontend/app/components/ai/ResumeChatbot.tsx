@@ -78,7 +78,7 @@ export default function ResumeChatbot({
     setIsSending(true);
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
       // Map JakeResumeBuilder format to the AI backend format
       const backendResume = {
@@ -98,7 +98,7 @@ export default function ResumeChatbot({
       const recentHistory = conversationHistory.slice(-20);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/ai/resume/chat${
+        `${API_BASE_URL}/ai/resume/chat${
           conversationId ? `?conversation_id=${encodeURIComponent(conversationId)}` : ""
         }`,
         {
@@ -198,7 +198,7 @@ export default function ResumeChatbot({
           return (
             <div key={chatMessage.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 animate-in slide-in-from-bottom-2 fade-in duration-300 ${
                   isUser
                     ? "bg-primary text-on-primary rounded-br-sm"
                     : "bg-surface-container text-on-surface rounded-bl-sm"
