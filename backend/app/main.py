@@ -50,20 +50,12 @@ app = FastAPI(
 # CORS
 # ============================================================
 
-allowed_origins_raw = os.getenv(
-    "ALLOWED_ORIGINS",
-    "*",
-)
-
-origins = (
-    [
-        origin.strip()
-        for origin in allowed_origins_raw.split(",")
-        if origin.strip()
-    ]
-    if allowed_origins_raw != "*"
-    else ["*"]
-)
+# Explicitly define your production and local frontend URLs
+origins = [
+    "https://nisbmakemycv.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173", # Add your local dev port if different
+]
 
 app.add_middleware(
     CORSMiddleware,

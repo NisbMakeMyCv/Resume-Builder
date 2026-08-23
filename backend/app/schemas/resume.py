@@ -14,6 +14,7 @@ class ProfileBase(BaseModel):
     headline: Optional[str] = None
     summary: Optional[str] = None
     location: Optional[str] = None
+    dob: Optional[date] = None
 
 class ProfileCreate(ProfileBase):
     pass

@@ -28,6 +28,7 @@ export type Profile = {
   headline: string | null;
   summary: string | null;
   location: string | null;
+  dob: string | null;
 };
 
 type RequestOptions = {

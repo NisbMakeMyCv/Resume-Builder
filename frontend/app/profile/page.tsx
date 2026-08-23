@@ -8,28 +8,18 @@ import MaterialIcon from "../components/MaterialIcon";
 import Protected from "../components/Protected";
 import Reveal from "../components/Reveal";
 import ConfirmModal from "../components/ConfirmModal";
-import ResumeDataSection from "../components/ResumeDataSection";
 import { ToastStack, useToasts } from "../components/Toast";
-import {
   apiRequest,
   clearSession,
   deleteAccount,
-  educationApi,
-  experienceApi,
   getProfile,
   getStoredUser,
   getToken,
-  projectsApi,
-  skillsApi,
   storeUser,
   updateProfile,
   uploadProfilePhoto,
   type CurrentUser,
-  type EducationCreateInput,
-  type ExperienceCreateInput,
   type Profile,
-  type ProjectCreateInput,
-  type SkillCreateInput,
 } from "../../lib/api";
 
 /**
@@ -62,8 +52,12 @@ function ProfileInner() {
 
   // ---- Identity (GET /auth/me) ----
   const [user, setUser] = useState<CurrentUser | null>(getStoredUser());
-  // ---- Form fields ----
   const [fullName, setFullName] = useState("");
+
+  const [dob, setDob] = useState("");
+  const [location, setLocation] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [summary, setSummary] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,11 +73,19 @@ function ProfileInner() {
     const token = getToken();
     if (!token) return;
 
-    apiRequest<CurrentUser>("/auth/me", { token })
-      .then((me) => {
+    Promise.all([
+      apiRequest<CurrentUser>("/auth/me", { token }),
+      getProfile(token)
+    ])
+      .then(([me, prof]) => {
         setUser(me);
         storeUser(me);
         setFullName(me.full_name ?? "");
+        
+        setDob(prof.dob ?? "");
+        setLocation(prof.location ?? "");
+        setHeadline(prof.headline ?? "");
+        setSummary(prof.summary ?? "");
       })
       .catch(() => {
         /* token may be stale — Protected redirects on next visit */
@@ -91,7 +93,7 @@ function ProfileInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  const dirty = fullName !== (user?.full_name ?? "");
+  const dirty = true; // Simplified dirty checking
 
   const saveProfile = useCallback(async () => {
     const token = getToken();
@@ -99,14 +101,19 @@ function ProfileInner() {
 
     setSaving(true);
     try {
-      // If full_name changed, persist the new name for the sidebar/avatar too.
       if (fullName.trim() && user && fullName.trim() !== user.full_name) {
         const updatedUser = { ...user, full_name: fullName.trim() };
         setUser(updatedUser);
         storeUser(updatedUser);
-        // Note: the backend sync for name is currently handled during specific requests or would need a dedicated endpoint. 
-        // For now, it stays locally synced to avoid errors since updateProfile was removed.
       }
+      
+      await updateProfile(token, {
+        dob: dob || null,
+        location: location || null,
+        headline: headline || null,
+        summary: summary || null,
+      });
+
       notify.success("Profile saved successfully");
     } catch (err) {
       notify.error(
@@ -115,7 +122,7 @@ function ProfileInner() {
     } finally {
       setSaving(false);
     }
-  }, [fullName, user, notify]);
+  }, [fullName, user, dob, location, headline, summary, notify]);
 
   const handleDeleteAccount = async () => {
     const token = getToken();
@@ -277,115 +284,70 @@ function ProfileInner() {
           </Reveal>
 
 
-          {/* Resume Data — the four building blocks behind every resume */}
+          {/* Basic Details */}
           <div className="pt-4">
             <div className="flex items-center gap-3">
               <h4 className="text-headline-md font-bold text-on-surface">
-                Resume Data
+                Basic Details
               </h4>
               <span className="text-label-sm text-on-surface-variant">
-                The building blocks used in every resume you create.
+                Core information for your resumes.
               </span>
             </div>
           </div>
 
           <Reveal delay={0}>
-            <ResumeDataSection
-              title="Education"
-              icon="school"
-              emptyLabel="No education yet — add your first institution."
-              fields={[
-                { name: "institution", label: "Institution", placeholder: "e.g. BMS College of Engineering", required: true },
-                { name: "degree", label: "Degree", placeholder: "e.g. B.E. in Computer Science", required: true },
-                { name: "branch", label: "Branch", placeholder: "e.g. Computer Science", required: true },
-                { name: "start_date", label: "Start Date", kind: "date", required: true },
-                { name: "end_date", label: "End Date", kind: "date" },
-                { name: "cgpa", label: "CGPA", kind: "number", placeholder: "e.g. 8.5" },
-              ]}
-              fetchList={(token: string) => educationApi.list(token)}
-              createItem={(token: string, payload: EducationCreateInput) =>
-                educationApi.create(token, payload)
-              }
-              updateItem={(token: string, id: string, payload: Partial<EducationCreateInput>) =>
-                educationApi.update(token, id, payload)
-              }
-              deleteItem={(token: string, id: string) => educationApi.remove(token, id)}
-            />
-          </Reveal>
+            <div className="ambient-card bg-white rounded-2xl border border-outline-variant p-6 sm:p-8 space-y-6">
+              <Field label="Full Name" hint="Your display name">
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Jake Ryan"
+                  className="input-field w-full"
+                />
+              </Field>
 
-          <Reveal delay={40}>
-            <ResumeDataSection
-              title="Experience"
-              icon="work"
-              emptyLabel="No work experience yet — add your first role."
-              fields={[
-                { name: "company", label: "Company", placeholder: "e.g. Google", required: true },
-                { name: "designation", label: "Designation", placeholder: "e.g. Software Engineer", required: true },
-                { name: "start_date", label: "Start Date", kind: "date", required: true },
-                { name: "end_date", label: "End Date", kind: "date" },
-                { name: "description", label: "Description", kind: "textarea", placeholder: "What did you build, own, or improve?" },
-              ]}
-              fetchList={(token: string) => experienceApi.list(token)}
-              createItem={(token: string, payload: ExperienceCreateInput) =>
-                experienceApi.create(token, payload)
-              }
-              updateItem={(token: string, id: string, payload: Partial<ExperienceCreateInput>) =>
-                experienceApi.update(token, id, payload)
-              }
-              deleteItem={(token: string, id: string) => experienceApi.remove(token, id)}
-            />
-          </Reveal>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Field label="Date of Birth" hint="Format: YYYY-MM-DD">
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="input-field w-full"
+                  />
+                </Field>
+                <Field label="Location" hint="City, Country">
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. San Francisco, CA"
+                    className="input-field w-full"
+                  />
+                </Field>
+              </div>
 
-          <Reveal delay={80}>
-            <ResumeDataSection
-              title="Skills"
-              icon="bolt"
-              emptyLabel="No skills yet — add a skill and its proficiency."
-              fields={[
-                { name: "skill_name", label: "Skill", placeholder: "e.g. React", required: true },
-                {
-                  name: "proficiency",
-                  label: "Proficiency",
-                  kind: "select",
-                  required: true,
-                  options: [
-                    { value: "Beginner", label: "Beginner" },
-                    { value: "Intermediate", label: "Intermediate" },
-                    { value: "Expert", label: "Expert" },
-                  ],
-                },
-              ]}
-              fetchList={(token: string) => skillsApi.list(token)}
-              createItem={(token: string, payload: SkillCreateInput) =>
-                skillsApi.create(token, payload)
-              }
-              updateItem={(token: string, id: string, payload: Partial<SkillCreateInput>) =>
-                skillsApi.update(token, id, payload)
-              }
-              deleteItem={(token: string, id: string) => skillsApi.remove(token, id)}
-            />
-          </Reveal>
+              <Field label="Headline" hint="A short professional title">
+                <input
+                  type="text"
+                  value={headline}
+                  onChange={(e) => setHeadline(e.target.value)}
+                  placeholder="e.g. Software Engineer"
+                  className="input-field w-full"
+                />
+              </Field>
 
-          <Reveal delay={120}>
-            <ResumeDataSection
-              title="Projects"
-              icon="code"
-              emptyLabel="No projects yet — add your first project."
-              fields={[
-                { name: "title", label: "Title", placeholder: "e.g. MakeMyCV Resume Builder", required: true },
-                { name: "github_link", label: "GitHub Link", placeholder: "e.g. https://github.com/you/repo" },
-                { name: "github_link_text", label: "Link Label (Optional)", placeholder: "e.g. view repo" },
-                { name: "description", label: "Description", kind: "textarea", placeholder: "What problem does it solve?" },
-              ]}
-              fetchList={(token: string) => projectsApi.list(token)}
-              createItem={(token: string, payload: ProjectCreateInput) =>
-                projectsApi.create(token, payload)
-              }
-              updateItem={(token: string, id: string, payload: Partial<ProjectCreateInput>) =>
-                projectsApi.update(token, id, payload)
-              }
-              deleteItem={(token: string, id: string) => projectsApi.remove(token, id)}
-            />
+              <Field label="Summary" hint="A brief overview of your background">
+                <textarea
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="A passionate developer..."
+                  rows={4}
+                  className="input-field w-full resize-none"
+                />
+              </Field>
+            </div>
           </Reveal>
         </div>
       </main>

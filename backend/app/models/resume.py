@@ -20,6 +20,7 @@ class Profile(Base):
     headline = Column(String, nullable=True)
     summary = Column(Text, nullable=True)
     location = Column(String, nullable=True)
+    dob = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
