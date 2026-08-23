@@ -791,7 +791,6 @@ export default function JakeResumePreview({
             )}
           </>
         )}
-        )}
       </div>
       </div>
     </div>
