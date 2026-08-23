@@ -522,7 +522,7 @@ Rules:
 
     raw_response = generate_text(
         prompt=prompt,
-        model="llama3-8b-8192",
+        model="openai/gpt-oss-120b",
         temperature=0.1,
         json_mode=False,
     )
@@ -696,7 +696,7 @@ Rules:
 
     response = generate_text(
         prompt=prompt,
-        model="llama3-8b-8192",
+        model="openai/gpt-oss-120b",
         temperature=0.2,
         json_mode=False,
     )

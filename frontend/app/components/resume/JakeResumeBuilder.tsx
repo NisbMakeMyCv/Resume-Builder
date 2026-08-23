@@ -851,7 +851,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
         </div>
 
         {/* ============ RIGHT: LIVE PREVIEW ============ */}
-        <div className="lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8">
+        <div className="lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8 print:!static print:!max-h-none print:!overflow-visible print:!pb-0 print:!w-full print:!h-auto">
           <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
             <div>
               <p className="text-label-md font-semibold text-on-surface">

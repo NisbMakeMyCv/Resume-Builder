@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import MaterialIcon from "../components/MaterialIcon";
 import JakeResumeBuilder from "../components/resume/JakeResumeBuilder";
@@ -12,6 +13,7 @@ import { useCrypto } from "../providers/CryptoProvider";
 import PassphraseModal from "../components/PassphraseModal";
 
 export default function ResumesPage() {
+  const router = useRouter();
   const { passphrase, isUnlocked } = useCrypto();
   const [editorOpen, setEditorOpen] = useState(false);
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
@@ -106,6 +108,13 @@ export default function ResumesPage() {
               {/* Header Section */}
               <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-200/60 pb-6 no-print">
                 <div>
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="mb-4 text-gray-500 hover:text-gray-900 flex items-center gap-1 transition-colors text-sm font-medium"
+                  >
+                    <MaterialIcon name="arrow_back" className="text-[16px]" />
+                    Back to Dashboard
+                  </button>
                   <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">My Vault</h2>
                   <p className="text-gray-500 mt-2 text-lg">
                     Manage, decrypt, and edit your zero-knowledge resumes.

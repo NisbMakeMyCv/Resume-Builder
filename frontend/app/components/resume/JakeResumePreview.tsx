@@ -99,16 +99,30 @@ export default function JakeResumePreview({
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      id="resume-preview-container"
-      className={`bg-surface-container flex justify-center items-center text-gray-900 w-full overflow-hidden ${className}`}
-      style={{
-        fontFamily:
-          "'Baskerville', 'Palatino Linotype', Georgia, serif",
-        height: "calc(100vh - 6rem)", // Full available height to center properly
-      }}
-    >
+    <>
+      <style type="text/css">
+        {`
+          @media print {
+            @page { margin: 0; size: A4; }
+            body { 
+              margin: 0; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact; 
+            }
+          }
+        `}
+      </style>
+
+      <div
+        ref={containerRef}
+        id="resume-preview-container"
+        className={`bg-surface-container flex justify-center items-center text-gray-900 w-full overflow-hidden ${className} print:!block print:!h-auto print:!overflow-visible print:!bg-transparent`}
+        style={{
+          fontFamily:
+            "'Baskerville', 'Palatino Linotype', Georgia, serif",
+          height: "calc(100vh - 6rem)", // Full available height to center properly
+        }}
+      >
       <div 
         className="print:!transform-none origin-center"
         style={{ transform: `scale(${scale})` }}
@@ -777,9 +791,11 @@ export default function JakeResumePreview({
             )}
           </>
         )}
+        )}
       </div>
       </div>
     </div>
+    </>
   );
 }
 
