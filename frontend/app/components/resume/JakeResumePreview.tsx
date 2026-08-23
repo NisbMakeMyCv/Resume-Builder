@@ -109,19 +109,21 @@ export default function JakeResumePreview({
         height: "calc(100vh - 6rem)", // Full available height to center properly
       }}
     >
-      <div
-        id="resume-pdf-content"
-        className="bg-white shadow-xl shrink-0 print:shadow-none print:m-0 print:p-0"
-        style={{ 
-          width: "210mm", 
-          height: "297mm", 
-          overflow: "hidden", 
-          boxSizing: "border-box",
-          padding: "12mm 15mm", // Thinner margins matching Jake's template (approx 0.5" top/bottom, 0.6" sides)
-          transform: `scale(${scale})`,
-          transformOrigin: "center", // Center scale
-        }}
+      <div 
+        className="print:!transform-none origin-center"
+        style={{ transform: `scale(${scale})` }}
       >
+        <div
+          id="resume-pdf-content"
+          className="bg-white shadow-xl shrink-0 print:shadow-none print:m-0 print:p-0"
+          style={{ 
+            width: "210mm", 
+            height: "297mm", 
+            overflow: "hidden", 
+            boxSizing: "border-box",
+            padding: "12mm 15mm", // Thinner margins matching Jake's template (approx 0.5" top/bottom, 0.6" sides)
+          }}
+        >
         {/* =========================================================
             NAME / HEADER
         ========================================================= */}
@@ -775,6 +777,7 @@ export default function JakeResumePreview({
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

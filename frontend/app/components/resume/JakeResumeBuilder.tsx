@@ -147,6 +147,9 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   };
 
   const handleExportDOCX = async () => {
+    const filename = prompt("Enter a name for your DOCX file:", "resume");
+    if (!filename) return; // User cancelled
+
     const el = document.getElementById("resume-pdf-content");
     if (!el) return;
     
@@ -164,7 +167,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
       const blob = await res.blob();
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = "resume.docx";
+      link.download = `${filename}.docx`;
       link.click();
     } catch (err) {
       alert("Failed to export DOCX: " + (err instanceof Error ? err.message : String(err)));
@@ -327,7 +330,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));  return (
     <>
       <PassphraseModal />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start relative">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start relative">
         {/* ============ LEFT: EDITOR & TOOLS PANEL ============ */}
         <div className="space-y-6 no-print">
           {/* Tab Navigation */}
@@ -424,7 +427,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                   placeholder="e.g. linkedin/you"
                 />
               </Field>
-              <Field label="GitHub URL">
+              <Field label="GitHub URL (Use GitHub Analyzer below to extract!)">
                 <TextInput
                   value={data.header.links.github}
                   onChange={(v) =>
@@ -848,7 +851,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
         </div>
 
         {/* ============ RIGHT: LIVE PREVIEW ============ */}
-        <div className="xl:sticky xl:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8">
+        <div className="lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-8">
           <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
             <div>
               <p className="text-label-md font-semibold text-on-surface">
