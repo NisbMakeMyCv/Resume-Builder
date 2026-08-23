@@ -53,6 +53,8 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - TOKEN_GITHUB=${TOKEN_GITHUB}
+      - GOOGLE_DRIVE_CREDENTIALS_JSON=${GOOGLE_DRIVE_CREDENTIALS_JSON}
+      - GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/"]
       interval: 10s
