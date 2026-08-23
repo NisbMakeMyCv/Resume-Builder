@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState, useRef } from "react";
+
 import type {
   ResumeData,
   SkillGroup,
@@ -70,20 +72,55 @@ export default function JakeResumePreview({
     { type: "link", url: header?.links?.portfolio, text: header?.links?.portfolioText || header?.links?.portfolio },
   ].filter(item => item.value || item.url);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // A4 size in pixels at 96 DPI: 794 x 1123
+        const a4Width = 794;
+        const a4Height = 1123;
+        
+        // Calculate scale to fit BOTH width and height (with a little padding)
+        const scaleX = (width - 32) / a4Width;
+        const scaleY = (height - 32) / a4Height;
+        
+        // We only scale down (never up) to keep it crisp if monitor is huge.
+        setScale(Math.min(scaleX, scaleY, 1));
+      }
+    });
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={containerRef}
       id="resume-preview-container"
-      className={`bg-surface-container flex justify-center items-start text-gray-900 w-full overflow-auto ${className}`}
+      className={`bg-surface-container flex justify-center items-center text-gray-900 w-full overflow-hidden ${className}`}
       style={{
         fontFamily:
           "'Baskerville', 'Palatino Linotype', Georgia, serif",
-        padding: "1rem",
+        height: "calc(100vh - 6rem)", // Full available height to center properly
       }}
     >
       <div
         id="resume-pdf-content"
-        className="px-8 py-8 bg-white shadow-xl shrink-0 transition-all print:shadow-none mx-auto"
-        style={{ width: "210mm", minHeight: "297mm", overflow: "hidden", boxSizing: "border-box" }}
+        className="bg-white shadow-xl shrink-0 print:shadow-none print:m-0 print:p-0"
+        style={{ 
+          width: "210mm", 
+          height: "297mm", 
+          overflow: "hidden", 
+          boxSizing: "border-box",
+          padding: "12mm 15mm", // Thinner margins matching Jake's template (approx 0.5" top/bottom, 0.6" sides)
+          transform: `scale(${scale})`,
+          transformOrigin: "center", // Center scale
+        }}
       >
         {/* =========================================================
             NAME / HEADER
@@ -102,6 +139,18 @@ export default function JakeResumePreview({
           >
             {header?.fullName || "Your Name"}
           </h1>
+          {header?.position && (
+            <p
+              style={{
+                fontSize: "14px",
+                fontStyle: "italic",
+                color: "#111827",
+                margin: "4px 0 0 0",
+              }}
+            >
+              {header.position}
+            </p>
+          )}
 
           {contactItems.length > 0 && (
             <div

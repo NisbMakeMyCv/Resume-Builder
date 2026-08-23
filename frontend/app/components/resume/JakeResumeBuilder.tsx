@@ -497,10 +497,9 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                     />
                   </Field>
                   <Field label="Dates">
-                    <TextInput
+                    <DateRangeInput
                       value={ed.dates}
                       onChange={(v) => updateItem<Education>("education", ed.id, { dates: v })}
-                      placeholder="2018 – 2022"
                     />
                   </Field>
                   <Field label="Location">
@@ -554,10 +553,9 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                     />
                   </Field>
                   <Field label="Dates">
-                    <TextInput
+                    <DateRangeInput
                       value={ex.dates}
                       onChange={(v) => updateItem<Experience>("experience", ex.id, { dates: v })}
-                      placeholder="2022 – Present"
                     />
                   </Field>
                   <Field label="Location">
@@ -616,10 +614,9 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                     />
                   </Field>
                   <Field label="Dates">
-                    <TextInput
+                    <DateRangeInput
                       value={proj.dates}
                       onChange={(v) => updateItem<Project>("projects", proj.id, { dates: v })}
-                      placeholder="Jan 2024 – Present"
                     />
                   </Field>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -908,10 +905,10 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
         <button
           type="button"
           onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-          className="relative group w-14 h-14 bg-gradient-to-tr from-primary to-primary-container text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-4 ring-primary/20"
+          className="relative group w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-4 ring-primary/20 overflow-hidden"
           aria-label="Toggle NISBot AI Assistant"
         >
-          <span className="text-2xl leading-none animate-bounce">🤖</span>
+          <img src="/nisbot.jpeg" alt="NISBot" className="w-full h-full object-cover mix-blend-multiply" />
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
             <span className="relative inline-flex rounded-full h-4 w-4 bg-tertiary"></span>
@@ -1056,6 +1053,98 @@ function TextInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
     />
+  );
+}
+
+function DateRangeInput({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (v: string) => void;
+}) {
+  // Parse the current value if it looks like "Start - End"
+  const parts = (value || "").split("–").map(s => s.trim());
+  let initStart = parts[0] || "";
+  let initEnd = parts.length > 1 ? parts[1] : "";
+  if (!value?.includes("–") && !value?.includes("-")) {
+    initStart = value || "";
+    initEnd = "";
+  } else if (value.includes("-") && !value.includes("–")) {
+    const dashParts = value.split("-").map(s => s.trim());
+    initStart = dashParts[0] || "";
+    initEnd = dashParts.length > 1 ? dashParts[1] : "";
+  }
+
+  const [start, setStart] = useState(initStart);
+  const [end, setEnd] = useState(initEnd);
+  const [isPresent, setIsPresent] = useState(initEnd.toLowerCase() === "present");
+
+  // Keep internal state synced if external value completely changes (e.g. reset)
+  useEffect(() => {
+    if (!value) {
+      setStart("");
+      setEnd("");
+      setIsPresent(false);
+    }
+  }, [value]);
+
+  const updateValue = (s: string, e: string, p: boolean) => {
+    if (!s && !e && !p) {
+      onChange("");
+      return;
+    }
+    const endStr = p ? "Present" : e;
+    if (s && endStr) {
+      onChange(`${s} – ${endStr}`);
+    } else if (s) {
+      onChange(s);
+    } else if (endStr) {
+      onChange(endStr);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          className="w-1/2 px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all"
+          placeholder="Start (e.g. Jan 2024)"
+          value={start}
+          onChange={(e) => {
+            setStart(e.target.value);
+            updateValue(e.target.value, end, isPresent);
+          }}
+        />
+        <input
+          type="text"
+          disabled={isPresent}
+          className="w-1/2 px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-50 disabled:bg-surface-container-low"
+          placeholder="End (e.g. Mar 2024)"
+          value={isPresent ? "Present" : end}
+          onChange={(e) => {
+            setEnd(e.target.value);
+            updateValue(start, e.target.value, isPresent);
+          }}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id={`present-${start}-${end}`}
+          checked={isPresent}
+          onChange={(e) => {
+            setIsPresent(e.target.checked);
+            updateValue(start, end, e.target.checked);
+          }}
+          className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
+        />
+        <label htmlFor={`present-${start}-${end}`} className="text-label-sm text-on-surface-variant cursor-pointer">
+          Currently working here (Present)
+        </label>
+      </div>
+    </div>
   );
 }
 
