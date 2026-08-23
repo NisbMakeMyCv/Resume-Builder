@@ -233,6 +233,7 @@ jobs:
           GOOGLE_DRIVE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS_JSON }}
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
         run: |
+          # Inject EVERYTHING directly into the heredoc block without extra quotes
           cat > .env.prod << EOF
           DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }}
@@ -246,11 +247,9 @@ jobs:
           TOKEN_GITHUB=${{ secrets.TOKEN_GITHUB }}
           ALLOWED_ORIGINS=*
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+          GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID}
+          GOOGLE_DRIVE_CREDENTIALS_JSON=${GOOGLE_DRIVE_CREDENTIALS_JSON}
           EOF
-          
-          # Safely append secrets using environment variables to prevent bash injection or formatting issues
-          echo "GOOGLE_DRIVE_FOLDER_ID=$GOOGLE_DRIVE_FOLDER_ID" >> .env.prod
-          echo "GOOGLE_DRIVE_CREDENTIALS_JSON='$GOOGLE_DRIVE_CREDENTIALS_JSON'" >> .env.prod
           
           # Remove leading whitespace caused by heredoc indentation
           sed -i 's/^[ \t]*//' .env.prod
