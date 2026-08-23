@@ -1045,14 +1045,14 @@ function TextInput({
   onChange,
   placeholder,
 }: {
-  value: string;
+  value?: string;
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
   return (
     <input
       className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all"
-      value={value}
+      value={value || ""}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
     />
