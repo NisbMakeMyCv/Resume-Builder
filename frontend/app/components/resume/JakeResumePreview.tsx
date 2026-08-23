@@ -61,23 +61,14 @@ export default function JakeResumePreview({
         : "";
 
   // Build single unified contact + links line.
-  const contactParts = [
-    header?.phone,
-    header?.email,
-    header?.location,
-    header?.links?.linkedin,
-    header?.links?.github,
-    header?.links?.portfolio,
-  ].filter(Boolean) as string[];
-
-  // Determine which parts are links vs plain text.
-  const linkFields = new Set(
-    [
-      header?.links?.linkedin,
-      header?.links?.github,
-      header?.links?.portfolio,
-    ].filter(Boolean)
-  );
+  const contactItems = [
+    { type: "text", value: header?.phone },
+    { type: "text", value: header?.email },
+    { type: "text", value: header?.location },
+    { type: "link", url: header?.links?.linkedin, text: header?.links?.linkedinText || header?.links?.linkedin },
+    { type: "link", url: header?.links?.github, text: header?.links?.githubText || header?.links?.github },
+    { type: "link", url: header?.links?.portfolio, text: header?.links?.portfolioText || header?.links?.portfolio },
+  ].filter(item => item.value || item.url);
 
   return (
     <div
@@ -112,7 +103,7 @@ export default function JakeResumePreview({
             {header?.fullName || "Your Name"}
           </h1>
 
-          {contactParts.length > 0 && (
+          {contactItems.length > 0 && (
             <div
               style={{
                 fontSize: "11px",
@@ -126,8 +117,8 @@ export default function JakeResumePreview({
                 rowGap: "2px"
               }}
             >
-              {contactParts.map((part, i) => (
-                <span key={`contact-${i}-${part}`} style={{ display: "flex", alignItems: "center" }}>
+              {contactItems.map((item, i) => (
+                <span key={`contact-${i}`} style={{ display: "flex", alignItems: "center" }}>
                   {i > 0 && (
                     <span
                       style={{
@@ -139,20 +130,20 @@ export default function JakeResumePreview({
                     </span>
                   )}
 
-                  {linkFields.has(part) ? (
+                  {item.type === "link" && item.url ? (
                     <a
-                      href={normalizeHref(part)}
+                      href={normalizeHref(item.url)}
                       target="_blank"
                       rel="noreferrer"
                       style={{
-                        color: "#1c3fa8",
+                        color: "#000000",
                         textDecoration: "underline",
                       }}
                     >
-                      {part}
+                      {item.text}
                     </a>
                   ) : (
-                    <span>{part}</span>
+                    <span>{item.value}</span>
                   )}
                 </span>
               ))}
@@ -424,6 +415,7 @@ export default function JakeResumePreview({
                           fontSize: "12px",
                           margin: 0,
                           color: "#111827",
+                          wordBreak: "break-word",
                         }}
                       >
                         <strong>{proj.title || "Project"}</strong>
@@ -450,13 +442,13 @@ export default function JakeResumePreview({
                               rel="noreferrer"
                               style={{
                                 fontSize: "11px",
-                                color: "#1c3fa8",
+                                color: "#000000",
                                 textDecoration: "underline",
                                 fontWeight: "400",
                                 fontStyle: "normal",
                               }}
                             >
-                              {proj.links}
+                              {proj.linkText || proj.links}
                             </a>
                           </>
                         )}
@@ -582,7 +574,7 @@ export default function JakeResumePreview({
                         target="_blank"
                         rel="noreferrer"
                         style={{
-                          color: "#1c3fa8",
+                          color: "#000000",
                           textDecoration: "underline",
                         }}
                       >
@@ -717,7 +709,7 @@ export default function JakeResumePreview({
                                 target="_blank"
                                 rel="noreferrer"
                                 style={{
-                                  color: "#1c3fa8",
+                                  color: "#000000",
                                   textDecoration: "underline",
                                 }}
                               >
@@ -774,7 +766,7 @@ function SectionHeading({ title }: { title: string }) {
           fontSize: "13px",
           fontVariant: "small-caps",
           fontWeight: "700",
-          color: "#1c3fa8",
+          color: "#000000",
           letterSpacing: "0.04em",
           margin: "0 0 2px 0",
         }}
@@ -785,7 +777,7 @@ function SectionHeading({ title }: { title: string }) {
       <hr
         style={{
           border: "none",
-          borderTop: "1px solid #9ca3af",
+          borderTop: "1px solid #000000",
           margin: "0 0 4px 0",
         }}
       />

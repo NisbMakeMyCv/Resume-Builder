@@ -16,7 +16,6 @@ export type ContactLink = {
   value: string;
 };
 
-/** Header — name, phone, location, and profile links (LinkedIn / GitHub / Portfolio). */
 export type ResumeHeader = {
   fullName: string;
   position: string;
@@ -25,8 +24,11 @@ export type ResumeHeader = {
   location: string;
   links: {
     linkedin: string;
+    linkedinText?: string;
     github: string;
+    githubText?: string;
     portfolio: string;
+    portfolioText?: string;
   };
 };
 
@@ -54,6 +56,7 @@ export type Project = {
   technologies: string;
   dates: string;
   links: string;
+  linkText?: string;
   bullets: string[];
 };
 
@@ -111,7 +114,7 @@ export function emptyResume(): ResumeData {
       phone: "",
       email: "",
       location: "",
-      links: { linkedin: "", github: "", portfolio: "" },
+      links: { linkedin: "", github: "", portfolio: "", linkedinText: "", githubText: "", portfolioText: "" },
     },
     education: [],
     experience: [],

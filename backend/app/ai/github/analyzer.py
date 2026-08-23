@@ -522,7 +522,7 @@ Rules:
 
     raw_response = generate_text(
         prompt=prompt,
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         temperature=0.1,
         json_mode=False,
     )
@@ -696,7 +696,7 @@ Rules:
 
     response = generate_text(
         prompt=prompt,
-        model="llama-3.3-70b-versatile",
+        model="llama3-70b-8192",
         temperature=0.2,
         json_mode=False,
     )

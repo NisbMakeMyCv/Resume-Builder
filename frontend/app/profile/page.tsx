@@ -374,6 +374,7 @@ function ProfileInner() {
               fields={[
                 { name: "title", label: "Title", placeholder: "e.g. MakeMyCV Resume Builder", required: true },
                 { name: "github_link", label: "GitHub Link", placeholder: "e.g. https://github.com/you/repo" },
+                { name: "github_link_text", label: "Link Label (Optional)", placeholder: "e.g. view repo" },
                 { name: "description", label: "Description", kind: "textarea", placeholder: "What problem does it solve?" },
               ]}
               fetchList={(token: string) => projectsApi.list(token)}

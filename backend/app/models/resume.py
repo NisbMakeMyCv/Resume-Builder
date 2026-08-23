@@ -71,6 +71,7 @@ class Project(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     github_link = Column(String, nullable=True)
+    github_link_text = Column(String, nullable=True)
     display_order = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -405,8 +405,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                 placeholder="San Francisco, CA"
               />
             </Field>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="LinkedIn">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="LinkedIn URL">
                 <TextInput
                   value={data.header.links.linkedin}
                   onChange={(v) =>
@@ -415,7 +415,16 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                   placeholder="linkedin.com/in/you"
                 />
               </Field>
-              <Field label="GitHub">
+              <Field label="LinkedIn Text">
+                <TextInput
+                  value={data.header.links.linkedinText}
+                  onChange={(v) =>
+                    updateHeader({ links: { ...data.header.links, linkedinText: v } })
+                  }
+                  placeholder="e.g. linkedin/you"
+                />
+              </Field>
+              <Field label="GitHub URL">
                 <TextInput
                   value={data.header.links.github}
                   onChange={(v) =>
@@ -424,13 +433,31 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                   placeholder="github.com/you"
                 />
               </Field>
-              <Field label="Portfolio">
+              <Field label="GitHub Text">
+                <TextInput
+                  value={data.header.links.githubText}
+                  onChange={(v) =>
+                    updateHeader({ links: { ...data.header.links, githubText: v } })
+                  }
+                  placeholder="e.g. github/you"
+                />
+              </Field>
+              <Field label="Portfolio URL">
                 <TextInput
                   value={data.header.links.portfolio}
                   onChange={(v) =>
                     updateHeader({ links: { ...data.header.links, portfolio: v } })
                   }
                   placeholder="yourdomain.dev"
+                />
+              </Field>
+              <Field label="Portfolio Text">
+                <TextInput
+                  value={data.header.links.portfolioText}
+                  onChange={(v) =>
+                    updateHeader({ links: { ...data.header.links, portfolioText: v } })
+                  }
+                  placeholder="e.g. Portfolio"
                 />
               </Field>
             </div>
@@ -595,13 +622,22 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
                       placeholder="Jan 2024 – Present"
                     />
                   </Field>
-                  <Field label="Links">
-                    <TextInput
-                      value={proj.links}
-                      onChange={(v) => updateItem<Project>("projects", proj.id, { links: v })}
-                      placeholder="github.com/you/project"
-                    />
-                  </Field>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field label="Links">
+                      <TextInput
+                        value={proj.links}
+                        onChange={(v) => updateItem<Project>("projects", proj.id, { links: v })}
+                        placeholder="github.com/you/project"
+                      />
+                    </Field>
+                    <Field label="Link Text">
+                      <TextInput
+                        value={proj.linkText || ""}
+                        onChange={(v) => updateItem<Project>("projects", proj.id, { linkText: v })}
+                        placeholder="e.g. view repo"
+                      />
+                    </Field>
+                  </div>
                 </div>
                 <BulletList
                   label="Bullet Points"

@@ -206,6 +206,7 @@ export type Project = {
   title: string;
   description: string | null;
   github_link: string | null;
+  github_link_text: string | null;
 };
 
 /**
@@ -336,6 +337,7 @@ export type ProjectCreateInput = {
   title: string;
   description?: string | null;
   github_link?: string | null;
+  github_link_text?: string | null;
 };
 
 /* =========================================================

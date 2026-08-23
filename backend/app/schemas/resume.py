@@ -118,6 +118,7 @@ class ProjectBase(BaseModel):
     title: str
     description: Optional[str] = None
     github_link: Optional[str] = None
+    github_link_text: Optional[str] = None
     display_order: Optional[int] = 0
 
 class ProjectCreate(ProjectBase):
