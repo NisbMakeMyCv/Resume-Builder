@@ -42,7 +42,7 @@ flowchart TD
 
 ---
 
-### 🔹 Step 2: Finalized Resumes in Google Drive (`app/services/drive_service.py` & `resumes.py`)
+### ✅ Step 2: Finalized Resumes in Google Drive (`app/services/drive_service.py` & `resumes.py`) (Completed)
 1. Ensure `POST /api/v1/resumes/` cleanly handles:
    * Encrypted vault backup files (`.enc`).
    * Generated / finalized resume exports (PDF / DOCX / LaTeX).
@@ -50,8 +50,10 @@ flowchart TD
 
 ---
 
-### 🔹 Step 3: Environment Variables Checklist
-* `SUPABASE_URL`: e.g., `https://<project-ref>.supabase.co`
-* `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_KEY`: Supabase API key with storage permissions.
-* `GOOGLE_DRIVE_CREDENTIALS_JSON`: Service account JSON string for resume drive storage.
-* `GOOGLE_DRIVE_FOLDER_ID`: Parent folder ID shared with the service account.
+### ✅ Step 3: Environment Variables Checklist (Completed)
+* `SUPABASE_URL`: Connected
+* `SUPABASE_SERVICE_ROLE_KEY`: Connected
+* `GOOGLE_DRIVE_CLIENT_ID`: Connected (Using OAuth Refresh Tokens to bypass quota limits)
+* `GOOGLE_DRIVE_CLIENT_SECRET`: Connected 
+* `GOOGLE_DRIVE_REFRESH_TOKEN`: Connected
+* `GOOGLE_DRIVE_FOLDER_ID`: Connected
