@@ -23,11 +23,9 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    environment:
-      # Connects directly to Supabase via .env.local
-      - DATABASE_URL=${DATABASE_URL}
+
     env_file:
-      - path: .env        # committed — non-sensitive defaults
-        required: true
+      - path: .env        # committed — non-sensitive defaults (generated in CI/CD)
+        required: false
       - path: .env.local  # gitignored — your real local secrets including DATABASE_URL
         required: false

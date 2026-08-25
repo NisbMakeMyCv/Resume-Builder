@@ -222,37 +222,40 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
     }
 
 from fastapi import UploadFile, File
-import shutil
-import uuid
-import tempfile
-
-UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "makemycv_uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+from app.services.supabase_storage import upload_avatar_to_supabase
 
 @router.post("/me/photo")
-def upload_profile_photo(
+async def upload_profile_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    content_type = file.content_type or ""
+    content_type = file.content_type or "image/png"
     if not content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
+        raise HTTPException(status_code=400, detail="Uploaded file must be an image (JPEG, PNG, WEBP)")
     
-    filename_str = file.filename or ""
+    filename_str = file.filename or "avatar.png"
     ext = filename_str.split(".")[-1] if "." in filename_str else "png"
-    filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
     
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    base_url = os.getenv("API_BASE_URL", "http://localhost:8000").rstrip("/")
-    photo_url = f"{base_url}/api/v1/uploads/{filename}"
-    
+    # Read file bytes asynchronously
+    file_bytes = await file.read()
+    if len(file_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    if len(file_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size exceeds the 5MB limit")
+
+    # Upload to Supabase Storage
+    photo_url = upload_avatar_to_supabase(
+        file_bytes=file_bytes,
+        file_ext=ext,
+        user_id=str(current_user.id),
+        content_type=content_type
+    )
+
     current_user.profile_picture = photo_url
     db.commit()
-    
+    db.refresh(current_user)
+
     return {"message": "Photo uploaded successfully", "profile_picture": photo_url}
 
 @router.post("/forgot-password")

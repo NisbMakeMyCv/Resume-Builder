@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
         hostname: "ui-avatars.com",
         pathname: "/**",
       },
+      // Supabase Storage URLs for uploaded avatars
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/**",
+      },
     ],
   },
   output: "standalone",
