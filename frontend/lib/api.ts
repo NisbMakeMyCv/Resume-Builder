@@ -29,6 +29,13 @@ export type Profile = {
   summary: string | null;
   location: string | null;
   dob: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  linkedin_text: string | null;
+  github_url: string | null;
+  github_text: string | null;
+  portfolio_url: string | null;
+  portfolio_text: string | null;
 };
 
 type RequestOptions = {
@@ -210,6 +217,23 @@ export type Project = {
   github_link_text: string | null;
 };
 
+export type Certification = {
+  id: string;
+  name: string;
+  organization: string | null;
+  issue_date: string | null;
+  credential_id: string | null;
+  credential_url: string | null;
+};
+
+export type Achievement = {
+  id: string;
+  title: string;
+  organization: string | null;
+  date: string | null;
+  description: string | null;
+};
+
 /**
  * Minimal per-entity REST helper factory.
  * `url` is the API path (e.g. "/education") — the auth prefix is omitted.
@@ -239,6 +263,8 @@ export const educationApi = createCrud<Education, EducationCreateInput>("/educat
 export const experienceApi = createCrud<Experience, ExperienceCreateInput>("/experience");
 export const skillsApi = createCrud<Skill, SkillCreateInput>("/skills");
 export const projectsApi = createCrud<Project, ProjectCreateInput>("/projects");
+export const certificationsApi = createCrud<Certification, CertificationCreateInput>("/certifications");
+export const achievementsApi = createCrud<Achievement, AchievementCreateInput>("/achievements");
 
 /* =========================================================
    RESUMES — Cloud Storage for Resumes
@@ -339,6 +365,21 @@ export type ProjectCreateInput = {
   description?: string | null;
   github_link?: string | null;
   github_link_text?: string | null;
+};
+
+export type CertificationCreateInput = {
+  name: string;
+  organization?: string | null;
+  issue_date?: string | null;
+  credential_id?: string | null;
+  credential_url?: string | null;
+};
+
+export type AchievementCreateInput = {
+  title: string;
+  organization?: string | null;
+  date?: string | null;
+  description?: string | null;
 };
 
 /* =========================================================

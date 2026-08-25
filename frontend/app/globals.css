@@ -780,3 +780,25 @@ body {
   -webkit-mask-image: radial-gradient(circle at 50% 40%, black, transparent 82%);
   mask-image: radial-gradient(circle at 50% 40%, black, transparent 82%);
 }
+
+/* Form boundaries / Input field enhancements */
+.input-field {
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 8px;
+  background-color: #ffffff;
+  padding: 10px 14px;
+  color: var(--color-on-surface);
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 42, 88, 0.15);
+}
+
+.input-field::placeholder {
+  color: var(--color-outline);
+}

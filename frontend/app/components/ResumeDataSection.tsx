@@ -64,13 +64,14 @@ export default function ResumeDataSection<
       setItems(await fetchList(token));
       setLoadError("");
     } catch (err) {
-      setLoadError(
-        err instanceof Error ? err.message : "Failed to load this section."
-      );
+      console.error(`Failed to load ${title}:`, err);
+      setItems([]); // Set safe fallback empty state
+      setLoadError(""); // Suppress full-screen error block
+      notify.error(`Failed to load ${title}. Showing local defaults.`);
     } finally {
       setLoading(false);
     }
-  }, [fetchList]);
+  }, [fetchList, title, notify]);
 
   useEffect(() => {
     // Defer the initial fetch so the effect never writes state synchronously.

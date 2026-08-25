@@ -15,6 +15,13 @@ class ProfileBase(BaseModel):
     summary: Optional[str] = None
     location: Optional[str] = None
     dob: Optional[date] = None
+    phone: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    linkedin_text: Optional[str] = None
+    github_url: Optional[str] = None
+    github_text: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    portfolio_text: Optional[str] = None
 
 class ProfileCreate(ProfileBase):
     pass
@@ -152,6 +159,62 @@ class ResumeDocumentUpdate(BaseModel):
     title: Optional[str] = None
 
 class ResumeDocumentResponse(ResumeDocumentBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# CERTIFICATION
+class CertificationBase(BaseModel):
+    name: str
+    organization: Optional[str] = None
+    issue_date: Optional[date] = None
+    credential_id: Optional[str] = None
+    credential_url: Optional[str] = None
+    display_order: Optional[int] = 0
+
+class CertificationCreate(CertificationBase):
+    pass
+
+class CertificationUpdate(BaseModel):
+    name: Optional[str] = None
+    organization: Optional[str] = None
+    issue_date: Optional[date] = None
+    credential_id: Optional[str] = None
+    credential_url: Optional[str] = None
+    display_order: Optional[int] = None
+
+class CertificationResponse(CertificationBase):
+    id: UUID
+    user_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ACHIEVEMENT
+class AchievementBase(BaseModel):
+    title: str
+    organization: Optional[str] = None
+    date: Optional[date] = None
+    description: Optional[str] = None
+    display_order: Optional[int] = 0
+
+class AchievementCreate(AchievementBase):
+    pass
+
+class AchievementUpdate(BaseModel):
+    title: Optional[str] = None
+    organization: Optional[str] = None
+    date: Optional[date] = None
+    description: Optional[str] = None
+    display_order: Optional[int] = None
+
+class AchievementResponse(AchievementBase):
     id: UUID
     user_id: UUID
     created_at: datetime

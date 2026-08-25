@@ -16,6 +16,8 @@ from app.api.v1.projects import router as project_router
 from app.api.v1.ai.github import router as ai_github_router
 from app.api.v1.ai.resume import router as ai_resume_router
 from app.api.v1.resumes import router as resumes_router
+from app.api.v1.certifications import router as cert_router
+from app.api.v1.achievements import router as ach_router
 
 from app.core.database import engine
 from app.models import user, resume
@@ -162,6 +164,28 @@ app.include_router(
     resumes_router,
     prefix="/api/v1/resumes",
     tags=["Resumes"],
+)
+
+
+# ============================================================
+# CERTIFICATIONS
+# ============================================================
+
+app.include_router(
+    cert_router,
+    prefix="/api/v1/certifications",
+    tags=["Certifications"],
+)
+
+
+# ============================================================
+# ACHIEVEMENTS
+# ============================================================
+
+app.include_router(
+    ach_router,
+    prefix="/api/v1/achievements",
+    tags=["Achievements"],
 )
 
 

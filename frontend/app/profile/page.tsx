@@ -9,6 +9,7 @@ import Protected from "../components/Protected";
 import Reveal from "../components/Reveal";
 import ConfirmModal from "../components/ConfirmModal";
 import { ToastStack, useToasts } from "../components/Toast";
+import ResumeDataSection from "../components/ResumeDataSection";
 import {
   apiRequest,
   clearSession,
@@ -19,27 +20,71 @@ import {
   storeUser,
   updateProfile,
   uploadProfilePhoto,
+  educationApi,
+  experienceApi,
+  skillsApi,
+  projectsApi,
+  certificationsApi,
+  achievementsApi,
+  resumesApi,
   type CurrentUser,
   type Profile,
 } from "../../lib/api";
 
-/**
- * User Profile — one place to manage the personal details powering every
- * resume, plus account management.
- *
- * Data sources:
- *  - GET /api/v1/auth/me    → identity: full_name, email, profile_picture
- *  - GET /api/v1/profile/   → resume-facing text: headline, summary, location
- *
- * Saving sends a PATCH /api/v1/profile/ with { headline, summary, location }
- * (Authorization: Bearer <token> + Content-Type: application/json).
- * The avatar renders the user's profile_picture when it is a usable URL;
- * otherwise a clean initials tile is shown (no external fallback, so there
- * is never a broken/overlapping image).
- *
- * Danger Zone — Delete Account — PATCH-free: DELETE /api/v1/auth/me (GDPR
- * wipe) behind a confirmation modal to prevent accidental taps.
- */
+const EDUCATION_FIELDS = [
+  { name: "institution", label: "Institution", placeholder: "e.g. UC Berkeley", required: true },
+  { name: "degree", label: "Degree", placeholder: "e.g. B.S. Computer Science", required: true },
+  { name: "branch", label: "Branch", placeholder: "e.g. Computer Science", required: true },
+  { name: "start_date", label: "Start Date", kind: "date" as const, required: true },
+  { name: "end_date", label: "End Date", kind: "date" as const },
+  { name: "cgpa", label: "CGPA (0-10)", kind: "number" as const, placeholder: "e.g. 9.5" }
+] as const;
+
+const EXPERIENCE_FIELDS = [
+  { name: "company", label: "Company", placeholder: "e.g. Northwind Systems", required: true },
+  { name: "designation", label: "Designation/Role", placeholder: "e.g. Full-Stack Engineer", required: true },
+  { name: "description", label: "Description (Actions/Impact)", kind: "textarea" as const, placeholder: "Describe responsibilities..." },
+  { name: "start_date", label: "Start Date", kind: "date" as const, required: true },
+  { name: "end_date", label: "End Date", kind: "date" as const }
+] as const;
+
+const SKILL_FIELDS = [
+  { name: "skill_name", label: "Skill Name", placeholder: "e.g. TypeScript", required: true },
+  {
+    name: "proficiency",
+    label: "Proficiency",
+    kind: "select" as const,
+    options: [
+      { value: "Beginner", label: "Beginner" },
+      { value: "Intermediate", label: "Intermediate" },
+      { value: "Expert", label: "Expert" }
+    ],
+    required: true
+  }
+] as const;
+
+const PROJECT_FIELDS = [
+  { name: "title", label: "Project Title", placeholder: "e.g. GitRater", required: true },
+  { name: "description", label: "Description", kind: "textarea" as const, placeholder: "A brief project overview..." },
+  { name: "github_link", label: "GitHub Link", placeholder: "github.com/you/repo" },
+  { name: "github_link_text", label: "Link Text", placeholder: "e.g. View Source" }
+] as const;
+
+const CERTIFICATION_FIELDS = [
+  { name: "name", label: "Certification Name", placeholder: "e.g. AWS Certified", required: true },
+  { name: "organization", label: "Organization", placeholder: "e.g. Amazon Web Services" },
+  { name: "issue_date", label: "Issue Date", kind: "date" as const },
+  { name: "credential_id", label: "Credential ID", placeholder: "e.g. AWS-12345" },
+  { name: "credential_url", label: "Credential URL", placeholder: "https://..." }
+] as const;
+
+const ACHIEVEMENT_FIELDS = [
+  { name: "title", label: "Achievement Title", placeholder: "e.g. 1st Place Hackathon", required: true },
+  { name: "organization", label: "Organization", placeholder: "e.g. Google Developer Group" },
+  { name: "date", label: "Date Received", kind: "date" as const },
+  { name: "description", label: "Description", kind: "textarea" as const, placeholder: "Detail your achievement..." }
+] as const;
+
 export default function ProfilePage() {
   return (
     <Protected>
@@ -59,9 +104,19 @@ function ProfileInner() {
   const [location, setLocation] = useState("");
   const [headline, setHeadline] = useState("");
   const [summary, setSummary] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // ---- Social Links States ----
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [linkedinText, setLinkedinText] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [githubText, setGithubText] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [portfolioText, setPortfolioText] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // ---- Delete account modal ----
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -87,6 +142,14 @@ function ProfileInner() {
         setLocation(prof.location ?? "");
         setHeadline(prof.headline ?? "");
         setSummary(prof.summary ?? "");
+        setPhone(prof.phone ?? "");
+
+        setLinkedinUrl(prof.linkedin_url ?? "");
+        setLinkedinText(prof.linkedin_text ?? "");
+        setGithubUrl(prof.github_url ?? "");
+        setGithubText(prof.github_text ?? "");
+        setPortfolioUrl(prof.portfolio_url ?? "");
+        setPortfolioText(prof.portfolio_text ?? "");
       })
       .catch(() => {
         /* token may be stale — Protected redirects on next visit */
@@ -96,7 +159,59 @@ function ProfileInner() {
 
   const dirty = true; // Simplified dirty checking
 
+  const [resumes, setResumes] = useState<Array<{ id: string; title: string }>>([]);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+
+  // ---- Field level dynamic error states ----
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  const validateSingleField = (name: string, value: string): string => {
+    if (name === "phone" && value) {
+      const cleanPhone = value.replace(/\D/g, "");
+      if (cleanPhone.length !== 10) return "Phone number must be exactly 10 digits.";
+    }
+    const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+    if ((name === "linkedinUrl" || name === "githubUrl" || name === "portfolioUrl") && value) {
+      if (!urlRegex.test(value)) return "Please enter a valid URL.";
+    }
+    return "";
+  };
+
+  const handleBlurField = (name: string, value: string) => {
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    const err = validateSingleField(name, value);
+    setFieldErrors((prev) => ({ ...prev, [name]: err }));
+  };
+
+  const handleChangeField = (name: string, value: string, setter: (v: string) => void) => {
+    setter(value);
+    if (touchedFields[name] || fieldErrors[name]) {
+      const err = validateSingleField(name, value);
+      setFieldErrors((prev) => ({ ...prev, [name]: err }));
+    }
+  };
+
+  const validateProfileForm = (): string | null => {
+    const pErr = validateSingleField("phone", phone);
+    const lErr = validateSingleField("linkedinUrl", linkedinUrl);
+    const gErr = validateSingleField("githubUrl", githubUrl);
+    const portErr = validateSingleField("portfolioUrl", portfolioUrl);
+    if (pErr || lErr || gErr || portErr) {
+      setFieldErrors({ phone: pErr, linkedinUrl: lErr, githubUrl: gErr, portfolioUrl: portErr });
+      return pErr || lErr || gErr || portErr;
+    }
+    return null;
+  };
+
   const saveProfile = useCallback(async () => {
+    const error = validateProfileForm();
+    if (error) {
+      notify.error(error);
+      return;
+    }
+
     const token = getToken();
     if (!token) return;
 
@@ -113,6 +228,13 @@ function ProfileInner() {
         location: location || null,
         headline: headline || null,
         summary: summary || null,
+        phone: phone || null,
+        linkedin_url: linkedinUrl || null,
+        linkedin_text: linkedinText || null,
+        github_url: githubUrl || null,
+        github_text: githubText || null,
+        portfolio_url: portfolioUrl || null,
+        portfolio_text: portfolioText || null,
       });
 
       notify.success("Profile saved successfully");
@@ -123,7 +245,90 @@ function ProfileInner() {
     } finally {
       setSaving(false);
     }
-  }, [fullName, user, dob, location, headline, summary, notify]);
+  }, [
+    fullName,
+    user,
+    dob,
+    location,
+    headline,
+    summary,
+    phone,
+    linkedinUrl,
+    linkedinText,
+    githubUrl,
+    githubText,
+    portfolioUrl,
+    portfolioText,
+    notify,
+  ]);
+
+  const handleExportToResume = async () => {
+    const token = getToken();
+    if (!token) {
+      notify.error("Please log in to export your profile.");
+      return;
+    }
+
+    setExporting(true);
+    try {
+      // Fetch user's existing resumes to display in the modal selection
+      const list = await resumesApi.list(token);
+      setResumes(list);
+      setShowExportModal(true);
+    } catch (err) {
+      notify.error("Failed to load existing resumes list.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const executeExport = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    setExporting(true);
+    setShowExportModal(false);
+    try {
+      // Gather all loaded profile data from database endpoints
+      const [profileData, eduList, expList, skillList, projectList, certList, achList] = await Promise.all([
+        getProfile(token),
+        educationApi.list(token),
+        experienceApi.list(token),
+        skillsApi.list(token),
+        projectsApi.list(token),
+        certificationsApi.list(token),
+        achievementsApi.list(token),
+      ]);
+
+      const { mapProfileToResume } = require("../../utils/resumeMapper");
+      const exportedResume = mapProfileToResume(user, {
+        profile: profileData,
+        education: eduList,
+        experience: expList,
+        skills: skillList,
+        projects: projectList,
+        certifications: certList,
+        achievements: achList,
+      });
+
+      // Save to localStorage so Resume Builder can detect and load it
+      localStorage.setItem("makemycv_resume_jake_exported", JSON.stringify(exportedResume));
+      notify.success("Profile exported! Redirecting to Resume Builder...");
+      
+      // Delay navigation slightly so toast is visible
+      setTimeout(() => {
+        if (selectedResumeId === "new") {
+          router.push("/resumes?import_source=profile_export");
+        } else {
+          router.push(`/resumes?import_source=profile_export&resume_id=${selectedResumeId}`);
+        }
+      }, 1000);
+    } catch (err) {
+      notify.error(err instanceof Error ? err.message : "Failed to export profile data");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     const token = getToken();
@@ -204,19 +409,34 @@ function ProfileInner() {
         <h1 className="text-headline-md font-bold text-primary">
           User Profile
         </h1>
-        <button
-          type="button"
-          onClick={saveProfile}
-          disabled={!dirty || saving || loading}
-          className="btn-primary btn-shine px-4 lg:px-6 py-2 rounded-full text-label-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {saving ? (
-            <MaterialIcon name="sync" className="animate-spin text-[18px]" />
-          ) : (
-            <MaterialIcon name="save" className="text-[18px]" />
-          )}
-          {saving ? "Saving..." : "Save Profile"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleExportToResume}
+            disabled={exporting || loading}
+            className="btn-outline px-4 lg:px-5 py-2 rounded-full text-label-md flex items-center gap-2 disabled:opacity-50"
+          >
+            {exporting ? (
+              <MaterialIcon name="sync" className="animate-spin text-[18px]" />
+            ) : (
+              <MaterialIcon name="send" className="text-[18px]" />
+            )}
+            {exporting ? "Exporting..." : "Export to Resume"}
+          </button>
+          <button
+            type="button"
+            onClick={saveProfile}
+            disabled={!dirty || saving || loading}
+            className="btn-primary btn-shine px-4 lg:px-6 py-2 rounded-full text-label-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <MaterialIcon name="sync" className="animate-spin text-[18px]" />
+            ) : (
+              <MaterialIcon name="save" className="text-[18px]" />
+            )}
+            {saving ? "Saving..." : "Save Profile"}
+          </button>
+        </div>
       </header>
 
       {/* Main Content Canvas */}
@@ -284,7 +504,6 @@ function ProfileInner() {
             </div>
           </Reveal>
 
-
           {/* Basic Details */}
           <div className="pt-4">
             <div className="flex items-center gap-3">
@@ -309,7 +528,7 @@ function ProfileInner() {
                 />
               </Field>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <Field label="Date of Birth" hint="Format: YYYY-MM-DD">
                   <input
                     type="date"
@@ -326,6 +545,19 @@ function ProfileInner() {
                     placeholder="e.g. San Francisco, CA"
                     className="input-field w-full"
                   />
+                </Field>
+                <Field label="Phone" hint="Contact number">
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => handleChangeField("phone", e.target.value, setPhone)}
+                    onBlur={(e) => handleBlurField("phone", e.target.value)}
+                    placeholder="e.g. 5550192834"
+                    className={`input-field w-full ${fieldErrors.phone ? "!border-error focus:!ring-error" : ""}`}
+                  />
+                  {fieldErrors.phone && (
+                    <p className="text-label-sm text-error mt-1">{fieldErrors.phone}</p>
+                  )}
                 </Field>
               </div>
 
@@ -350,6 +582,168 @@ function ProfileInner() {
               </Field>
             </div>
           </Reveal>
+
+          {/* Social Links */}
+          <div className="pt-4">
+            <div className="flex items-center gap-3">
+              <h4 className="text-headline-md font-bold text-on-surface">
+                Social Links & Portfolio
+              </h4>
+              <span className="text-label-sm text-on-surface-variant">
+                Your professional links for headers.
+              </span>
+            </div>
+          </div>
+
+          <Reveal delay={100}>
+            <div className="ambient-card bg-white rounded-2xl border border-outline-variant p-6 sm:p-8 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Field label="LinkedIn URL" hint="Full profile link">
+                  <input
+                    type="text"
+                    value={linkedinUrl}
+                    onChange={(e) => handleChangeField("linkedinUrl", e.target.value, setLinkedinUrl)}
+                    onBlur={(e) => handleBlurField("linkedinUrl", e.target.value)}
+                    placeholder="e.g. linkedin.com/in/username"
+                    className={`input-field w-full ${fieldErrors.linkedinUrl ? "!border-error focus:!ring-error" : ""}`}
+                  />
+                  {fieldErrors.linkedinUrl && (
+                    <p className="text-label-sm text-error mt-1">{fieldErrors.linkedinUrl}</p>
+                  )}
+                </Field>
+                <Field label="LinkedIn Label Text" hint="Display text (optional)">
+                  <input
+                    type="text"
+                    value={linkedinText}
+                    onChange={(e) => setLinkedinText(e.target.value)}
+                    placeholder="e.g. linkedin/username"
+                    className="input-field w-full"
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Field label="GitHub URL" hint="Profile link">
+                  <input
+                    type="text"
+                    value={githubUrl}
+                    onChange={(e) => handleChangeField("githubUrl", e.target.value, setGithubUrl)}
+                    onBlur={(e) => handleBlurField("githubUrl", e.target.value)}
+                    placeholder="e.g. github.com/username"
+                    className={`input-field w-full ${fieldErrors.githubUrl ? "!border-error focus:!ring-error" : ""}`}
+                  />
+                  {fieldErrors.githubUrl && (
+                    <p className="text-label-sm text-error mt-1">{fieldErrors.githubUrl}</p>
+                  )}
+                </Field>
+                <Field label="GitHub Label Text" hint="Display text (optional)">
+                  <input
+                    type="text"
+                    value={githubText}
+                    onChange={(e) => setGithubText(e.target.value)}
+                    placeholder="e.g. github/username"
+                    className="input-field w-full"
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Field label="Portfolio URL" hint="Personal website link">
+                  <input
+                    type="text"
+                    value={portfolioUrl}
+                    onChange={(e) => handleChangeField("portfolioUrl", e.target.value, setPortfolioUrl)}
+                    onBlur={(e) => handleBlurField("portfolioUrl", e.target.value)}
+                    placeholder="e.g. username.dev"
+                    className={`input-field w-full ${fieldErrors.portfolioUrl ? "!border-error focus:!ring-error" : ""}`}
+                  />
+                  {fieldErrors.portfolioUrl && (
+                    <p className="text-label-sm text-error mt-1">{fieldErrors.portfolioUrl}</p>
+                  )}
+                </Field>
+                <Field label="Portfolio Label Text" hint="Display text (optional)">
+                  <input
+                    type="text"
+                    value={portfolioText}
+                    onChange={(e) => setPortfolioText(e.target.value)}
+                    placeholder="e.g. portfolio"
+                    className="input-field w-full"
+                  />
+                </Field>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Subsections matching the 6 target categories */}
+          <div className="pt-8 space-y-6">
+            <h3 className="text-headline-md font-bold text-on-surface">Detailed Experience & Credentials</h3>
+            
+            <ResumeDataSection
+              title="Education"
+              icon="school"
+              fields={EDUCATION_FIELDS}
+              emptyLabel="No education details added yet."
+              fetchList={educationApi.list}
+              createItem={educationApi.create}
+              updateItem={educationApi.update}
+              deleteItem={educationApi.remove}
+            />
+
+            <ResumeDataSection
+              title="Experience & Positions"
+              icon="work"
+              fields={EXPERIENCE_FIELDS}
+              emptyLabel="No experience or leadership roles added yet."
+              fetchList={experienceApi.list}
+              createItem={experienceApi.create}
+              updateItem={experienceApi.update}
+              deleteItem={experienceApi.remove}
+            />
+
+            <ResumeDataSection
+              title="Internships & Projects"
+              icon="code"
+              fields={PROJECT_FIELDS}
+              emptyLabel="No projects or internships added yet."
+              fetchList={projectsApi.list}
+              createItem={projectsApi.create}
+              updateItem={projectsApi.update}
+              deleteItem={projectsApi.remove}
+            />
+
+            <ResumeDataSection
+              title="Skills & Interests"
+              icon="bolt"
+              fields={SKILL_FIELDS}
+              emptyLabel="No skills added yet."
+              fetchList={skillsApi.list}
+              createItem={skillsApi.create}
+              updateItem={skillsApi.update}
+              deleteItem={skillsApi.remove}
+            />
+
+            <ResumeDataSection
+              title="Certifications"
+              icon="badge"
+              fields={CERTIFICATION_FIELDS}
+              emptyLabel="No certifications added yet."
+              fetchList={certificationsApi.list}
+              createItem={certificationsApi.create}
+              updateItem={certificationsApi.update}
+              deleteItem={certificationsApi.remove}
+            />
+
+            <ResumeDataSection
+              title="Awards & Recognitions"
+              icon="workspace_premium"
+              fields={ACHIEVEMENT_FIELDS}
+              emptyLabel="No awards or achievements added yet."
+              fetchList={achievementsApi.list}
+              createItem={achievementsApi.create}
+              updateItem={achievementsApi.update}
+              deleteItem={achievementsApi.remove}
+            />
+          </div>
         </div>
       </main>
 
@@ -398,6 +792,62 @@ function ProfileInner() {
         onConfirm={handleDeleteAccount}
         onCancel={() => setConfirmOpen(false)}
       />
+
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-outline-variant space-y-6">
+            <div>
+              <h3 className="text-headline-md font-bold text-on-surface">Export to Resume</h3>
+              <p className="text-body-md text-on-surface-variant">Which resume would you like to update?</p>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-3 rounded-xl border border-outline-variant hover:bg-surface-container-low cursor-pointer">
+                <input
+                  type="radio"
+                  name="resumeSelect"
+                  value="new"
+                  checked={selectedResumeId === "new" || selectedResumeId === ""}
+                  onChange={() => setSelectedResumeId("new")}
+                  className="accent-primary"
+                />
+                <span className="text-label-md font-medium">Create New Resume</span>
+              </label>
+
+              {resumes.map((res) => (
+                <label key={res.id} className="flex items-center gap-3 p-3 rounded-xl border border-outline-variant hover:bg-surface-container-low cursor-pointer">
+                  <input
+                    type="radio"
+                    name="resumeSelect"
+                    value={res.id}
+                    checked={selectedResumeId === res.id}
+                    onChange={() => setSelectedResumeId(res.id)}
+                    className="accent-primary"
+                  />
+                  <span className="text-label-md font-medium">{res.title}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowExportModal(false)}
+                className="btn-outline px-4 py-2 rounded-full text-label-md"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeExport}
+                className="btn-primary px-5 py-2 rounded-full text-label-md"
+              >
+                Export
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -427,3 +877,22 @@ function Field({
     </div>
   );
 }
+
+/**
+ * User Profile — one place to manage the personal details powering every
+ * resume, plus account management.
+ *
+ * Data sources:
+ *  - GET /api/v1/auth/me    → identity: full_name, email, profile_picture
+ *  - GET /api/v1/profile/   → resume-facing text: headline, summary, location
+ *
+ * Saving sends a PATCH /api/v1/profile/ with { headline, summary, location }
+ * (Authorization: Bearer <token> + Content-Type: application/json).
+ * The avatar renders the user's profile_picture when it is a usable URL;
+ * otherwise a clean initials tile is shown (no external fallback, so there
+ * is never a broken/overlapping image).
+ *
+ * Danger Zone — Delete Account — PATCH-free: DELETE /api/v1/auth/me (GDPR
+ * wipe) behind a confirmation modal to prevent accidental taps.
+ */
+

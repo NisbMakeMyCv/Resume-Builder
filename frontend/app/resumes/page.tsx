@@ -25,6 +25,20 @@ export default function ResumesPage() {
 
   useEffect(() => {
     fetchResumes();
+    
+    // Check if redirecting from Profile Export
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("import_source") === "profile_export") {
+        const exported = localStorage.getItem("makemycv_resume_jake_exported");
+        if (exported) {
+          setSelectedResumeJson(exported);
+          setEditorOpen(true);
+          // Clean URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    }
   }, []);
 
   const fetchResumes = async () => {

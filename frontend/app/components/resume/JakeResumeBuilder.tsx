@@ -17,13 +17,15 @@ import {
   type CustomSectionField,
   type CustomSectionFieldType,
 } from "../../../lib/resume";
-import { getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
+import { getProfile, getStoredUser, getToken, improveGitHubBullets, resumesApi } from "../../../lib/api";
 
 import { encryptData } from "../../../lib/crypto";
 import { useCrypto } from "../../providers/CryptoProvider";
 import PassphraseModal from "../PassphraseModal";
 import ResumeChatbot from "../ai/ResumeChatbot";
 import GitHubAnalyzer from "../ai/GitHubAnalyzer";
+import ConfirmModal from "../ConfirmModal";
+import { ToastStack, useToasts } from "../Toast";
 
 /**
  * Jake's Resume Builder — the resume editor for the `editor` stitch frame.
@@ -50,14 +52,20 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     return loadResume();
   });
   const [saving, setSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string>("Header");
   const [activeTab, setActiveTab] = useState<"editor" | "github">("editor");
 
-  // Apply operations received from NISBot
+  const { toasts, dismiss, notify } = useToasts();
+
+  // Draft state representing current inputs in the builder forms
+  const [draftData, setDraftData] = useState<ResumeData>(data);
+
+  // Apply operations received from NISBot directly to the active draft
   const applyResumeOperations = (operations: any[]) => {
-    setData((prev) => {
+    setDraftData((prev) => {
       let next = { ...prev };
       operations.forEach((op) => {
         const sec = op.section === "personal" ? "header" : op.section;
@@ -103,40 +111,142 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     });
   };
 
-  // Persist on every change to local storage
-  useEffect(() => {
-    saveResume(data);
-  }, [data]);
+  // Only save draft changes to localStorage upon Recompile
+  const saveDraftLocally = (nextDraft: ResumeData) => {
+    saveResume(nextDraft);
+  };
+
+  // ---- Field level dynamic error states for builder header ----
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  const validateSingleField = (name: string, value: string): string => {
+    if (name === "phone" && value) {
+      const cleanPhone = value.replace(/\D/g, "");
+      if (cleanPhone.length !== 10) return "Phone number must be exactly 10 digits.";
+    }
+    if (name === "email" && value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) return "Please enter a valid email address.";
+    }
+    const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+    if ((name === "linkedin" || name === "github" || name === "portfolio") && value) {
+      if (!urlRegex.test(value)) return "Please enter a valid URL.";
+    }
+    return "";
+  };
+
+  const handleBlurField = (name: string, value: string) => {
+    setTouchedFields((prev) => ({ ...prev, [name]: true }));
+    const err = validateSingleField(name, value);
+    setFieldErrors((prev) => ({ ...prev, [name]: err }));
+  };
+
+  const handleChangeField = (name: string, value: string, updateFn: () => void) => {
+    updateFn();
+    if (touchedFields[name] || fieldErrors[name]) {
+      const err = validateSingleField(name, value);
+      setFieldErrors((prev) => ({ ...prev, [name]: err }));
+    }
+  };
+
+  // Validations helper
+  const validateForm = (d: ResumeData): string | null => {
+    const pErr = validateSingleField("phone", d.header.phone);
+    const eErr = validateSingleField("email", d.header.email);
+    const lErr = validateSingleField("linkedin", d.header.links.linkedin);
+    const gErr = validateSingleField("github", d.header.links.github);
+    const portErr = validateSingleField("portfolio", d.header.links.portfolio);
+
+    if (pErr || eErr || lErr || gErr || portErr) {
+      setFieldErrors({ phone: pErr, email: eErr, linkedin: lErr, github: gErr, portfolio: portErr });
+      return pErr || eErr || lErr || gErr || portErr;
+    }
+    return null;
+  };
+
+  const [isRecompiling, setIsRecompiling] = useState(false);
+  const [showRollbackModal, setShowRollbackModal] = useState(false);
+  // Snapshot of the committed preview state just BEFORE the last Recompile — used for Rollback
+  const [previousData, setPreviousData] = useState<ResumeData | null>(null);
+
+  const handleRecompile = async () => {
+    const error = validateForm(draftData);
+    if (error) {
+      notify.error(error);
+      return;
+    }
+    
+    setIsRecompiling(true);
+    try {
+      // ✅ Save the current committed preview state so Rollback can restore it
+      setPreviousData(JSON.parse(JSON.stringify(data)));
+
+      // Commit draftData → data (updates the Live Preview)
+      const freshCopy = JSON.parse(JSON.stringify(draftData));
+      setData(freshCopy);
+      saveDraftLocally(freshCopy);
+      
+      // Save to Cloud if user has cloud record
+      const token = getToken();
+      if (token && resumeId) {
+        try {
+          const title = freshCopy.header.fullName ? `${freshCopy.header.fullName}'s Resume` : "My Resume";
+          const encryptedBlob = await encryptData(JSON.stringify(freshCopy), passphrase!);
+          await resumesApi.update(token, resumeId, title, encryptedBlob);
+        } catch (err) {
+          console.error("Auto cloud sync failed during recompile:", err);
+        }
+      }
+      notify.success("Recompiled successfully!");
+    } finally {
+      setIsRecompiling(false);
+    }
+  };
+
+  const executeRollback = () => {
+    localStorage.removeItem("makemycv_resume_jake_exported");
+    // Restore to the snapshot taken just before the last Recompile.
+    // Falls back to current `data` if no recompile has happened yet.
+    const target = JSON.parse(JSON.stringify(previousData ?? data));
+    setData(target);      // ← forces the Live Preview canvas to update
+    setDraftData(target); // ← resets all form input fields
+    setPreviousData(null);
+    setShowRollbackModal(false);
+    notify.success("Rolled back to previous version.");
+  };
+
+  const handleRollback = () => {
+    setShowRollbackModal(true);
+  };
 
   const handleCloudSave = async () => {
     const token = getToken();
     if (!token) {
-      alert("Please log in to save your resume to the cloud.");
+      notify.error("Please log in to save your resume to the cloud.");
       return;
     }
     if (!passphrase) {
-      alert("Encryption passphrase is required to save.");
+      notify.error("Encryption passphrase is required to save.");
       return;
     }
     
     setSaving(true);
     try {
-      const title = data.header.fullName ? `${data.header.fullName}'s Resume` : "My Resume";
-      const jsonString = JSON.stringify(data);
-      
-      // Zero-knowledge encryption: encrypt the JSON string into a binary Blob
+      const title = draftData.header.fullName ? `${draftData.header.fullName}'s Resume` : "My Resume";
+      const jsonString = JSON.stringify(draftData);
       const encryptedBlob = await encryptData(jsonString, passphrase);
 
       if (resumeId) {
         await resumesApi.update(token, resumeId, title, encryptedBlob);
-        alert("Resume updated in cloud!");
+        notify.success("Resume updated in cloud!");
       } else {
         const created = await resumesApi.create(token, title, encryptedBlob);
         setResumeId(created.id);
-        alert("Resume saved to cloud!");
+        notify.success("Resume saved to cloud!");
       }
     } catch (err) {
-      alert("Failed to save resume: " + (err instanceof Error ? err.message : String(err)));
+      notify.error("Failed to save resume: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -147,21 +257,22 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   };
 
   const handleExportDOCX = async () => {
-    const filename = prompt("Enter a name for your DOCX file:", "resume");
-    if (!filename) return; // User cancelled
-
-    const el = document.getElementById("resume-pdf-content");
-    if (!el) return;
-    
+    setIsExporting(true);
     try {
+      const filename = draftData.header.fullName
+        ? draftData.header.fullName.replace(/\s+/g, "_") + "_Resume"
+        : "resume";
+
       const res = await fetch("/api/export-docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html: el.outerHTML }),
+        // Send structured ResumeData, not raw HTML
+        body: JSON.stringify({ resumeData: data }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to generate DOCX");
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || "Failed to generate DOCX");
       }
 
       const blob = await res.blob();
@@ -169,18 +280,59 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
       link.href = URL.createObjectURL(blob);
       link.download = `${filename}.docx`;
       link.click();
+      URL.revokeObjectURL(link.href);
+      notify.success("DOCX exported successfully!");
     } catch (err) {
-      alert("Failed to export DOCX: " + (err instanceof Error ? err.message : String(err)));
+      notify.error("Failed to export DOCX: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportFromProfile = async () => {
+    const token = getToken();
+    if (!token) {
+      notify.error("Please log in to import your profile.");
+      return;
+    }
+    
+    try {
+      const [profileData, eduList, expList, skillList, projectList, certList, achList] = await Promise.all([
+        resumesApi.list(token).then(() => getProfile(token)), // Get profile details
+        require("../../../lib/api").educationApi.list(token),
+        require("../../../lib/api").experienceApi.list(token),
+        require("../../../lib/api").skillsApi.list(token),
+        require("../../../lib/api").projectsApi.list(token),
+        require("../../../lib/api").certificationsApi.list(token),
+        require("../../../lib/api").achievementsApi.list(token),
+      ]);
+
+      const storedUser = getStoredUser();
+      const { mapProfileToResume } = require("../../../utils/resumeMapper");
+      const importedData = mapProfileToResume(storedUser, {
+        profile: profileData,
+        education: eduList,
+        experience: expList,
+        skills: skillList,
+        projects: projectList,
+        certifications: certList,
+        achievements: achList,
+      });
+
+      setDraftData(importedData);
+      notify.success("Successfully imported your latest profile data!");
+    } catch (err) {
+      notify.error("Failed to import profile data: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const updateHeader = (patch: Partial<ResumeData["header"]>) =>
-    setData((d) => ({ ...d, header: { ...d.header, ...patch } }));
+    setDraftData((d) => ({ ...d, header: { ...d.header, ...patch } }));
 
   /* ---- Array starters/removers (shared by all sections) ---- */
 
   function addEducation() {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       education: [
         ...d.education,
@@ -189,7 +341,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));
   }
   function addExperience() {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       experience: [
         ...d.experience,
@@ -198,7 +350,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));
   }
   function addProject() {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       projects: [
         ...d.projects,
@@ -207,14 +359,14 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));
   }
   function addSkillGroup() {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       skills: [...d.skills, { id: uid(), category: "", items: "" }],
     }));
   }
 
   function addCustomSection() {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       customSections: [
         ...(d.customSections || []),
@@ -224,7 +376,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   }
 
   function addCustomField(sectionId: string, type: CustomSectionFieldType) {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       customSections: (d.customSections || []).map((s) =>
         s.id === sectionId
@@ -241,7 +393,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   }
 
   function removeCustomField(sectionId: string, fieldId: string) {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       customSections: (d.customSections || []).map((s) =>
         s.id === sectionId
@@ -256,7 +408,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     fieldId: string,
     patch: Partial<CustomSectionField>
   ) {
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       customSections: (d.customSections || []).map((s) =>
         s.id === sectionId
@@ -275,7 +427,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     key: "education" | "experience" | "projects" | "skills" | "customSections",
     id: string
   ) =>
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       [key]: (d[key] as unknown as T[]).filter((i) => i.id !== id),
     }));
@@ -285,7 +437,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     id: string,
     patch: Partial<T>
   ) =>
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       [key]: (d[key] as unknown as T[]).map((i) =>
         i.id === id ? { ...i, ...patch } : i
@@ -298,7 +450,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     index: number,
     value: string
   ) =>
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       [key]: (d[key] as unknown as T[]).map((i) =>
         i.id === id
@@ -311,7 +463,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));
 
   const addBullet = (key: "experience" | "projects", id: string) =>
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       [key]: (d[key] as unknown as Array<{ id: string; bullets: string[] }>).map(
         (i) => (i.id === id ? { ...i, bullets: [...i.bullets, ""] } : i)
@@ -319,7 +471,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));
 
   const removeBullet = (key: "experience" | "projects", id: string, index: number) =>
-    setData((d) => ({
+    setDraftData((d) => ({
       ...d,
       [key]: (d[key] as unknown as Array<{ id: string; bullets: string[] }>).map(
         (i) =>
@@ -330,6 +482,15 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
     }));  return (
     <>
       <PassphraseModal />
+      <ToastStack toasts={toasts} onDismiss={dismiss} />
+      <ConfirmModal
+        open={showRollbackModal}
+        title="Discard Draft Changes?"
+        message="Are you sure you want to discard your draft changes? Recompile states will be lost."
+        confirmLabel="Discard"
+        onConfirm={executeRollback}
+        onCancel={() => setShowRollbackModal(false)}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start relative">
         {/* ============ LEFT: EDITOR & TOOLS PANEL ============ */}
         <div className="space-y-6 no-print">
@@ -373,14 +534,14 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
           >
             <Field label="Full Name">
               <TextInput
-                value={data.header.fullName}
+                value={draftData.header.fullName}
                 onChange={(v) => updateHeader({ fullName: v })}
                 placeholder="Alex Morgan"
               />
             </Field>
             <Field label="Job Title / Position">
               <TextInput
-                value={data.header.position}
+                value={draftData.header.position}
                 onChange={(v) => updateHeader({ position: v })}
                 placeholder="Full-Stack Engineer"
               />
@@ -388,22 +549,26 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Phone">
                 <TextInput
-                  value={data.header.phone}
-                  onChange={(v) => updateHeader({ phone: v })}
+                  value={draftData.header.phone}
+                  onChange={(v) => handleChangeField("phone", v, () => updateHeader({ phone: v }))}
+                  onBlur={(v) => handleBlurField("phone", v)}
+                  error={fieldErrors.phone}
                   placeholder="(555) 867-5309"
                 />
               </Field>
               <Field label="Email">
                 <TextInput
-                  value={data.header.email}
-                  onChange={(v) => updateHeader({ email: v })}
+                  value={draftData.header.email}
+                  onChange={(v) => handleChangeField("email", v, () => updateHeader({ email: v }))}
+                  onBlur={(v) => handleBlurField("email", v)}
+                  error={fieldErrors.email}
                   placeholder="alex@email.com"
                 />
               </Field>
             </div>
             <Field label="Location">
               <TextInput
-                value={data.header.location}
+                value={draftData.header.location}
                 onChange={(v) => updateHeader({ location: v })}
                 placeholder="San Francisco, CA"
               />
@@ -411,54 +576,66 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="LinkedIn URL">
                 <TextInput
-                  value={data.header.links.linkedin}
+                  value={draftData.header.links.linkedin}
                   onChange={(v) =>
-                    updateHeader({ links: { ...data.header.links, linkedin: v } })
+                    handleChangeField("linkedin", v, () =>
+                      updateHeader({ links: { ...draftData.header.links, linkedin: v } })
+                    )
                   }
+                  onBlur={(v) => handleBlurField("linkedin", v)}
+                  error={fieldErrors.linkedin}
                   placeholder="linkedin.com/in/you"
                 />
               </Field>
               <Field label="LinkedIn Text">
                 <TextInput
-                  value={data.header.links.linkedinText}
+                  value={draftData.header.links.linkedinText}
                   onChange={(v) =>
-                    updateHeader({ links: { ...data.header.links, linkedinText: v } })
+                    updateHeader({ links: { ...draftData.header.links, linkedinText: v } })
                   }
                   placeholder="e.g. linkedin/you"
                 />
               </Field>
               <Field label="GitHub URL (Use GitHub Analyzer below to extract!)">
                 <TextInput
-                  value={data.header.links.github}
+                  value={draftData.header.links.github}
                   onChange={(v) =>
-                    updateHeader({ links: { ...data.header.links, github: v } })
+                    handleChangeField("github", v, () =>
+                      updateHeader({ links: { ...draftData.header.links, github: v } })
+                    )
                   }
+                  onBlur={(v) => handleBlurField("github", v)}
+                  error={fieldErrors.github}
                   placeholder="github.com/you"
                 />
               </Field>
               <Field label="GitHub Text">
                 <TextInput
-                  value={data.header.links.githubText}
+                  value={draftData.header.links.githubText}
                   onChange={(v) =>
-                    updateHeader({ links: { ...data.header.links, githubText: v } })
+                    updateHeader({ links: { ...draftData.header.links, githubText: v } })
                   }
                   placeholder="e.g. github/you"
                 />
               </Field>
               <Field label="Portfolio URL">
                 <TextInput
-                  value={data.header.links.portfolio}
+                  value={draftData.header.links.portfolio}
                   onChange={(v) =>
-                    updateHeader({ links: { ...data.header.links, portfolio: v } })
+                    handleChangeField("portfolio", v, () =>
+                      updateHeader({ links: { ...draftData.header.links, portfolio: v } })
+                    )
                   }
+                  onBlur={(v) => handleBlurField("portfolio", v)}
+                  error={fieldErrors.portfolio}
                   placeholder="yourdomain.dev"
                 />
               </Field>
               <Field label="Portfolio Text">
                 <TextInput
-                  value={data.header.links.portfolioText}
+                  value={draftData.header.links.portfolioText}
                   onChange={(v) =>
-                    updateHeader({ links: { ...data.header.links, portfolioText: v } })
+                    updateHeader({ links: { ...draftData.header.links, portfolioText: v } })
                   }
                   placeholder="e.g. Portfolio"
                 />
@@ -477,8 +654,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             isOpen={openSection === "Education"}
             onToggle={() => setOpenSection(openSection === "Education" ? "" : "Education")}
           >
-            {data.education.length === 0 && <EmptyRow onAdd={addEducation} />}
-            {data.education.map((ed) => (
+            {draftData.education.length === 0 && <EmptyRow onAdd={addEducation} />}
+            {draftData.education.map((ed) => (
               <EditableCard
                 key={ed.id}
                 title={ed.school || "Education Entry"}
@@ -533,8 +710,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             isOpen={openSection === "Experience"}
             onToggle={() => setOpenSection(openSection === "Experience" ? "" : "Experience")}
           >
-            {data.experience.length === 0 && <EmptyRow onAdd={addExperience} />}
-            {data.experience.map((ex) => (
+            {draftData.experience.length === 0 && <EmptyRow onAdd={addExperience} />}
+            {draftData.experience.map((ex) => (
               <EditableCard
                 key={ex.id}
                 title={ex.company || "Experience Entry"}
@@ -594,8 +771,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             isOpen={openSection === "Projects"}
             onToggle={() => setOpenSection(openSection === "Projects" ? "" : "Projects")}
           >
-            {data.projects.length === 0 && <EmptyRow onAdd={addProject} />}
-            {data.projects.map((proj) => (
+            {draftData.projects.length === 0 && <EmptyRow onAdd={addProject} />}
+            {draftData.projects.map((proj) => (
               <EditableCard
                 key={proj.id}
                 title={proj.title || "Project Entry"}
@@ -667,8 +844,8 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             isOpen={openSection === "Skills"}
             onToggle={() => setOpenSection(openSection === "Skills" ? "" : "Skills")}
           >
-            {data.skills.length === 0 && <EmptyRow onAdd={addSkillGroup} />}
-            {data.skills.map((s) => (
+            {draftData.skills.length === 0 && <EmptyRow onAdd={addSkillGroup} />}
+            {draftData.skills.map((s) => (
               <EditableCard
                 key={s.id}
                 title={s.category || "Skill Group"}
@@ -705,10 +882,10 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             isOpen={openSection === "Custom"}
             onToggle={() => setOpenSection(openSection === "Custom" ? "" : "Custom")}
           >
-            {(!data.customSections || data.customSections.length === 0) && (
+            {(!draftData.customSections || draftData.customSections.length === 0) && (
               <EmptyRow onAdd={addCustomSection} />
             )}
-            {(data.customSections || []).map((s) => (
+            {(draftData.customSections || []).map((s) => (
               <EditableCard
                 key={s.id}
                 title={s.title || "Custom Section"}
@@ -827,7 +1004,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
               <div className="flex justify-start pt-2">
                 <button
                   type="button"
-                  onClick={() => setData(emptyResume())}
+                  onClick={() => setDraftData(emptyResume())}
                   className="btn-outline px-4 py-2.5 rounded-full text-label-md flex items-center gap-2"
                 >
                   <MaterialIcon name="refresh" className="text-[18px]" />
@@ -864,6 +1041,28 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
             
             <div className="flex flex-wrap items-center gap-2">
               <button
+                onClick={handleImportFromProfile}
+                className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5 border-primary text-primary hover:bg-primary/5"
+              >
+                <MaterialIcon name="download" className="text-[16px]" />
+                Import from Profile
+              </button>
+              <button
+                onClick={handleRecompile}
+                disabled={isRecompiling}
+                className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5 bg-green-700 hover:bg-green-800 disabled:opacity-50"
+              >
+                <MaterialIcon name={isRecompiling ? "sync" : "autorenew"} className={`text-[16px] ${isRecompiling ? "animate-spin" : ""}`} />
+                {isRecompiling ? "Compiling..." : "Recompile"}
+              </button>
+              <button
+                onClick={handleRollback}
+                className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5 border-red-600 text-red-600 hover:bg-red-50"
+              >
+                <MaterialIcon name="undo" className="text-[16px]" />
+                Rollback
+              </button>
+              <button
                 onClick={handleCloudSave}
                 disabled={saving}
                 className="btn-outline px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
@@ -880,10 +1079,15 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
               </button>
               <button
                 onClick={handleExportDOCX}
-                className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5"
+                disabled={isExporting}
+                className="btn-primary px-3 py-1.5 rounded-full text-label-sm flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <MaterialIcon name="description" className="text-[16px]" />
-                DOCX
+                {isExporting ? (
+                  <MaterialIcon name="sync" className="text-[16px] animate-spin" />
+                ) : (
+                  <MaterialIcon name="description" className="text-[16px]" />
+                )}
+                {isExporting ? "Exporting…" : "DOCX"}
               </button>
             </div>
           </div>
@@ -1043,19 +1247,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function TextInput({
   value,
   onChange,
+  onBlur,
   placeholder,
+  error,
+  type = "text",
 }: {
   value?: string;
   onChange: (v: string) => void;
+  onBlur?: (v: string) => void;
   placeholder?: string;
+  error?: string;
+  type?: string;
 }) {
   return (
-    <input
-      className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all"
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-    />
+    <div>
+      <input
+        type={type}
+        className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all ${
+          error ? "border-error focus:ring-error" : "border-outline-variant"
+        }`}
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={(e) => onBlur && onBlur(e.target.value)}
+        placeholder={placeholder}
+      />
+      {error && <p className="text-label-sm text-error mt-1">{error}</p>}
+    </div>
   );
 }
 

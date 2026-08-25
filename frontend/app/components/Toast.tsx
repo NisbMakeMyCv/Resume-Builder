@@ -23,7 +23,8 @@ export function useToasts() {
 
   function push(kind: ToastKind, text: string) {
     const id = ++nextId.current;
-    setToasts((prev) => [...prev.slice(-3), { id, kind, text }]);
+    // Replace any existing toasts with the latest one to prevent stacking / spam
+    setToasts([{ id, kind, text }]);
     return id;
   }
   function dismiss(id: number) {
@@ -78,11 +79,12 @@ function ToastCard({
   toast: ToastMessage;
   onDismiss: (id: number) => void;
 }) {
-  // Auto-dismiss after a delay (errors linger a little longer).
+  // Auto-dismiss after a short delay (2000ms, errors 3000ms).
   useEffect(() => {
+    const duration = toast.kind === "error" ? 3000 : 2000;
     const t = setTimeout(
       () => onDismiss(toast.id),
-      toast.kind === "error" ? 6000 : 4000
+      duration
     );
     return () => clearTimeout(t);
   }, [toast.id, toast.kind, onDismiss]);

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Date, Float, Integer, ForeignKey, Enum, DateTime
+from sqlalchemy import Column, String, Text, Date, Float, Integer, ForeignKey, Enum, DateTime, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -21,6 +21,13 @@ class Profile(Base):
     summary = Column(Text, nullable=True)
     location = Column(String, nullable=True)
     dob = Column(Date, nullable=True)
+    phone = Column(String, nullable=True)
+    linkedin_url = Column(String, nullable=True)
+    linkedin_text = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
+    github_text = Column(String, nullable=True)
+    portfolio_url = Column(String, nullable=True)
+    portfolio_text = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -83,6 +90,34 @@ class ResumeDocument(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False, default="Untitled Resume")
-    drive_file_id = Column(String, nullable=True) # ID of the encrypted file in Google Drive
+    drive_file_id = Column(String, nullable=True)  # Google Drive file ID (when Drive is configured)
+    file_blob = Column(LargeBinary, nullable=True)  # Local DB fallback when Drive is not configured
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Certification(Base):
+    __tablename__ = "certifications"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    organization = Column(String, nullable=True)
+    issue_date = Column(Date, nullable=True)
+    credential_id = Column(String, nullable=True)
+    credential_url = Column(String, nullable=True)
+    display_order = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)
+    organization = Column(String, nullable=True)
+    date = Column(Date, nullable=True)
+    description = Column(Text, nullable=True)
+    display_order = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
