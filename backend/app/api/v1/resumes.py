@@ -15,16 +15,16 @@ from app.schemas.resume import (
 
 router = APIRouter()
 
-DRIVE_AVAILABLE = bool(os.environ.get("GOOGLE_DRIVE_CREDENTIALS_JSON") or os.environ.get("GOOGLE_DRIVE_FOLDER_ID"))
+DRIVE_AVAILABLE = bool(os.environ.get("GOOGLE_DRIVE_REFRESH_TOKEN") and os.environ.get("GOOGLE_DRIVE_FOLDER_ID"))
 
 
-def _try_drive_upload(file_bytes: bytes, filename: str, user_id: str) -> Optional[str]:
+def _try_drive_upload(file_bytes: bytes, filename: str, user_id: str, mime_type: str = 'application/octet-stream') -> Optional[str]:
     """Upload to Google Drive; return file ID or None if Drive isn't configured."""
     if not DRIVE_AVAILABLE:
         return None
     try:
         from app.services.drive_service import upload_encrypted_file
-        return upload_encrypted_file(file_bytes, filename=filename, user_id=user_id)
+        return upload_encrypted_file(file_bytes, filename=filename, user_id=user_id, mime_type=mime_type)
     except Exception as exc:
         # Drive is configured but the call failed — surface the error
         raise HTTPException(
@@ -33,7 +33,7 @@ def _try_drive_upload(file_bytes: bytes, filename: str, user_id: str) -> Optiona
         )
 
 
-def _try_drive_update(old_file_id: str, file_bytes: bytes, filename: str, user_id: str) -> Optional[str]:
+def _try_drive_update(old_file_id: str, file_bytes: bytes, filename: str, user_id: str, mime_type: str = 'application/octet-stream') -> Optional[str]:
     """Delete old Drive file and upload new one; return new file ID or None."""
     if not DRIVE_AVAILABLE:
         return None
@@ -43,7 +43,7 @@ def _try_drive_update(old_file_id: str, file_bytes: bytes, filename: str, user_i
             delete_encrypted_file(old_file_id)
         except Exception:
             pass  # Non-fatal if old deletion fails
-        return upload_encrypted_file(file_bytes, filename=filename, user_id=user_id)
+        return upload_encrypted_file(file_bytes, filename=filename, user_id=user_id, mime_type=mime_type)
     except HTTPException:
         raise
     except Exception as exc:
@@ -102,20 +102,30 @@ async def create_resume(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new resume document. Stores in Google Drive if configured, otherwise in the DB."""
-    import uuid, time
+    import uuid, time, os
 
     file_bytes = await file.read()
 
+    # Safely extract extension and construct filename
     safe_title = "".join([c for c in title if c.isalpha() or c.isdigit() or c == " "]).rstrip()
     unique_id = str(uuid.uuid4())[:8]
     timestamp = int(time.time())
-    filename = f"resume_{safe_title}_{timestamp}_{unique_id}.enc"
+    
+    original_filename = file.filename or "resume.pdf"
+    _, ext = os.path.splitext(original_filename)
+    if not ext:
+        ext = ".enc"  # fallback for completely unknown files
+        
+    filename = f"resume_{safe_title}_{timestamp}_{unique_id}{ext}"
+    mime_type = file.content_type or "application/octet-stream"
 
-    drive_file_id = _try_drive_upload(file_bytes, filename=filename, user_id=str(current_user.id))
+    drive_file_id = _try_drive_upload(file_bytes, filename=filename, user_id=str(current_user.id), mime_type=mime_type)
 
     new_resume = ResumeDocument(
         user_id=current_user.id,
         title=title,
+        file_name=original_filename,
+        mime_type=mime_type,
         drive_file_id=drive_file_id,
         # Store blob locally if Drive is not available
         file_blob=None if drive_file_id else file_bytes,
@@ -148,7 +158,7 @@ def download_resume(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Download the encrypted resume file (from Drive or local DB)."""
+    """Download the resume file (from Drive or local DB) with correct headers."""
     resume = db.query(ResumeDocument).filter(
         ResumeDocument.id == resume_id,
         ResumeDocument.user_id == current_user.id
@@ -156,14 +166,21 @@ def download_resume(
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
 
+    mime_type = resume.mime_type or "application/octet-stream"
+    download_name = resume.file_name or f"{resume.title}.pdf"
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{download_name}"'
+    }
+
     # Prefer Drive; fall back to local blob
     if resume.drive_file_id:
         file_bytes = _try_drive_download(resume.drive_file_id)
         if file_bytes:
-            return Response(content=file_bytes, media_type="application/octet-stream")
+            return Response(content=file_bytes, media_type=mime_type, headers=headers)
 
     if resume.file_blob:
-        return Response(content=resume.file_blob, media_type="application/octet-stream")
+        return Response(content=resume.file_blob, media_type=mime_type, headers=headers)
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume file data not found")
 
@@ -188,22 +205,32 @@ async def update_resume(
         resume.title = title
 
     if file is not None:
-        import uuid, time
+        import uuid, time, os
         file_bytes = await file.read()
 
         safe_title = "".join([c for c in (resume.title or "resume") if c.isalpha() or c.isdigit() or c == " "]).rstrip()
         unique_id = str(uuid.uuid4())[:8]
         timestamp = int(time.time())
-        filename = f"resume_{safe_title}_{timestamp}_{unique_id}.enc"
+        
+        original_filename = file.filename or "resume.pdf"
+        _, ext = os.path.splitext(original_filename)
+        if not ext:
+            ext = ".enc"
+            
+        filename = f"resume_{safe_title}_{timestamp}_{unique_id}{ext}"
+        mime_type = file.content_type or "application/octet-stream"
 
         if DRIVE_AVAILABLE and resume.drive_file_id:
-            new_drive_id = _try_drive_update(resume.drive_file_id, file_bytes, filename, str(current_user.id))
+            new_drive_id = _try_drive_update(resume.drive_file_id, file_bytes, filename, str(current_user.id), mime_type=mime_type)
             resume.drive_file_id = new_drive_id
             resume.file_blob = None
         else:
             # No Drive — store/overwrite locally
             resume.file_blob = file_bytes
             resume.drive_file_id = None
+            
+        resume.file_name = original_filename
+        resume.mime_type = mime_type
 
     db.commit()
     db.refresh(resume)

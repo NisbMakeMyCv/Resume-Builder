@@ -90,6 +90,8 @@ class ResumeDocument(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False, default="Untitled Resume")
+    file_name = Column(String, nullable=True)
+    mime_type = Column(String, nullable=True)
     drive_file_id = Column(String, nullable=True)  # Google Drive file ID (when Drive is configured)
     file_blob = Column(LargeBinary, nullable=True)  # Local DB fallback when Drive is not configured
     created_at = Column(DateTime, default=datetime.utcnow)

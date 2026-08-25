@@ -8,36 +8,28 @@ from fastapi import HTTPException, status
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
+from google.oauth2.credentials import Credentials
+
 def get_drive_service():
-    """Initializes and returns the Google Drive API service."""
-    creds_json = os.environ.get("GOOGLE_DRIVE_CREDENTIALS_JSON")
+    """Initializes and returns the Google Drive API service using User OAuth2 credentials."""
+    refresh_token = os.environ.get("GOOGLE_DRIVE_REFRESH_TOKEN")
+    client_id = os.environ.get("GOOGLE_DRIVE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_DRIVE_CLIENT_SECRET")
     
-    if creds_json:
-        try:
-            creds_dict = json.loads(creds_json)
-            creds = service_account.Credentials.from_service_account_info(
-                creds_dict, scopes=SCOPES
-            )
-        except json.JSONDecodeError as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GOOGLE_DRIVE_CREDENTIALS_JSON environment variable contains invalid JSON: {str(e)}"
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to initialize Google Drive service account credentials: {str(e)}"
-            )
+    if refresh_token and client_id and client_secret:
+        creds = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=SCOPES
+        )
     else:
-        # Fallback to default application credentials (e.g., local file)
-        try:
-            import google.auth
-            creds, _ = google.auth.default(scopes=SCOPES)
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google Drive credentials not configured. Please set GOOGLE_DRIVE_CREDENTIALS_JSON in .env"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google Drive OAuth credentials not fully configured in .env.local"
+        )
 
     try:
         return build('drive', 'v3', credentials=creds)
@@ -64,7 +56,10 @@ def get_or_create_user_folder(user_id: str) -> str:
     # 1. Search for existing folder
     query = f"name='{folder_name}' and '{main_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
     try:
-        response = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
+        response = service.files().list(
+            q=query, spaces='drive', fields='files(id, name)',
+            includeItemsFromAllDrives=True, supportsAllDrives=True
+        ).execute()
         files = response.get('files', [])
         if files:
             return files[0].get('id')
@@ -75,7 +70,10 @@ def get_or_create_user_folder(user_id: str) -> str:
             'mimeType': 'application/vnd.google-apps.folder',
             'parents': [main_folder_id]
         }
-        folder = service.files().create(body=folder_metadata, fields='id').execute()
+        folder = service.files().create(
+            body=folder_metadata, fields='id',
+            supportsAllDrives=True
+        ).execute()
         return folder.get('id')
     except Exception as e:
         raise HTTPException(
@@ -104,7 +102,8 @@ def upload_encrypted_file(file_bytes: bytes, filename: str, user_id: str, mime_t
         file = service.files().create(
             body=file_metadata,
             media_body=media,
-            fields='id'
+            fields='id',
+            supportsAllDrives=True
         ).execute()
         return file.get('id')
     except Exception as e:
@@ -121,7 +120,7 @@ def download_encrypted_file(file_id: str) -> bytes:
     service = get_drive_service()
     
     try:
-        request = service.files().get_media(fileId=file_id)
+        request = service.files().get_media(fileId=file_id, supportsAllDrives=True)
         file_io = io.BytesIO()
         downloader = MediaIoBaseDownload(file_io, request)
         
@@ -142,7 +141,7 @@ def delete_encrypted_file(file_id: str):
     """
     service = get_drive_service()
     try:
-        service.files().delete(fileId=file_id).execute()
+        service.files().delete(fileId=file_id, supportsAllDrives=True).execute()
     except Exception as e:
         # We might not want to fail the whole request if deletion fails, just log it.
         # But for now, we'll raise an error.

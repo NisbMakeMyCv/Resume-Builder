@@ -150,6 +150,8 @@ class ProjectResponse(ProjectBase):
 # RESUME DOCUMENT
 class ResumeDocumentBase(BaseModel):
     title: str
+    file_name: Optional[str] = None
+    mime_type: Optional[str] = None
     drive_file_id: Optional[str] = None
 
 class ResumeDocumentCreate(BaseModel):
