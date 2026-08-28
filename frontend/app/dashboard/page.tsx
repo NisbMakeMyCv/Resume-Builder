@@ -215,7 +215,7 @@ function DashboardInner() {
           {/* Recent Activity Table */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Reveal className="lg:col-span-3">
-            <div className="ambient-card bg-white rounded-xl border border-outline-variant overflow-hidden">
+            <div className="ambient-card bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
               <div className="p-6 border-b border-outline-variant flex justify-between items-center">
                 <h4 className="text-headline-md text-primary">Recent Activity</h4>
                 <span className="text-secondary text-label-md">No activity yet</span>
@@ -319,7 +319,7 @@ function MetricCard({
 
   return (
     <motion.div
-      className="ambient-card bg-white p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors flex flex-col gap-2"
+      className="ambient-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors flex flex-col gap-2"
       variants={{
         hidden: { opacity: 0, y: 26 },
         visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 110, damping: 18 } },
