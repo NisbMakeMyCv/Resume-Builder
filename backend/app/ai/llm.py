@@ -31,7 +31,7 @@ def _get_client() -> Groq:
 
 def generate_text(
     prompt: str,
-    model: str = "llama-3.3-70b-versatile",
+    model: str = "openai/gpt-oss-120b",
     temperature: float = 0.2,
     json_mode: bool = False,
 ) -> str:
