@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  output: "standalone",
+  // output: "standalone", // Removed because it can cause 404s on Vercel deployments
 };
 
 export default nextConfig;
