@@ -63,39 +63,99 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
   // Draft state representing current inputs in the builder forms
   const [draftData, setDraftData] = useState<ResumeData>(data);
 
+  // Normalize backend field names to frontend field names
+  const normalizeOpData = (section: string, data: any): any => {
+    if (!data || typeof data !== "object") return data;
+    const d = { ...data };
+
+    if (section === "education") {
+      if (d.institution && !d.school) { d.school = d.institution; delete d.institution; }
+    }
+    if (section === "experience") {
+      if (d.role && !d.title) { d.title = d.role; delete d.role; }
+      if (d.job_title && !d.title) { d.title = d.job_title; delete d.job_title; }
+      if (d.startDate || d.endDate) {
+        if (!d.dates) d.dates = [d.startDate, d.endDate].filter(Boolean).join(" - ");
+        delete d.startDate; delete d.endDate;
+      }
+      if (d.description && !d.bullets) { d.bullets = [d.description]; delete d.description; }
+    }
+    if (section === "projects") {
+      if (d.name && !d.title) { d.title = d.name; delete d.name; }
+      if (d.projectLink && !d.links) { d.links = d.projectLink; delete d.projectLink; }
+      if (d.githubLink && !d.links) { d.links = d.githubLink; delete d.githubLink; }
+      if (Array.isArray(d.technologies)) { d.technologies = d.technologies.join(", "); }
+    }
+    if (section === "skills") {
+      // Backend may send {name: "Python", category: "Language"} → convert to {category, items}
+      if (d.name && !d.items) {
+        d.items = d.name;
+        delete d.name;
+      }
+      if (!d.category) d.category = "Technical";
+    }
+    return d;
+  };
+
   // Apply operations received from NISBot directly to the active draft
   const applyResumeOperations = (operations: any[]) => {
     setDraftData((prev) => {
       let next = { ...prev };
       operations.forEach((op) => {
         const sec = op.section === "personal" ? "header" : op.section;
-        if (!next[sec as keyof ResumeData]) return;
 
-        if (op.action === "add" && Array.isArray(next[sec as keyof ResumeData])) {
-          const newItem = { id: uid(), ...op.data };
-          (next[sec as keyof ResumeData] as any[]) = [...(next[sec as keyof ResumeData] as any[]), newItem];
-        } else if (op.action === "update" && Array.isArray(next[sec as keyof ResumeData])) {
-          if (op.index != null) {
+        // Handle 'clear' action
+        if (op.action === "clear") {
+          if (sec === "header" && op.field) {
+            if (op.field === "name") next.header = { ...next.header, fullName: "" };
+            else if (op.field === "email") next.header = { ...next.header, email: "" };
+            else if (op.field === "phone") next.header = { ...next.header, phone: "" };
+            else if (op.field === "linkedin") next.header = { ...next.header, links: { ...next.header.links, linkedin: "" } };
+            else if (op.field === "github") next.header = { ...next.header, links: { ...next.header.links, github: "" } };
+          } else if (Array.isArray(next[sec as keyof ResumeData])) {
+            (next[sec as keyof ResumeData] as any[]) = [];
+          }
+          return;
+        }
+
+        // Handle array sections (education, experience, projects, skills, customSections)
+        if (Array.isArray(next[sec as keyof ResumeData])) {
+          const normalized = normalizeOpData(op.section, op.data);
+
+          if (op.action === "add") {
+            const newItem = { id: uid(), ...normalized };
+            (next[sec as keyof ResumeData] as any[]) = [...(next[sec as keyof ResumeData] as any[]), newItem];
+          } else if (op.action === "update" && op.index != null) {
             (next[sec as keyof ResumeData] as any[]) = (next[sec as keyof ResumeData] as any[]).map((item, i) =>
-              i === op.index ? { ...item, ...op.data } : item
+              i === op.index ? { ...item, ...normalized } : item
             );
-          }
-        } else if (op.action === "delete" && Array.isArray(next[sec as keyof ResumeData])) {
-          if (op.index != null) {
+          } else if (op.action === "delete" && op.index != null) {
             (next[sec as keyof ResumeData] as any[]) = (next[sec as keyof ResumeData] as any[]).filter((_, i) => i !== op.index);
+          } else if (op.action === "replace") {
+            if (Array.isArray(normalized)) {
+              (next[sec as keyof ResumeData] as any) = normalized.map((item: any) => ({ id: uid(), ...normalizeOpData(op.section, item) }));
+            } else {
+              (next[sec as keyof ResumeData] as any) = normalized;
+            }
           }
-        } else if (sec === "header" && (op.action === "update" || op.action === "replace")) {
+        }
+        // Handle header/personal section
+        else if (sec === "header" && (op.action === "update" || op.action === "replace")) {
           if (op.field === "name") next.header.fullName = op.data;
           else if (op.field === "email") next.header.email = op.data;
           else if (op.field === "phone") next.header.phone = op.data;
-          else if (op.field === "linkedin") next.header.links.linkedin = op.data;
-          else if (op.field === "github") next.header.links.github = op.data;
-          else if (op.data) {
+          else if (op.field === "location") next.header.location = op.data;
+          else if (op.field === "position") next.header.position = op.data;
+          else if (op.field === "linkedin") next.header.links = { ...next.header.links, linkedin: op.data };
+          else if (op.field === "github") next.header.links = { ...next.header.links, github: op.data };
+          else if (op.data && typeof op.data === "object") {
             next.header = {
               ...next.header,
               fullName: op.data.name ?? next.header.fullName,
               email: op.data.email ?? next.header.email,
               phone: op.data.phone ?? next.header.phone,
+              location: op.data.location ?? next.header.location,
+              position: op.data.position ?? next.header.position,
               links: {
                 ...next.header.links,
                 linkedin: op.data.linkedin ?? next.header.links.linkedin,
@@ -103,8 +163,6 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
               },
             };
           }
-        } else if (op.action === "replace") {
-          (next[sec as keyof ResumeData] as any) = op.data;
         }
       });
       return next;
@@ -1102,7 +1160,7 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
         {isChatbotOpen && (
           <div className="w-[380px] h-[520px] max-w-[calc(100vw-2rem)] bg-surface rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-outline-variant overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
             <ResumeChatbot 
-              resumeData={data} 
+              resumeData={draftData} 
               onResumeUpdate={applyResumeOperations} 
               onClose={() => setIsChatbotOpen(false)}
             />
@@ -1112,13 +1170,15 @@ export default function JakeResumeBuilder({ initialDataStr }: { initialDataStr?:
         <button
           type="button"
           onClick={() => setIsChatbotOpen(!isChatbotOpen)}
-          className="relative group w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-4 ring-primary/20 overflow-hidden"
+          className="relative group w-14 h-14 bg-white dark:bg-slate-800 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(56,189,248,0.2)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ring-2 ring-primary/30 dark:ring-primary/50 p-[2px]"
           aria-label="Toggle NISBot AI Assistant"
         >
-          <img src="/nisbot.jpeg" alt="NISBot" className="w-full h-full object-cover mix-blend-multiply" />
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-tertiary"></span>
+          <div className="w-full h-full rounded-full overflow-hidden bg-white shadow-inner">
+            <img src="/nisbot.jpeg" alt="NISBot" className="w-full h-full object-cover" />
+          </div>
+          <span className="absolute -top-1 -right-1 flex h-4 w-4 z-10">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-primary border-2 border-white dark:border-slate-800"></span>
           </span>
         </button>
       </div>

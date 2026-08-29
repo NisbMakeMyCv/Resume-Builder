@@ -823,13 +823,24 @@ svg,
   }
 
   /* Remove padding/margins of parent containers */
-  main, .page-enter, #resume-preview-container {
+  main, .page-enter, #resume-preview-container, body, html {
     padding: 0 !important;
     margin: 0 !important;
     display: block !important;
     overflow: visible !important;
     max-height: none !important;
     background: white !important;
+  }
+
+  /* Force only the specific outer layout containers to be transparent so we don't accidentally remove borders from inside the resume */
+  .dark #resume-preview-container,
+  .dark body,
+  .dark html,
+  .dark main,
+  .dark .page-enter {
+    background-color: white !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   /* Collapse the two-column editor/preview grid to single column */
