@@ -3,7 +3,7 @@ name: Production Deploy
 on:
   push:
     branches:
-      - integration01 # Trigger on merges/pushes to main branch
+      - feature/integration01 # Trigger on merges/pushes to main branch
     paths:
       - 'frontend/**'
       - 'backend/**'
