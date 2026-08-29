@@ -219,7 +219,27 @@ export default function ResumeChatbot({
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-outline-variant bg-surface">
+      <div className="p-3 border-t border-outline-variant bg-surface space-y-2">
+        {/* Quick Action Chips */}
+        {messages.length <= 2 && !isSending && (
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { label: "📝 Fill with sample data", msg: "Add dummy data to my resume" },
+              { label: "✨ Improve resume", msg: "Make my resume more professional and ATS-friendly" },
+              { label: "➕ Add a project", msg: "Help me add a new project to my resume" },
+              { label: "📊 Analyze for ATS", msg: "Analyze my resume and suggest improvements for ATS" },
+            ].map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => { setMessage(chip.msg); }}
+                className="px-2.5 py-1 text-xs rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all duration-200 active:scale-95"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             value={message}

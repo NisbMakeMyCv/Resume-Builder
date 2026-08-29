@@ -12,7 +12,7 @@ WELCOME_MESSAGE = (
     "You can also paste a job description or ask me to analyze a GitHub project."
 )
 
-MODEL = "openai/gpt-oss-20b"
+MODEL = "llama-3.3-70b-versatile"
 
 # The frontend currently uses this normalized shape. The helper functions below
 # also tolerate common legacy variations such as technical_skills and arrays for
@@ -46,8 +46,9 @@ CORE BEHAVIOR
    missing. Never ask for information that is already present in the resume or
    conversation.
 9. If a request is informational/advisory, do not modify the resume.
-10. Never invent resume facts. Do not fabricate companies, dates, metrics,
-    technologies, links, responsibilities, achievements, degrees, or certificates.
+10. Never invent resume facts UNLESS the user explicitly asks for dummy, sample,
+    placeholder, or example data. When they do, generate realistic and
+    professional-sounding content across all sections.
 11. You may rewrite existing facts for clarity, ATS wording, grammar, concision,
     impact, or professionalism, but must preserve factual meaning.
 12. Never duplicate an existing skill/project/certification. If it already exists,
@@ -59,17 +60,30 @@ CORE BEHAVIOR
     the conversation contains enough information to safely reverse the immediately
     previous AI change. If it cannot be reversed safely, explain that and ask which
     change they want reversed.
+16. When the user asks to "fill", "populate", "add dummy data", "add sample data",
+    "add placeholder", or "fill everything", generate realistic professional
+    resume content for ALL empty sections. Use believable names, companies,
+    universities, skills, and project descriptions. Make it look like a real
+    software engineer's resume.
 
-RESUME SHAPE
+RESUME SHAPE (THIS IS THE EXACT FRONTEND SCHEMA — USE THESE FIELD NAMES)
 {
   "personal": {"name":"", "phone":"", "email":"", "linkedin":"", "github":""},
-  "education": {"institution":"", "location":"", "degree":"", "dates":""},
-  "experience": {"company":"", "role":"", "location":"", "startDate":"", "endDate":"", "description":""},
-  "projects": [{"name":"", "description":"", "technologies":"", "bullets":[], "projectLink":"", "githubLink":""}],
-  "skills": [{"name":"", "category":""}],
+  "education": [{"school":"", "degree":"", "location":"", "dates":"", "coursework":""}],
+  "experience": [{"company":"", "title":"", "location":"", "dates":"", "bullets":[]}],
+  "projects": [{"title":"", "technologies":"", "dates":"", "links":"", "bullets":[]}],
+  "skills": [{"category":"", "items":""}],
   "certifications": [{"name":"", "organization":"", "issueDate":"", "credentialId":"", "credentialUrl":""}],
   "achievements": [{"title":"", "organization":"", "date":"", "description":""}]
 }
+
+CRITICAL FIELD NAME RULES
+- Education uses "school" (NOT "institution"), "degree", "location", "dates", "coursework".
+- Experience uses "company", "title" (NOT "role" or "job_title"), "location", "dates", "bullets".
+- Projects uses "title" (NOT "name"), "technologies" (a string, NOT array), "dates", "links", "bullets".
+- Skills uses "category" and "items" (a comma-separated string, NOT "name").
+- ALWAYS use these exact field names. The frontend will silently ignore operations
+  with wrong field names.
 
 ALLOWED SECTIONS
 personal, education, experience, projects, skills, certifications, achievements
@@ -87,42 +101,30 @@ OPERATION SCHEMA
 }
 
 OPERATION RULES
-- update field: data is the NEW VALUE directly.
-- update array item: provide index and either field+value or a partial object in data.
-- add array item: provide a complete object using only supplied facts.
+- update personal field: {"action":"update", "section":"personal", "field":"email", "data":"new@email.com"}
+- add education: {"action":"add", "section":"education", "data":{"school":"MIT", "degree":"B.S. CS", "location":"Cambridge, MA", "dates":"Aug 2020 - May 2024", "coursework":"Algorithms, OS"}}
+- add experience: {"action":"add", "section":"experience", "data":{"company":"Google", "title":"SDE Intern", "location":"Mountain View, CA", "dates":"May 2023 - Aug 2023", "bullets":["Built X", "Improved Y"]}}
+- add project: {"action":"add", "section":"projects", "data":{"title":"ChatApp", "technologies":"React, Node.js, Socket.io", "dates":"Jan 2024", "links":"github.com/user/chatapp", "bullets":["Built real-time chat"]}}
+- add skill: {"action":"add", "section":"skills", "data":{"category":"Languages", "items":"Python, JavaScript, TypeScript"}}
 - delete array item: provide the current zero-based index.
 - clear a field: action=clear with field.
 - clear an array: action=clear with no index/field.
-- replace section/object: only when necessary.
 - Prefer the smallest safe operation.
 - Never return technical_skills; map it to skills for this frontend.
 
 SKILL INTELLIGENCE
-- Infer sensible categories only when obvious:
-  Programming Language: Python, Java, C, C++, JavaScript, TypeScript, Go, Rust, etc.
-  Framework: React, Next.js, Angular, Vue, FastAPI, Django, Spring, Express, etc.
-  Library: Pandas, NumPy, TensorFlow, PyTorch, LangChain, OpenCV, etc.
-  Developer Tool: Git, GitHub, Docker, Kubernetes, VS Code, Postman, AWS, etc.
-  Database: PostgreSQL, MySQL, MongoDB, Redis, etc.
-- If the user explicitly says a category, respect it.
-- Do not invent a category when the user only asks to add a skill; use a sensible
-  category and mention it in the reply.
-- "embedding" is not automatically a company/project. If the user says
-  "add embedding as my skill", add it as a skill. Preserve the exact term.
+- Skills are grouped by category with comma-separated items.
+- Example: {"category": "Languages", "items": "Python, Java, C++"}
+- Example: {"category": "Frameworks", "items": "React, Next.js, FastAPI"}
+- When adding a single skill, check if a matching category already exists and
+  update that category's items string instead of creating a new entry.
 
 PROJECT INTELLIGENCE
 - "first/second/last/latest project" resolves to the current array index.
-- "make the project description better" updates only description unless the user
-  asks for bullets too.
+- "make the project description better" updates only the bullets.
 - "make the bullets stronger" rewrites existing bullets without adding facts.
 - If the user asks to add a project but required factual information is missing,
   ask only for the missing essentials.
-
-EXPERIENCE / EDUCATION
-- The current frontend uses one experience object and one education object.
-- Update that object when it is empty or clearly refers to the current entry.
-- If the user wants multiple entries but the current frontend cannot represent
-  them safely, ask for clarification rather than silently overwriting.
 
 PERSONAL INFORMATION
 Understand requests like:
@@ -134,36 +136,6 @@ IMPROVEMENT / ATS
   "rewrite my project", etc. should use existing facts only.
 - Improve wording, grammar, action verbs, concision and relevance.
 - Never create fake metrics. Do not change a user's technology stack.
-- For JD analysis, compare the JD against the resume and report matched,
-  missing/underrepresented, strengths and recommended truthful changes.
-- Do not claim an exact ATS percentage unless an explicit reproducible scoring
-  method is actually used.
-
-CONVERSATION EXAMPLES
-A) User: "Add embedding"
-   Assistant: ask where only if context does not establish a target.
-   User: "skill"
-   => interpret as "Add embedding as a skill".
-
-B) User: "Add my internship"
-   Assistant asks for company/role/dates as needed.
-   User: "ABC Technologies"
-   => treat as the company answer, not a new topic.
-
-C) User: "Improve my first project"
-   => inspect projects[0] and improve only factual text.
-
-D) User: "Remove React"
-   => delete the matching React skill if it exists. If not, say it is not present.
-
-E) User: "Add Python and React, remove Java"
-   => perform all safe operations in one response.
-
-F) User: "Should I add Docker?"
-   => give advice only. No operation.
-
-G) User: "yes"
-   => approve the immediately preceding pending proposal/question if one exists.
 
 OUTPUT
 Return EXACTLY one JSON object and nothing else:
@@ -375,12 +347,8 @@ def _clean_resume(resume: dict[str, Any]) -> dict[str, Any]:
                 skills.append({"name": str(value), "category": category})
         r["skills"] = skills
 
-    # Convert legacy list education/experience to the current single-object shape
-    # only for model context; never destroy the user's actual frontend data.
-    if isinstance(r.get("education"), list):
-        r["education"] = (r["education"] or [{}])[0] if r["education"] else {}
-    if isinstance(r.get("experience"), list):
-        r["experience"] = (r["experience"] or [{}])[0] if r["experience"] else {}
+    # Keep education/experience as arrays — the frontend uses arrays and the
+    # system prompt now documents the correct array schema.
 
     return r
 
@@ -865,10 +833,127 @@ def _fallback_short_skill_task(message: str, history: list[dict[str, Any]], resu
     )
 
 
+def _is_dummy_data_request(message: str) -> bool:
+    """Detect requests for dummy/sample/placeholder data."""
+    t = _norm(message)
+    dummy_phrases = [
+        "dummy data", "sample data", "placeholder data", "example data",
+        "fill with dummy", "fill with sample", "fill everything",
+        "populate my resume", "fill my resume", "add dummy",
+        "add sample", "fill it up", "generate dummy", "generate sample",
+        "fill all sections", "add placeholder", "fill in dummy",
+    ]
+    return any(phrase in t for phrase in dummy_phrases)
+
+
+def _handle_dummy_data(resume: dict[str, Any]) -> ResumeChatResponse:
+    """Return a deterministic set of operations that fills all empty sections
+    with realistic, professional sample data."""
+    ops: list[dict[str, Any]] = []
+
+    personal = resume.get("personal") or {}
+    if not personal.get("name"):
+        ops.append({"action": "update", "section": "personal", "field": "name", "index": None, "data": "Alex Morgan"})
+    if not personal.get("phone"):
+        ops.append({"action": "update", "section": "personal", "field": "phone", "index": None, "data": "9876543210"})
+    if not personal.get("email"):
+        ops.append({"action": "update", "section": "personal", "field": "email", "index": None, "data": "alex.morgan@email.com"})
+    if not personal.get("linkedin"):
+        ops.append({"action": "update", "section": "personal", "field": "linkedin", "index": None, "data": "linkedin.com/in/alexmorgan"})
+    if not personal.get("github"):
+        ops.append({"action": "update", "section": "personal", "field": "github", "index": None, "data": "github.com/alexmorgan"})
+
+    edu = resume.get("education")
+    if not edu or (isinstance(edu, list) and len(edu) == 0) or (isinstance(edu, dict) and not edu.get("school") and not edu.get("institution")):
+        ops.append({"action": "add", "section": "education", "field": None, "index": None, "data": {
+            "school": "Indian Institute of Technology, Bangalore",
+            "degree": "B.Tech in Computer Science and Engineering",
+            "location": "Bangalore, India",
+            "dates": "Aug 2020 - May 2024",
+            "coursework": "Data Structures, Algorithms, Operating Systems, Database Systems, Computer Networks, Machine Learning",
+        }})
+
+    exp = resume.get("experience")
+    if not exp or (isinstance(exp, list) and len(exp) == 0) or (isinstance(exp, dict) and not exp.get("company")):
+        ops.append({"action": "add", "section": "experience", "field": None, "index": None, "data": {
+            "company": "TechNova Solutions",
+            "title": "Software Development Engineer Intern",
+            "location": "Bangalore, India",
+            "dates": "May 2023 - Aug 2023",
+            "bullets": [
+                "Developed and deployed 3 RESTful microservices using FastAPI and PostgreSQL, reducing API response time by 40%",
+                "Built an automated CI/CD pipeline with GitHub Actions and Docker, cutting deployment time from 45 minutes to 8 minutes",
+                "Collaborated with a cross-functional team of 6 to implement real-time notification system using WebSockets, serving 10K+ daily active users",
+            ],
+        }})
+
+    proj = resume.get("projects")
+    if not proj or (isinstance(proj, list) and len(proj) == 0):
+        ops.append({"action": "add", "section": "projects", "field": None, "index": None, "data": {
+            "title": "CloudDrive — Distributed File Storage System",
+            "technologies": "React, Node.js, AWS S3, PostgreSQL, Docker",
+            "dates": "Jan 2024 - Mar 2024",
+            "links": "github.com/alexmorgan/clouddrive",
+            "bullets": [
+                "Architected a scalable cloud storage platform supporting file upload, versioning, and sharing for 500+ concurrent users",
+                "Implemented chunked file uploads with resumable transfer protocol, handling files up to 5GB with 99.9% success rate",
+                "Designed role-based access control system with JWT authentication and refresh token rotation for enhanced security",
+            ],
+        }})
+        ops.append({"action": "add", "section": "projects", "field": None, "index": None, "data": {
+            "title": "SmartBudget — AI-Powered Expense Tracker",
+            "technologies": "Next.js, TypeScript, Tailwind CSS, Supabase, OpenAI API",
+            "dates": "Sep 2023 - Nov 2023",
+            "links": "github.com/alexmorgan/smartbudget",
+            "bullets": [
+                "Built a full-stack expense tracking application with AI-powered categorization achieving 92% classification accuracy",
+                "Implemented interactive data visualizations using Chart.js, enabling users to analyze spending patterns across 15+ categories",
+                "Optimized database queries with proper indexing and connection pooling, reducing page load time by 60%",
+            ],
+        }})
+
+    skills = resume.get("skills")
+    if not skills or (isinstance(skills, list) and len(skills) == 0):
+        ops.extend([
+            {"action": "add", "section": "skills", "field": None, "index": None, "data": {
+                "category": "Languages", "items": "Python, JavaScript, TypeScript, Java, C++, SQL",
+            }},
+            {"action": "add", "section": "skills", "field": None, "index": None, "data": {
+                "category": "Frameworks", "items": "React, Next.js, FastAPI, Node.js, Express, Tailwind CSS",
+            }},
+            {"action": "add", "section": "skills", "field": None, "index": None, "data": {
+                "category": "Developer Tools", "items": "Git, GitHub, Docker, AWS, VS Code, Postman, Linux",
+            }},
+            {"action": "add", "section": "skills", "field": None, "index": None, "data": {
+                "category": "Databases", "items": "PostgreSQL, MongoDB, Redis, Supabase",
+            }},
+        ])
+
+    if not ops:
+        return ResumeChatResponse(
+            reply="Your resume already has content in all sections! Would you like me to improve or add to any specific section?",
+            operations=[],
+        )
+
+    return ResumeChatResponse(
+        reply=(
+            "Done! I've filled your resume with professional sample data including education, "
+            "experience, projects, skills, and personal information. Hit **Recompile** to see "
+            "the changes in the live preview. You can now edit any section to replace the "
+            "sample data with your real information!"
+        ),
+        operations=ops,
+    )
+
+
 def process_resume_chat(message: str, resume: dict[str, Any], history: list[dict[str, Any]] | None = None) -> ResumeChatResponse:
     history = _history_dicts(history or [])[-40:]
     message = message.strip()
     resume = _clean_resume(resume)
+
+    # Deterministic dummy data handler — bypasses LLM for reliability.
+    if _is_dummy_data_request(message):
+        return _handle_dummy_data(resume)
 
     # Fast deterministic continuation for short, high-confidence replies.
     fallback = _fallback_short_skill_task(message, history, resume)
