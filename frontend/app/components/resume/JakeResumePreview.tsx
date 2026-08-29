@@ -116,11 +116,11 @@ export default function JakeResumePreview({
       <div
         ref={containerRef}
         id="resume-preview-container"
-        className={`bg-surface-container flex justify-center items-center text-gray-900 w-full overflow-hidden ${className} print:!block print:!h-auto print:!overflow-visible print:!bg-transparent`}
+        className={`bg-slate-100/80 dark:bg-slate-950/40 rounded-2xl border border-slate-200/80 dark:border-slate-800/60 p-4 flex justify-center items-center text-gray-900 w-full overflow-hidden ${className} print:!block print:!h-auto print:!overflow-visible print:!bg-transparent print:!border-none print:!p-0`}
         style={{
           fontFamily:
             "'Baskerville', 'Palatino Linotype', Georgia, serif",
-          height: "calc(100vh - 6rem)", // Full available height to center properly
+          height: "calc(100vh - 7rem)",
         }}
       >
       <div 
@@ -129,7 +129,7 @@ export default function JakeResumePreview({
       >
         <div
           id="resume-pdf-content"
-          className="bg-white shadow-xl shrink-0 print:shadow-none print:m-0 print:p-0"
+          className="bg-white shadow-2xl rounded-sm shrink-0 print:shadow-none print:m-0 print:p-0 print:rounded-none"
           style={{ 
             width: "210mm", 
             height: "297mm", 
