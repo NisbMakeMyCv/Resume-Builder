@@ -30,8 +30,8 @@ const NAV_ITEMS: SidebarItem[] = [
 
 /** Shared link treatment — larger text, soft rounded hover states. */
 const LINK_BASE =
-  "flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 ease-in-out";
-const LINK_ACTIVE = "text-blue-600 bg-blue-50 font-semibold";
+  "flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-medium text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-all duration-200 ease-in-out";
+const LINK_ACTIVE = "text-primary bg-surface-container-high font-semibold";
 
 /**
  * Responsive sidebar. On desktop it is a fixed left rail that the user can
@@ -109,7 +109,7 @@ export default function AppSidebar() {
             <>
               <MaterialIcon
                 name={item.icon}
-                className={active ? "text-blue-600" : "text-gray-400"}
+                className={active ? "text-primary" : "text-on-surface-variant"}
                 filled={active}
               />
               <span className="truncate">{item.label}</span>
@@ -120,11 +120,11 @@ export default function AppSidebar() {
             return (
               <div
                 key={item.label}
-                className={`${LINK_BASE} text-gray-300 cursor-not-allowed`}
+                className={`${LINK_BASE} opacity-50 cursor-not-allowed`}
                 title="Coming soon"
               >
                 {content}
-                <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-xs text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
                   Coming Soon
                 </span>
               </div>
@@ -185,7 +185,7 @@ export default function AppSidebar() {
     <>
       {/* Desktop rail — always visible on lg+, drag-resizable */}
       <aside
-        className="hidden lg:flex bg-surface-container-low dark:bg-surface-container-lowest h-screen fixed left-0 top-0 border-r border-outline-variant dark:border-outline flex-col z-50"
+        className="hidden lg:flex bg-surface-container-lowest h-screen fixed left-0 top-0 border-r border-outline-variant flex-col z-50"
         style={{ width }}
       >
         {sidebarBody}
@@ -210,7 +210,7 @@ export default function AppSidebar() {
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden bg-surface-container-low dark:bg-surface-container-lowest w-64 fixed left-0 top-0 h-screen z-50 border-r border-outline-variant dark:border-outline flex-col transition-transform duration-300 ${
+        className={`lg:hidden bg-surface-container-lowest w-64 fixed left-0 top-0 h-screen z-50 border-r border-outline-variant flex-col transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

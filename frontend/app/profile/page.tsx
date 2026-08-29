@@ -452,7 +452,7 @@ function ProfileInner() {
 
           {/* Identity Card — avatar + name + email */}
           <Reveal>
-            <div className="ambient-card bg-white rounded-2xl border border-outline-variant p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+            <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
               <div 
                 className="relative shrink-0 cursor-pointer group" 
                 onClick={() => fileInputRef.current?.click()}
@@ -517,7 +517,7 @@ function ProfileInner() {
           </div>
 
           <Reveal delay={0}>
-            <div className="ambient-card bg-white rounded-2xl border border-outline-variant p-6 sm:p-8 space-y-6">
+            <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 sm:p-8 space-y-6">
               <Field label="Full Name" hint="Your display name">
                 <input
                   type="text"
@@ -596,7 +596,7 @@ function ProfileInner() {
           </div>
 
           <Reveal delay={100}>
-            <div className="ambient-card bg-white rounded-2xl border border-outline-variant p-6 sm:p-8 space-y-6">
+            <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 sm:p-8 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Field label="LinkedIn URL" hint="Full profile link">
                   <input
@@ -795,7 +795,7 @@ function ProfileInner() {
 
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-outline-variant space-y-6">
+          <div className="bg-surface-container-lowest rounded-2xl p-6 max-w-md w-full border border-outline-variant space-y-6">
             <div>
               <h3 className="text-headline-md font-bold text-on-surface">Export to Resume</h3>
               <p className="text-body-md text-on-surface-variant">Which resume would you like to update?</p>

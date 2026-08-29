@@ -4,6 +4,7 @@ import GoogleProvider from "./components/GoogleProvider";
 import SplashScreen from "./components/SplashScreen";
 import { CryptoProvider } from "./providers/CryptoProvider";
 import "./globals.css";
+import { ThemeProvider } from "./providers/ThemeProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -53,11 +54,13 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <SplashScreen />
-        <GoogleProvider>
-          <CryptoProvider>{children}</CryptoProvider>
-        </GoogleProvider>
-      </body>
+  <ThemeProvider>
+    <SplashScreen />
+    <GoogleProvider>
+      <CryptoProvider>{children}</CryptoProvider>
+    </GoogleProvider>
+  </ThemeProvider>
+</body>
     </html>
   );
 }

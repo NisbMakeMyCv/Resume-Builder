@@ -8,6 +8,7 @@ import Protected from "../components/Protected";
 import Reveal from "../components/Reveal";
 import ConfirmModal from "../components/ConfirmModal";
 import { ToastStack, useToasts } from "../components/Toast";
+import { useTheme } from "../providers/ThemeProvider";
 import {
   apiRequest,
   clearSession,
@@ -27,6 +28,7 @@ export default function SettingsPage() {
 
 function SettingsInner() {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [user, setUser] = useState<CurrentUser | null>(getStoredUser());
   const [loading, setLoading] = useState(true);
 
@@ -110,27 +112,54 @@ function SettingsInner() {
           </div>
 
           <Reveal>
-            <div className="ambient-card bg-white rounded-2xl border border-outline-variant overflow-hidden">
+            <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
               <div className="p-6 border-b border-outline-variant flex items-center gap-3">
                 <MaterialIcon name="tune" className="text-primary" />
                 <h4 className="text-headline-md text-primary">Preferences</h4>
               </div>
               <div className="p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="text-label-md font-semibold text-on-surface">Dark Mode</h5>
-                    <p className="text-label-sm text-on-surface-variant">Switch between light and dark themes (Coming soon)</p>
-                  </div>
-                  <div className="w-12 h-6 bg-surface-container rounded-full relative opacity-50 cursor-not-allowed">
-                    <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-outline-variant" />
-                  </div>
-                </div>
+               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div>
+    <h5 className="text-label-md font-semibold text-on-surface">
+      Appearance
+    </h5>
+    <p className="text-label-sm text-on-surface-variant mt-1">
+      Choose between light and dark mode.
+    </p>
+  </div>
+
+  <div className="flex items-center gap-2 bg-surface-container rounded-full p-1 border border-outline-variant">
+    <button
+      type="button"
+      onClick={() => setTheme("light")}
+      className={`px-4 py-2 rounded-full text-label-md font-semibold transition ${
+        theme === "light"
+          ? "bg-primary text-on-primary shadow-sm"
+          : "text-on-surface-variant hover:text-on-surface"
+      }`}
+    >
+      ☀ Light
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setTheme("dark")}
+      className={`px-4 py-2 rounded-full text-label-md font-semibold transition ${
+        theme === "dark"
+          ? "bg-primary text-on-primary shadow-sm"
+          : "text-on-surface-variant hover:text-on-surface"
+      }`}
+    >
+      🌙 Dark
+    </button>
+  </div>
+</div>
               </div>
             </div>
           </Reveal>
 
           <Reveal delay={100}>
-            <div className="ambient-card bg-white rounded-2xl border border-outline-variant overflow-hidden">
+            <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
               <div className="p-6 border-b border-outline-variant flex items-center gap-3">
                 <MaterialIcon name="lock" className="text-primary" />
                 <h4 className="text-headline-md text-primary">Security</h4>
@@ -159,7 +188,7 @@ function SettingsInner() {
 
           {/* Danger Zone — Delete Account */}
           <Reveal delay={200}>
-            <div className="ambient-card bg-white rounded-2xl border border-error-container overflow-hidden">
+            <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-error-container overflow-hidden">
               <div className="p-6 border-b border-error-container/40 flex items-center gap-3">
                 <MaterialIcon name="delete_forever" className="text-error" />
                 <h4 className="text-headline-md text-on-surface">Danger Zone</h4>
