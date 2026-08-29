@@ -13,7 +13,7 @@ variable "environment" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.small" # t3.small is good for a simple web app. Update to t3.medium if running out of memory during builds.
+  default     = "t3.micro" # t3.micro is cost-effective for simple apps.
 }
 
 variable "key_name" {
