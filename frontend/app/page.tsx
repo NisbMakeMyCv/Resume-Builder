@@ -10,6 +10,9 @@ import Logo from "./components/Logo";
 import MaterialIcon from "./components/MaterialIcon";
 import Reveal from "./components/Reveal";
 import { cn } from "@/lib/utils";
+import { getStoredUser, CurrentUser } from "@/lib/api";
+import { useTheme } from "@/app/providers/ThemeProvider";
+import { useEffect } from "react";
 
 /**
  * Landing page — `refined_landing_page` stitch frame.
@@ -18,6 +21,12 @@ import { cn } from "@/lib/utils";
  */
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
 
   return (
     <main className="page-enter bg-background text-on-background font-body-md min-h-screen flex flex-col overflow-x-hidden">
@@ -31,22 +40,53 @@ export default function Home() {
             <div className="flex items-center gap-2 border-r border-outline-variant pr-4">
               <LiveClock />
             </div>
-            <Link
-              href="/signin"
-              className="btn-outline hidden sm:inline-flex text-label-md font-semibold px-4 py-2 rounded-full"
+            
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"
+              aria-label="Toggle dark mode"
             >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="btn-primary btn-shine btn-magnetic inline-flex text-label-md font-semibold px-6 py-2.5 rounded-full"
-            >
-              Sign Up
-            </Link>
+              <MaterialIcon name={theme === "dark" ? "light_mode" : "dark_mode"} className="text-[24px]" />
+            </button>
+
+            {user ? (
+              <Link href="/resumes" className="flex items-center gap-2 hover:opacity-80 transition-opacity ml-2">
+                {user.profile_picture ? (
+                  <img src={user.profile_picture} alt="Profile" className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-fixed" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">
+                    {user.full_name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                )}
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/signin"
+                  className="btn-outline hidden sm:inline-flex text-label-md font-semibold px-4 py-2 rounded-full"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="btn-primary btn-shine btn-magnetic inline-flex text-label-md font-semibold px-6 py-2.5 rounded-full"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile: hamburger */}
           <div className="flex sm:hidden items-center gap-1">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors"
+              aria-label="Toggle dark mode"
+            >
+              <MaterialIcon name={theme === "dark" ? "light_mode" : "dark_mode"} className="text-[24px] text-on-surface-variant" />
+            </button>
             <button
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors"
               onClick={() => setMobileMenuOpen((v) => !v)}
@@ -68,20 +108,32 @@ export default function Home() {
           )}
         >
           <div className="flex flex-col px-4 py-3 gap-2 bg-surface-container-lowest">
-            <Link
-              href="/signin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-label-md font-semibold text-primary px-4 py-3 rounded-xl hover:bg-surface-container transition-colors text-center"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              onClick={() => setMobileMenuOpen(false)}
-              className="bg-primary text-on-primary px-4 py-3 rounded-xl text-label-md font-semibold text-center hover:bg-primary/90 transition-colors"
-            >
-              Sign Up Free
-            </Link>
+            {user ? (
+              <Link
+                href="/resumes"
+                onClick={() => setMobileMenuOpen(false)}
+                className="bg-primary text-on-primary px-4 py-3 rounded-xl text-label-md font-semibold text-center hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                Go to My Resumes
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/signin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-label-md font-semibold text-primary px-4 py-3 rounded-xl hover:bg-surface-container transition-colors text-center"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="bg-primary text-on-primary px-4 py-3 rounded-xl text-label-md font-semibold text-center hover:bg-primary/90 transition-colors"
+                >
+                  Sign Up Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>

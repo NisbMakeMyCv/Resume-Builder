@@ -75,6 +75,16 @@ export async function apiRequest<T>(
     let detail = "Something went wrong. Please try again.";
     if (typeof data?.detail === "string") {
       detail = data.detail;
+      // Sanitize ugly backend error strings (e.g., from Google API HttpError)
+      if (detail.includes("HttpError") || detail.includes("failed:")) {
+        const match = detail.match(/returned "([^"]+)"/);
+        if (match) {
+          detail = match[1]; // Extract the clean message from Google API
+        } else {
+          // Fallback truncation to remove raw exception dumps
+          detail = detail.split("<")[0].trim() || "An external service error occurred.";
+        }
+      }
     } else if (Array.isArray(data?.detail)) {
       detail = data.detail
         .map((d: any) => {
@@ -101,6 +111,7 @@ export function saveSession(token: string, user: StoredUser) {
 export function clearSession() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem("makemycv_crypto_key");
 }
 
 export function getToken(): string | null {
@@ -273,6 +284,8 @@ export const achievementsApi = createCrud<Achievement, AchievementCreateInput>("
 export type ResumeDocument = {
   id: string;
   title: string;
+  file_name?: string | null;
+  mime_type?: string | null;
   drive_file_id?: string | null;
   created_at: string;
   updated_at: string;
