@@ -80,7 +80,7 @@ function SettingsInner() {
     try {
       await deleteAccount(token);
       clearSession();
-      router.replace("/signup");
+      window.location.href = "/signup";
     } catch (err) {
       setDeleteError(
         err instanceof Error
