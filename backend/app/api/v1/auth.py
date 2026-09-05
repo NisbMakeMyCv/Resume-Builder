@@ -195,7 +195,7 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
 @router.delete("/me", status_code=204)
 def delete_current_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Deletes the current user and all their associated data (GDPR Compliant)."""
-    from app.models.resume import Profile, Education, Experience, Skill, Project
+    from app.models.resume import Profile, Education, Experience, Skill, Project, ResumeDocument
     
     # 1. Delete all resume data
     db.query(Profile).filter(Profile.user_id == current_user.id).delete()
@@ -203,6 +203,7 @@ def delete_current_user(db: Session = Depends(get_db), current_user: User = Depe
     db.query(Experience).filter(Experience.user_id == current_user.id).delete()
     db.query(Skill).filter(Skill.user_id == current_user.id).delete()
     db.query(Project).filter(Project.user_id == current_user.id).delete()
+    db.query(ResumeDocument).filter(ResumeDocument.user_id == current_user.id).delete()
     
     # 2. Delete Auth Methods
     db.query(UserAuthMethod).filter(UserAuthMethod.user_id == current_user.id).delete()

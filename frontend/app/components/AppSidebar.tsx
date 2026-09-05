@@ -94,7 +94,7 @@ export default function AppSidebar() {
 
   function handleLogout() {
     clearSession();
-    router.push("/");
+    window.location.href = "/";
   }
 
   const initial = (user?.full_name ?? "U").trim().charAt(0).toUpperCase();
