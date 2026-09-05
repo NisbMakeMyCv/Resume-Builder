@@ -36,10 +36,6 @@ export default function Home() {
 
           {/* Desktop nav */}
           <div className="hidden sm:flex items-center gap-4">
-            <div className="flex items-center gap-2 border-r border-outline-variant pr-4">
-              <LiveClock />
-            </div>
-            
             {/* Dark Mode Toggle */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

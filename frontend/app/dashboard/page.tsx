@@ -20,7 +20,6 @@ import {
   projectsApi, 
   resumesApi 
 } from "@/lib/api";
-import LiveClock from "../components/LiveClock";
 
 /**
  * Dashboard — coded from the `main_dashboard_desktop` stitch frame.
