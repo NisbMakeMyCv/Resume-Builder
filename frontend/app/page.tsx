@@ -5,7 +5,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Container from "./components/Container";
 import HeroResume from "./components/HeroResume";
-import LiveClock from "./components/LiveClock";
 import Logo from "./components/Logo";
 import MaterialIcon from "./components/MaterialIcon";
 import Reveal from "./components/Reveal";
@@ -28,9 +27,6 @@ export default function Home() {
 
           {/* Desktop nav */}
           <div className="hidden sm:flex items-center gap-4">
-            <div className="flex items-center gap-2 border-r border-outline-variant pr-4">
-              <LiveClock />
-            </div>
             <Link
               href="/signin"
               className="btn-outline hidden sm:inline-flex text-label-md font-semibold px-4 py-2 rounded-full"
@@ -184,10 +180,10 @@ export default function Home() {
               </Reveal>
               <Reveal delay={120} className="col-span-12 md:col-span-4">
                 <FeatureCard
-                  icon="fact_check"
+                  icon="smart_toy"
                   iconClass="bg-secondary"
-                  title="ATS Resume Checker"
-                  text="Instant feedback on how well your CV ranks against Applicant Tracking Systems used by top Fortune 500 companies."
+                  title="GitHub Repo Analyzer"
+                  text="Paste a link to any public GitHub repository and let our AI automatically write your project bullet points and tech stack."
                 />
               </Reveal>
               <Reveal delay={240} className="col-span-12 md:col-span-4">
@@ -270,7 +266,7 @@ export default function Home() {
                     href="#features"
                     className="btn-magnetic inline-flex items-center gap-2 bg-transparent text-white border-2 border-white/30 px-12 py-5 rounded-full font-bold text-xl hover:bg-white/10 hover:border-white/50 transition-all btn-press"
                   >
-                    View Examples
+                    See Features
                   </Link>
                 </div>
               </div>
@@ -299,13 +295,11 @@ function FeatureCard({
   iconClass,
   title,
   text,
-  delay,
 }: {
   icon: string;
   iconClass: string;
   title: string;
   text: string;
-  delay?: string;
 }) {
   return (
     <div className="group col-span-12 md:col-span-4 tilt-card ambient-card h-full p-8 bg-surface-bright border border-outline-variant rounded-[24px] flex flex-col items-center text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 hover:border-primary/40 relative overflow-hidden">
@@ -372,9 +366,9 @@ function Footer() {
           <div className="flex flex-col gap-4 sm:items-end">
             <h5 className="font-bold text-on-surface">Product</h5>
             <ul className="flex flex-row gap-6 text-on-surface-variant">
-              <FooterLink>Resume</FooterLink>
-              <FooterLink>AI Writer</FooterLink>
-              <FooterLink>ATS Scan</FooterLink>
+              <FooterLink href="/resumes">Resume</FooterLink>
+              <FooterLink href="#features">AI Writer</FooterLink>
+              <FooterLink href="#features">Templates</FooterLink>
             </ul>
           </div>
         </div>
@@ -384,14 +378,14 @@ function Footer() {
             © 2026 NISB-MakeMyCV. Made by NISB.
           </p>
           <div className="flex gap-6 text-label-sm font-semibold text-on-surface-variant">
-            <a className="hover:text-primary transition-colors hover:underline" href="#">
+            <a className="hover:text-primary transition-colors hover:underline" href="#features">
               Privacy Policy
             </a>
-            <a className="hover:text-primary transition-colors hover:underline" href="#">
+            <a className="hover:text-primary transition-colors hover:underline" href="#how-it-works">
               Terms and Conditions
             </a>
-            <a className="hover:text-primary transition-colors hover:underline" href="#">
-              Contact
+            <a className="hover:text-primary transition-colors hover:underline" href="mailto:support@nisb.org">
+              Contact Us
             </a>
           </div>
         </div>
@@ -400,10 +394,10 @@ function Footer() {
   );
 }
 
-function FooterLink({ children }: { children: React.ReactNode }) {
+function FooterLink({ children, href }: { children: React.ReactNode, href: string }) {
   return (
     <li>
-      <a className="hover:text-primary transition-colors cursor-pointer">{children}</a>
+      <Link href={href} className="hover:text-primary transition-colors cursor-pointer">{children}</Link>
     </li>
   );
 }

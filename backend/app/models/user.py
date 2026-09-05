@@ -25,13 +25,6 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
-    conversations = relationship(
-        "Conversation",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        order_by="Conversation.updated_at.desc()",
-    )
-
 
 class UserAuthMethod(Base):
     __tablename__ = "user_auth_methods"
@@ -52,38 +45,3 @@ class EmailOTP(Base):
     email = Column(String, index=True, nullable=False)
     otp_code = Column(String, nullable=False)
     expires_at = Column(DateTime, nullable=False)
-
-
-class Conversation(Base):
-    __tablename__ = "resume_conversations"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    title = Column(String(200), nullable=False, default="New conversation")
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False, index=True)
-
-    user = relationship("User", back_populates="conversations")
-    messages = relationship(
-        "ConversationMessage",
-        back_populates="conversation",
-        cascade="all, delete-orphan",
-        order_by="ConversationMessage.created_at.asc()",
-    )
-
-
-class ConversationMessage(Base):
-    __tablename__ = "resume_conversation_messages"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversation_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("resume_conversations.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    role = Column(String(20), nullable=False)
-    content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-
-    conversation = relationship("Conversation", back_populates="messages")

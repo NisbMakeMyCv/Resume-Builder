@@ -210,7 +210,8 @@ export default function SignIn() {
             </p>
           </div>
 
-          {/* Sign In Card — elevated off the new background */}
+          {/* B9 FIX: Single <form> wraps EVERYTHING so Enter-key submission works */}
+          <form onSubmit={handleSubmit}>
           <div className="ambient-card bg-white/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 space-y-3 sm:space-y-4 lg:space-y-6 shadow-2xl ring-1 ring-black/5">
             {/* Email Field */}
             <div className="space-y-1 sm:space-y-2">
@@ -247,7 +248,7 @@ export default function SignIn() {
                 >
                   Password
                 </label>
-                <a href="#" className="text-[11px] font-bold text-secondary hover:text-[#004080] hover:underline transition-colors">
+                <a href="/signin/forgot-password" className="text-[11px] font-bold text-secondary hover:text-[#004080] hover:underline transition-colors">
                   Forgot password?
                 </a>
               </div>
@@ -289,23 +290,21 @@ export default function SignIn() {
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-1 sm:pt-2">
-              <form onSubmit={handleSubmit}>
-                <button
-                  className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                  type="submit"
-                  disabled={loading}
-                >
-                  <span>{loading ? "Signing In..." : "Sign In"}</span>
-                  {loading ? (
-                    <MaterialIcon
-                      name="sync"
-                      className="animate-spin text-[18px]"
-                    />
-                  ) : (
-                    <MaterialIcon name="arrow_forward" className="text-[18px]" />
-                  )}
-                </button>
-              </form>
+              <button
+                className="btn-primary btn-shine btn-magnetic w-full py-2.5 sm:py-3.5 rounded-brand font-label-md flex items-center justify-center gap-2 hover:shadow-md hover:brightness-105 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                type="submit"
+                disabled={loading}
+              >
+                <span>{loading ? "Signing In..." : "Sign In"}</span>
+                {loading ? (
+                  <MaterialIcon
+                    name="sync"
+                    className="animate-spin text-[18px]"
+                  />
+                ) : (
+                  <MaterialIcon name="arrow_forward" className="text-[18px]" />
+                )}
+              </button>
 
               <div className="relative flex items-center py-1 sm:py-1.5">
                 <div className="flex-grow border-t border-outline-variant" />
@@ -325,6 +324,7 @@ export default function SignIn() {
               </Link>
             </p>
           </div>
+          </form>
         </div>
         </motion.div>
         </div>
@@ -333,19 +333,19 @@ export default function SignIn() {
         <footer className="px-8 py-5 border-t border-outline-variant flex flex-col md:flex-row items-center justify-center gap-x-6 gap-y-2 text-center">
           <a
             className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-            href="#"
+            href="/privacy"
           >
             Privacy Policy
           </a>
           <a
             className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-            href="#"
+            href="/terms"
           >
             Terms of Service
           </a>
           <a
             className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-            href="#"
+            href="mailto:support@nisb.org"
           >
             Contact
           </a>
@@ -362,11 +362,13 @@ export default function SignIn() {
    LOCAL HELPERS — stats cycler typewriter + floating badges
    ========================================================= */
 
+// U14 FIX: Removed fictional social proof stats ("10k+ Resumes", "4.9/5 Rating")
+// Replace with real messaging that matches the actual product state
 const VALUE_PROPS = [
-  "⚡ 10k+ Resumes Generated",
-  "🎯 98% ATS Pass Rate",
-  "💼 Land Interviews 2x Faster",
-  "⭐ 4.9/5 User Rating",
+  "🎯 ATS-Optimized Resume Builder",
+  "✨ AI-Powered Bullet Writing",
+  "📁 Encrypted Cloud Resume Vault",
+  "🔗 GitHub Repo → Resume in Seconds",
 ];
 
 function useTypewriter(

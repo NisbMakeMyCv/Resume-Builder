@@ -84,12 +84,12 @@ def improve_github_resume_bullets(
             current_bullets=request.current_bullets,
         )
 
-        if not bullets:
+        if len(bullets) != len(request.current_bullets):
             raise HTTPException(
                 status_code=500,
                 detail=(
                     "AI could not generate "
-                    "improved resume bullets."
+                    "the correct number of improved resume bullets."
                 ),
             )
 

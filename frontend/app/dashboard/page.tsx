@@ -49,31 +49,29 @@ function DashboardInner() {
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    
-    // Fetch identity
-    apiRequest<{
-      id: string;
-      email: string;
-      full_name: string;
-      profile_picture: string | null;
-    }>("/auth/me", { token })
-      .then((me) => {
-        setUser(me);
-        localStorage.setItem("makemycv_user", JSON.stringify(me));
-      })
-      .catch(() => {});
 
-    // Fetch completion metrics & resumes
+    // B7 FIX: Fetch identity once; don't put `user` in the dep array
+    // B8 FIX: Use freshly fetched `me` for profile_picture in completion score
     Promise.all([
+      apiRequest<{
+        id: string;
+        email: string;
+        full_name: string;
+        profile_picture: string | null;
+      }>("/auth/me", { token }),
       getProfile(token).catch(() => null),
       educationApi.list(token).catch(() => []),
       experienceApi.list(token).catch(() => []),
       skillsApi.list(token).catch(() => []),
       projectsApi.list(token).catch(() => []),
       resumesApi.list(token).catch(() => []),
-    ]).then(([profile, edu, exp, skills, proj, resumes]) => {
+    ]).then(([me, profile, edu, exp, skills, proj, resumes]) => {
+      setUser(me);
+      localStorage.setItem("makemycv_user", JSON.stringify(me));
+
+      // Use `me.profile_picture` (fresh) not `user?.profile_picture` (stale closure)
       let score = 0;
-      if (user?.profile_picture) score += 10;
+      if (me.profile_picture) score += 10;
       if (profile?.headline) score += 15;
       if (profile?.summary) score += 15;
       if (profile?.location) score += 10;
@@ -83,8 +81,9 @@ function DashboardInner() {
       if (proj && proj.length > 0) score += 10;
       setCompletion(Math.min(100, score));
       setTotalResumes(resumes ? resumes.length : 0);
-    });
-  }, [user?.profile_picture]);
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const firstName = (user?.full_name ?? "there").split(" ")[0];
 
@@ -121,7 +120,9 @@ function DashboardInner() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35, duration: 0.55, ease: "easeOut" }}
             >
-              Your career dashboard is up to date.
+              {completion === 100
+                ? "Your master profile is 100% complete and ready for instant resume generation!"
+                : `Your profile is ${completion}% complete. Fill out your master profile for optimized AI suggestions.`}
             </motion.p>
           </header>
 
@@ -139,117 +140,58 @@ function DashboardInner() {
               label="Total Resumes"
               icon="description"
               value={totalResumes.toString()}
-              subtext="Create a resume to get started"
-              link={{ label: "Go to My Resumes", href: "/resumes" }}
+              subtext="Manage your created resumes"
+              link={{ label: "Go to My Vault", href: "/resumes" }}
             />
             <MetricCard
-              label="Avg. ATS Score"
-              icon="leaderboard"
-              value="—"
-              subtext="ATS Integration Coming Soon"
-              progress={0}
+              label="Profile Completion"
+              icon="how_to_reg"
+              value={`${completion}%`}
+              subtext="Keep this updated for better AI suggestions"
+              progress={completion}
+              link={{ label: "Edit Profile", href: "/profile" }}
             />
             <MetricCard
-              label="Profile Views"
-              icon="visibility"
-              value="0"
-              subtext="Shown once you publish"
+              label="Quick Start"
+              icon="bolt"
+              value="New"
+              subtext="Start building your next resume"
+              link={{ label: "Create Resume", href: "/resumes" }}
             />
           </motion.div>
 
           {/* Action Hero Card */}
-          {completion < 100 && (
-            <Reveal>
-          <motion.div
-            className="ambient-card bg-primary-container text-white p-8 rounded-xl flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden"
-            whileHover={{ y: -4, boxShadow: "0 24px 48px rgba(0, 42, 88, 0.24)" }}
-            transition={{ type: "spring", stiffness: 260, damping: 22 }}
-          >
-            <div className="space-y-4 z-10 max-w-lg">
-              <h3 className="text-headline-md text-on-primary-container">
-                Complete Your Master Profile
-              </h3>
-              <p className="text-body-md text-on-primary-container/90">
-                Your master profile is the foundation for all your resumes. A
-                complete profile allows our AI to better tailor your
-                achievements to specific job descriptions.
-              </p>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-on-primary-container">
-                  <span>Profile Completion</span>
-                  <span>{completion}%</span>
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-3">
-                  <div 
-                    className="bg-secondary-container h-3 rounded-full transition-all duration-1000 ease-out" 
-                    style={{ width: `${completion}%` }}
-                  />
-                </div>
-              </div>
-              <Link
-                href="/profile"
-                className="bg-white text-primary px-8 py-3 rounded-full font-bold hover:bg-white/90 transition-colors inline-flex items-center gap-2"
-              >
-                Complete Your Profile
-                <MaterialIcon name="arrow_forward" className="text-[18px]" />
-              </Link>
-            </div>
+          {/* (Hero Card Removed - Profile Completion is now a clean metric card above) */}
 
-            {/* Abstract Decoration */}
-            <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 -mr-10" />
-            <motion.div
-              className="hidden md:block z-10 w-48 h-48 rounded-full border-8 border-white/10 flex items-center justify-center"
-              animate={{ rotate: [0, 8, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <MaterialIcon
-                name="verified_user"
-                className="text-white/20 text-6xl"
-                filled
-              />
-            </motion.div>
-            </motion.div>
-            </Reveal>
-          )}
-
-          {/* Recent Activity Table */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Reveal className="lg:col-span-3">
-            <div className="ambient-card bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
-              <div className="p-6 border-b border-outline-variant flex justify-between items-center">
-                <h4 className="text-headline-md text-primary">Recent Activity</h4>
-                <span className="text-secondary text-label-md">No activity yet</span>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
-                className="flex flex-col items-center justify-center py-16 px-6 text-center"
-              >
-                <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4">
-                  <MaterialIcon
-                    name="description"
-                    className="text-on-surface-variant text-3xl"
-                  />
-                </div>
-                <h5 className="text-label-md font-bold text-on-surface">
-                  Your resume journey starts here
-                </h5>
-                <p className="text-label-md text-on-surface-variant mt-1 max-w-sm">
-                  Create your first resume and let NISB-MakeMyCV help you build a
-                  professional, ATS-friendly application.
-                </p>
-                <Link
+          {/* U5 FIX: Quick Actions — replaces always-empty Recent Activity */}
+          <Reveal>
+            <div className="space-y-4">
+              <h4 className="text-headline-md text-primary">Quick Actions</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <QuickActionCard
+                  icon="add_circle"
+                  title="Create New Resume"
+                  description="Start building a tailored resume from scratch"
                   href="/resumes"
-                  className="btn-primary btn-shine mt-6 text-white px-6 py-2.5 rounded-full text-label-md font-semibold"
-                >
-                  Create My First Resume
-                </Link>
-              </motion.div>
+                  accent="bg-primary-container text-primary"
+                />
+                <QuickActionCard
+                  icon="person_book"
+                  title="Update Master Profile"
+                  description="Keep your education, skills & experience up to date"
+                  href="/profile"
+                  accent="bg-secondary-container text-secondary"
+                />
+                <QuickActionCard
+                  icon="smart_toy"
+                  title="Analyze a GitHub Repo"
+                  description="Let AI write your project bullets from any public repo"
+                  href="/resumes"
+                  accent="bg-primary-fixed text-on-primary-fixed-variant"
+                />
+              </div>
             </div>
-            </Reveal>
-          </div>
+          </Reveal>
         </div>
       </main>
 
@@ -350,5 +292,38 @@ function MetricCard({
         </div>
       )}
     </motion.div>
+  );
+}
+
+function QuickActionCard({
+  icon,
+  title,
+  description,
+  href,
+  accent,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  href: string;
+  accent: string;
+}) {
+  return (
+    <Link href={href}>
+      <motion.div
+        className="ambient-card bg-surface-container-lowest p-5 rounded-xl border border-outline-variant hover:border-primary transition-all flex items-start gap-4 cursor-pointer group"
+        whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(0, 42, 88, 0.10)" }}
+        transition={{ type: "spring", stiffness: 260, damping: 22 }}
+      >
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${accent} group-hover:scale-110 transition-transform`}>
+          <MaterialIcon name={icon} className="text-[22px]" filled />
+        </div>
+        <div className="min-w-0">
+          <p className="text-label-md font-semibold text-on-surface leading-snug">{title}</p>
+          <p className="text-label-sm text-on-surface-variant mt-0.5 leading-snug">{description}</p>
+        </div>
+        <MaterialIcon name="arrow_forward" className="text-on-surface-variant group-hover:text-primary transition-colors shrink-0 mt-0.5" />
+      </motion.div>
+    </Link>
   );
 }

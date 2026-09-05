@@ -21,7 +21,7 @@ import {
  * Requires a signed-in user: the JWT is sent as a Bearer token (the AI
  * routes are registered under /api/v1/ai/github on the backend).
  */
-export default function GitHubAnalyzer() {
+export default function GitHubAnalyzer({ onAddProject }: { onAddProject?: (project: any) => void }) {
   const [owner, setOwner] = useState("");
   const [repo, setRepo] = useState("");
 
@@ -31,6 +31,9 @@ export default function GitHubAnalyzer() {
   const [analysis, setAnalysis] = useState<GitHubAnalysis | null>(null);
   const [improving, setImproving] = useState(false);
   const [improveError, setImproveError] = useState("");
+
+  // U16 FIX: Pre-check auth so we can show a locked state up-front
+  const isSignedIn = typeof window !== "undefined" && !!localStorage.getItem("makemycv_access_token");
 
   async function handleAnalyze() {
     const token = getToken();
@@ -135,18 +138,31 @@ export default function GitHubAnalyzer() {
           </div>
         </div>
 
+        {/* U16 FIX: Show locked state if not signed in */}
+        {!isSignedIn && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-surface-container rounded-xl border border-outline-variant">
+            <MaterialIcon name="lock" className="text-on-surface-variant text-[20px]" />
+            <p className="text-label-md text-on-surface-variant">
+              <span className="font-semibold text-on-surface">Sign in required</span> — AI features need an account.
+            </p>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={handleAnalyze}
-          disabled={loading}
+          disabled={loading || !isSignedIn}
+          title={!isSignedIn ? "Sign in to use AI features" : undefined}
           className="btn-primary btn-shine px-6 py-3 rounded-full text-label-md flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? (
             <MaterialIcon name="sync" className="animate-spin text-[18px]" />
+          ) : !isSignedIn ? (
+            <MaterialIcon name="lock" className="text-[18px]" />
           ) : (
             <MaterialIcon name="auto_awesome" className="text-[18px]" filled />
           )}
-          {loading ? "Analyzing..." : "Analyze Repository"}
+          {loading ? "Analyzing..." : !isSignedIn ? "Sign in to Analyze" : "Analyze Repository"}
         </button>
 
         {/* Errors */}
@@ -235,6 +251,40 @@ export default function GitHubAnalyzer() {
                   </li>
                 ))}
               </ul>
+              
+              {onAddProject && (
+                <div className="mt-6 flex flex-wrap justify-between gap-3">
+                  {/* U17 FIX: Analyze another repo without closing the panel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAnalysis(null);
+                      setOwner("");
+                      setRepo("");
+                      setError("");
+                      setImproveError("");
+                    }}
+                    className="btn-outline px-4 py-2 rounded-full text-label-sm flex items-center gap-1.5"
+                  >
+                    <MaterialIcon name="refresh" className="text-[16px]" />
+                    Analyze Another Repo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAddProject({
+                      title: analysis.project_name,
+                      description: analysis.description,
+                      technologies: analysis.technologies.join(", "),
+                      links: `https://github.com/${owner}/${repo}`,
+                      bullets: analysis.resume_bullets
+                    })}
+                    className="btn-primary px-5 py-2.5 rounded-full text-label-md flex items-center gap-2"
+                  >
+                    <MaterialIcon name="add_circle" className="text-[18px]" />
+                    Add to Resume
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

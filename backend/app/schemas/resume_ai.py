@@ -65,39 +65,3 @@ class ResumeData(BaseModel):
     technical_skills: TechnicalSkills = Field(default_factory=TechnicalSkills)
     certifications: list[CertificationEntry] = Field(default_factory=list)
     achievements: list[AchievementEntry] = Field(default_factory=list)
-
-
-class ChatHistoryMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
-
-
-class ResumeChatRequest(BaseModel):
-    message: str = Field(..., min_length=1)
-    resume: dict[str, Any] = Field(default_factory=dict)
-    history: list[ChatHistoryMessage] = Field(default_factory=list)
-
-
-class ResumeUpdateOperation(BaseModel):
-    action: Literal["add", "update", "delete", "replace", "clear"]
-    section: Literal[
-        "personal",
-        "education",
-        "experience",
-        "projects",
-        "skills",
-        "technical_skills",
-        "certifications",
-        "achievements",
-    ]
-    field: str | None = None
-    index: int | None = None
-    data: Any | None = None
-
-
-class ResumeChatResponse(BaseModel):
-    reply: str
-    operations: list[ResumeUpdateOperation] = Field(default_factory=list)
-    needs_clarification: bool = False
-    clarifying_question: str = ""
-    conversation_id: str | None = None

@@ -663,6 +663,10 @@ def improve_resume_bullets(
     current_bullets: list[str],
 ) -> list[str]:
 
+    num_bullets = len(current_bullets)
+    if num_bullets == 0:
+        return []
+
     prompt = f"""
 You are an expert technical resume writer.
 
@@ -680,18 +684,16 @@ TECHNOLOGIES:
 CURRENT BULLETS:
 {chr(10).join(current_bullets)}
 
-Generate exactly 3 improved resume bullets.
+Generate EXACTLY {num_bullets} improved resume bullets (one for each provided bullet).
 
 Rules:
-- Preserve the actual meaning and facts.
-- Do not invent technologies.
-- Do not invent metrics.
-- Do not invent achievements.
-- Make the bullets concise and professional.
-- Use strong technical action verbs.
+- Preserve the actual meaning and facts of each bullet.
+- Do not invent technologies, metrics, or achievements.
+- If a provided bullet is completely meaningless gibberish (e.g. "asdf", "qweqwe"), completely unrelated to the project context, or impossible to enhance, you MUST return exactly the string "INVALID_INPUT_DETECTED" for that specific line. Do not invent details to "fix" it.
+- Make valid bullets concise and professional, using strong technical action verbs.
 - Focus on what was built and how it was implemented.
 - Do not use Markdown.
-- Return ONLY the 3 bullets, one per line.
+- Return ONLY the {num_bullets} bullets (or the INVALID_INPUT_DETECTED string for invalid ones), one per line.
 """
 
     response = generate_text(
@@ -707,12 +709,17 @@ Rules:
         if line.strip()
     ]
 
+    # Check for invalid input detection
+    for bullet in bullets:
+        if "INVALID_INPUT_DETECTED" in bullet:
+            raise ValueError("One or more bullet points contained meaningless text and could not be enhanced.")
+
     # Remove accidental numbering/bullets
     cleaned = []
-
     for bullet in bullets:
         bullet = bullet.lstrip("0123456789.-•) ")
         if bullet:
             cleaned.append(bullet)
 
-    return cleaned[:3]
+    # Ensure we return exactly the requested amount
+    return cleaned[:num_bullets]

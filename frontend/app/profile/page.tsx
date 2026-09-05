@@ -10,6 +10,7 @@ import Reveal from "../components/Reveal";
 import ConfirmModal from "../components/ConfirmModal";
 import { ToastStack, useToasts } from "../components/Toast";
 import ResumeDataSection from "../components/ResumeDataSection";
+import { mapProfileToResume } from "../../utils/resumeMapper"; // B12 FIX: static import
 import {
   apiRequest,
   clearSession,
@@ -137,7 +138,7 @@ function ProfileInner() {
         setUser(me);
         storeUser(me);
         setFullName(me.full_name ?? "");
-        
+
         setDob(prof.dob ?? "");
         setLocation(prof.location ?? "");
         setHeadline(prof.headline ?? "");
@@ -150,6 +151,22 @@ function ProfileInner() {
         setGithubText(prof.github_text ?? "");
         setPortfolioUrl(prof.portfolio_url ?? "");
         setPortfolioText(prof.portfolio_text ?? "");
+
+        // B4 FIX: Capture initial values so dirty can be computed
+        setInitialProfile({
+          fullName: me.full_name ?? "",
+          dob: prof.dob ?? "",
+          location: prof.location ?? "",
+          headline: prof.headline ?? "",
+          summary: prof.summary ?? "",
+          phone: prof.phone ?? "",
+          linkedinUrl: prof.linkedin_url ?? "",
+          linkedinText: prof.linkedin_text ?? "",
+          githubUrl: prof.github_url ?? "",
+          githubText: prof.github_text ?? "",
+          portfolioUrl: prof.portfolio_url ?? "",
+          portfolioText: prof.portfolio_text ?? "",
+        });
       })
       .catch(() => {
         /* token may be stale — Protected redirects on next visit */
@@ -157,7 +174,34 @@ function ProfileInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  const dirty = true; // Simplified dirty checking
+  // B4 FIX: Track the initial loaded values to compute real dirty state
+  const [initialProfile, setInitialProfile] = useState<{
+    fullName: string; dob: string; location: string; headline: string;
+    summary: string; phone: string;
+    linkedinUrl: string; linkedinText: string;
+    githubUrl: string; githubText: string;
+    portfolioUrl: string; portfolioText: string;
+  } | null>(null);
+
+  // B4 FIX: Real dirty detection via useMemo
+  const dirty = useMemo(() => {
+    if (!initialProfile) return false;
+    return (
+      fullName !== initialProfile.fullName ||
+      dob !== initialProfile.dob ||
+      location !== initialProfile.location ||
+      headline !== initialProfile.headline ||
+      summary !== initialProfile.summary ||
+      phone !== initialProfile.phone ||
+      linkedinUrl !== initialProfile.linkedinUrl ||
+      linkedinText !== initialProfile.linkedinText ||
+      githubUrl !== initialProfile.githubUrl ||
+      githubText !== initialProfile.githubText ||
+      portfolioUrl !== initialProfile.portfolioUrl ||
+      portfolioText !== initialProfile.portfolioText
+    );
+  }, [initialProfile, fullName, dob, location, headline, summary, phone,
+      linkedinUrl, linkedinText, githubUrl, githubText, portfolioUrl, portfolioText]);
 
   const [resumes, setResumes] = useState<Array<{ id: string; title: string }>>([]);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -238,6 +282,11 @@ function ProfileInner() {
       });
 
       notify.success("Profile saved successfully");
+      // B4 FIX: Reset the baseline so dirty → false after saving
+      setInitialProfile({
+        fullName, dob, location, headline, summary, phone,
+        linkedinUrl, linkedinText, githubUrl, githubText, portfolioUrl, portfolioText,
+      });
     } catch (err) {
       notify.error(
         err instanceof Error ? err.message : "Failed to save your profile."
@@ -300,7 +349,7 @@ function ProfileInner() {
         achievementsApi.list(token),
       ]);
 
-      const { mapProfileToResume } = require("../../utils/resumeMapper");
+      // B12 FIX: Now using static import of mapProfileToResume
       const exportedResume = mapProfileToResume(user, {
         profile: profileData,
         education: eduList,
@@ -444,7 +493,7 @@ function ProfileInner() {
         <div className="max-w-[880px] mx-auto space-y-8">
           {/* Page Title */}
           <div>
-            <h2 className="text-headline-md text-on-surface">User Profile</h2>
+            <h2 className="text-headline-md text-on-surface">Master Profile Settings</h2>
             <p className="text-body-md text-on-surface-variant">
               Your identity and the details our AI uses to tailor your resumes.
             </p>
@@ -507,9 +556,9 @@ function ProfileInner() {
           {/* Basic Details */}
           <div className="pt-4">
             <div className="flex items-center gap-3">
-              <h4 className="text-headline-md font-bold text-on-surface">
+              <h3 className="text-headline-md font-bold text-on-surface">
                 Basic Details
-              </h4>
+              </h3>
               <span className="text-label-sm text-on-surface-variant">
                 Core information for your resumes.
               </span>
@@ -529,7 +578,7 @@ function ProfileInner() {
               </Field>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <Field label="Date of Birth" hint="Format: YYYY-MM-DD">
+                <Field label="Date of Birth" hint="Not included in resumes.">
                   <input
                     type="date"
                     value={dob}
@@ -586,9 +635,9 @@ function ProfileInner() {
           {/* Social Links */}
           <div className="pt-4">
             <div className="flex items-center gap-3">
-              <h4 className="text-headline-md font-bold text-on-surface">
+              <h3 className="text-headline-md font-bold text-on-surface">
                 Social Links & Portfolio
-              </h4>
+              </h3>
               <span className="text-label-sm text-on-surface-variant">
                 Your professional links for headers.
               </span>
@@ -743,6 +792,26 @@ function ProfileInner() {
               updateItem={achievementsApi.update}
               deleteItem={achievementsApi.remove}
             />
+          </div>
+
+          {/* Danger Zone */}
+          <div className="pt-12">
+            <div className="ambient-card bg-error-container/10 border-2 border-error/20 rounded-2xl p-6 sm:p-8 space-y-4">
+              <h3 className="text-headline-sm font-bold text-error">Danger Zone</h3>
+              <p className="text-body-md text-on-surface-variant">
+                Permanently delete your account and all associated resumes. This action cannot be undone.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
+                  className="btn-outline px-6 py-2.5 rounded-full text-label-md text-error border-error hover:bg-error-container/30 transition-colors flex items-center gap-2"
+                >
+                  <MaterialIcon name="delete_forever" className="text-[18px]" />
+                  Delete Account
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>

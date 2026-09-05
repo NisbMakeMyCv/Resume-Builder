@@ -78,17 +78,14 @@ export default function JakeResumePreview({
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const { width, height } = entry.contentRect;
+        const { width } = entry.contentRect;
         // A4 size in pixels at 96 DPI: 794 x 1123
         const a4Width = 794;
-        const a4Height = 1123;
         
-        // Calculate scale to fit BOTH width and height (with a little padding)
+        // B10 FIX: Only use width-based scale — height is variable on mobile so
+        // scaleY was near-zero, collapsing the preview. Scale down only (never up).
         const scaleX = (width - 32) / a4Width;
-        const scaleY = (height - 32) / a4Height;
-        
-        // We only scale down (never up) to keep it crisp if monitor is huge.
-        setScale(Math.min(scaleX, scaleY, 1));
+        setScale(Math.min(scaleX, 1));
       }
     });
 
@@ -116,11 +113,12 @@ export default function JakeResumePreview({
       <div
         ref={containerRef}
         id="resume-preview-container"
-        className={`bg-slate-100/80 dark:bg-slate-950/40 rounded-2xl border border-slate-200/80 dark:border-slate-800/60 p-4 flex justify-center items-center text-gray-900 w-full overflow-hidden ${className} print:!block print:!h-auto print:!overflow-visible print:!bg-transparent print:!border-none print:!p-0`}
+        className={`bg-slate-100/80 dark:bg-slate-950/40 rounded-2xl border border-slate-200/80 dark:border-slate-800/60 p-4 flex justify-center items-start text-gray-900 w-full overflow-hidden ${className} print:!block print:!h-auto print:!overflow-visible print:!bg-transparent print:!border-none print:!p-0`}
         style={{
           fontFamily:
             "'Baskerville', 'Palatino Linotype', Georgia, serif",
-          height: "calc(100vh - 7rem)",
+          // B10 FIX: min-height instead of fixed height to avoid collapse on short/mobile screens
+          minHeight: `calc(${scale} * 1123px + 32px)`,
         }}
       >
       <div 

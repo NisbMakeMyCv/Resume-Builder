@@ -317,6 +317,10 @@ export const resumesApi = {
     return res.json();
   },
   
+  rename(token: string, id: string, title: string): Promise<ResumeDocument> {
+    return this.update(token, id, title);
+  },
+  
   remove(token: string, id: string): Promise<void> {
     return apiRequest<void>(`/resumes/${id}`, { method: "DELETE", token });
   },

@@ -8,6 +8,7 @@ import Logo from "./Logo";
 import MaterialIcon from "./MaterialIcon";
 import { clearSession, getStoredUser } from "@/lib/api";
 import { useSidebar } from "./SidebarContext";
+import { useTheme } from "@/providers/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_MIN = 256; // 16rem — current optimal width
@@ -41,11 +42,17 @@ const LINK_ACTIVE = "text-primary bg-surface-container-high font-semibold";
 export default function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const user = getStoredUser();
+  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+  const { theme, setTheme, resolved } = useTheme();
   const [open, setOpen] = useState(false);
   const [width, setWidth] = useState(SIDEBAR_MIN);
   const [imgError, setImgError] = useState(false);
   const draggingRef = useRef(false);
+
+  // B11 FIX: Load user after mount to avoid SSR hydration mismatch
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
 
   // Sync the CSS variable so dashboard/resumes content offsets follow.
   useEffect(() => {
@@ -143,6 +150,36 @@ export default function AppSidebar() {
           );
         })}
       </nav>
+
+      {/* U24 FIX: Dark mode toggle at bottom of sidebar */}
+      <div className="px-4 py-2 border-t border-outline-variant">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <MaterialIcon
+              name={resolved === "dark" ? "dark_mode" : "light_mode"}
+              className="text-on-surface-variant"
+            />
+            <span className="text-label-md font-medium text-on-surface">
+              {resolved === "dark" ? "Dark Mode" : "Light Mode"}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              resolved === "dark"
+                ? "bg-primary text-on-primary"
+                : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container"
+            }`}
+            aria-label={resolved === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <MaterialIcon
+              name={resolved === "dark" ? "light_mode" : "dark_mode"}
+              className="text-[20px]"
+            />
+          </button>
+        </div>
+      </div>
 
       <button
         className="px-4 py-3 flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors w-full text-left"
