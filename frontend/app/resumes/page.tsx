@@ -43,8 +43,6 @@ function ResumesInner() {
   const [renameValue, setRenameValue] = useState("");
   const [renaming, setRenaming] = useState(false);
 
-  const { isMobileOpen, setMobileOpen } = useSidebar();
-
   useEffect(() => {
     fetchResumes();
 
