@@ -8,7 +8,7 @@ import Logo from "./Logo";
 import MaterialIcon from "./MaterialIcon";
 import { clearSession, getStoredUser } from "@/lib/api";
 import { useSidebar } from "./SidebarContext";
-import { useTheme } from "@/providers/ThemeProvider";
+import { useTheme } from "@/app/providers/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_MIN = 256; // 16rem — current optimal width
