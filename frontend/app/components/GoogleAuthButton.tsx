@@ -43,9 +43,8 @@ export default function GoogleAuthButton() {
   const [error, setError] = useState("");
   const [celebrate, setCelebrate] = useState(false);
 
-  const clientId =
-    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??
-    "162439018220-2gn11m76oek6vspri9b8q794pdcdll91.apps.googleusercontent.com";
+  const rawClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId = (rawClientId ? rawClientId.trim() : "") || "162439018220-2gn11m76oek6vspri9b8q794pdcdll91.apps.googleusercontent.com";
 
   if (!clientId) {
     return (
