@@ -27,6 +27,7 @@ export default function ResumesPage() {
 
 function ResumesInner() {
   const router = useRouter();
+  const { open } = useSidebar();
   const { passphrase, isUnlocked } = useCrypto();
   const [editorOpen, setEditorOpen] = useState(false);
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
@@ -195,7 +196,7 @@ function ResumesInner() {
       {/* Mobile Top Bar */}
       <div className="lg:hidden h-14 border-b border-outline-variant bg-surface flex items-center px-4 sticky top-0 z-40">
         <button
-          onClick={() => setMobileOpen(true)}
+          onClick={open}
           className="text-on-surface hover:bg-surface-container rounded-full p-2 -ml-2"
         >
           <MaterialIcon name="menu" className="text-2xl" />
