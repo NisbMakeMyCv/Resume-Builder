@@ -146,17 +146,30 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
     import requests as http_requests
     try:
         # The frontend's useGoogleLogin implicit flow yields an access_token, not a JWT id_token.
-        # We validate it directly with Google's userinfo endpoint.
+        # Try validating with Google's userinfo endpoint first:
+        idinfo = None
         google_response = http_requests.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {request.token}"}
+            headers={"Authorization": f"Bearer {request.token}"},
+            timeout=10
         )
-        if google_response.status_code != 200:
-            raise ValueError("Invalid Google Token")
-            
-        idinfo = google_response.json()
+        if google_response.status_code == 200:
+            idinfo = google_response.json()
+        else:
+            # Fallback: verify as OAuth2 ID Token
+            try:
+                idinfo = id_token.verify_oauth2_token(request.token, requests.Request(), GOOGLE_CLIENT_ID)
+            except Exception:
+                raise HTTPException(status_code=401, detail="Invalid Google Token")
+
+        if not idinfo:
+            raise HTTPException(status_code=401, detail="Could not verify Google authentication token")
+
         email = idinfo.get("email")
-        full_name = idinfo.get("name")
+        if not email:
+            raise HTTPException(status_code=400, detail="Google response did not include an email address.")
+
+        full_name = idinfo.get("name") or email.split("@")[0]
         picture = idinfo.get("picture")
         google_id = idinfo.get("sub")
         
@@ -172,8 +185,8 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
             body = f"Hi {full_name},\n\nThank you for registering with MakeMyCV via Google! We are excited to help you build the perfect resume.\n\nBest,\nThe MakeMyCV Team"
             background_tasks.add_task(send_email, email, subject, body)
         else:
-            # Update their picture to their latest Google one
-            if picture:
+            # Preserve user's existing custom picture if already set; otherwise set Google picture
+            if picture and not user.profile_picture:
                 user.profile_picture = picture
                 db.commit()
                 
@@ -191,8 +204,11 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
             
         access_token = create_access_token(data={"sub": str(user.id)})
         return {"access_token": access_token, "token_type": "bearer"}
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Google Token")
+    except HTTPException:
+        raise
+    except Exception as err:
+        print("[Google Auth Error]:", str(err))
+        raise HTTPException(status_code=401, detail=f"Google sign-in failed: {str(err)}")
 
 @router.delete("/me", status_code=204)
 def delete_current_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
