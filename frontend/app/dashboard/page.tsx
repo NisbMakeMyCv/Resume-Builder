@@ -40,7 +40,7 @@ export default function Dashboard() {
 
 function DashboardInner() {
   const [user, setUser] = useState(getStoredUser());
-  const { toggle } = useSidebar();
+  const { open } = useSidebar();
 
   const [totalResumes, setTotalResumes] = useState(0);
   const [completion, setCompletion] = useState(0);
@@ -91,13 +91,23 @@ function DashboardInner() {
       <AppSidebar />
 
       {/* Top App Bar */}
-      <header className="bg-surface border-b border-outline-variant fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-14 lg:top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))]">
-        <span className="text-headline-md font-bold text-primary">
-          Dashboard
-        </span>
+      <header className="bg-surface border-b border-outline-variant fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))]">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={open}
+            className="text-on-surface hover:bg-surface-container rounded-full p-2 -ml-2 lg:hidden"
+            aria-label="Open Navigation Menu"
+          >
+            <MaterialIcon name="menu" className="text-2xl" />
+          </button>
+          <span className="text-headline-sm sm:text-headline-md font-bold text-primary truncate">
+            Dashboard
+          </span>
+        </div>
         <Link
           href="/resumes"
-          className="btn-primary btn-shine inline-flex items-center gap-2 text-white text-label-md px-4 lg:px-6 py-2 rounded-full"
+          className="btn-primary btn-shine inline-flex items-center gap-2 text-white text-xs sm:text-label-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-full"
         >
           <span className="hidden sm:inline">Create New Resume</span>
           <span className="sm:hidden">+ Resume</span>
@@ -105,7 +115,7 @@ function DashboardInner() {
       </header>
 
       {/* Main Content Canvas */}
-      <main className="pt-28 lg:pt-16 lg:ml-[var(--sidebar-width)] min-h-screen pb-20">
+      <main className="pt-20 lg:pt-16 lg:ml-[var(--sidebar-width)] min-h-screen pb-20">
         <div className="max-w-[1280px] mx-auto p-8 space-y-8">
           {/* Welcome Header */}
           <header>

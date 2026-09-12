@@ -10,6 +10,7 @@ import Reveal from "../components/Reveal";
 import ConfirmModal from "../components/ConfirmModal";
 import { ToastStack, useToasts } from "../components/Toast";
 import ResumeDataSection from "../components/ResumeDataSection";
+import { SidebarProvider, useSidebar } from "../components/SidebarContext";
 import { mapProfileToResume } from "../../utils/resumeMapper"; // B12 FIX: static import
 import {
   apiRequest,
@@ -87,13 +88,16 @@ const ACHIEVEMENT_FIELDS = [
 export default function ProfilePage() {
   return (
     <Protected>
-      <ProfileInner />
+      <SidebarProvider>
+        <ProfileInner />
+      </SidebarProvider>
     </Protected>
   );
 }
 
 function ProfileInner() {
   const router = useRouter();
+  const { open } = useSidebar();
 
   // ---- Identity (GET /auth/me) ----
   const [user, setUser] = useState<CurrentUser | null>(getStoredUser());
@@ -193,12 +197,10 @@ function ProfileInner() {
       portfolioUrl !== initialProfile.portfolioUrl ||
       portfolioText !== initialProfile.portfolioText
     );
-  }, [initialProfile, fullName, dob, location, headline, summary, phone,
-      linkedinUrl, linkedinText, githubUrl, githubText, portfolioUrl, portfolioText]);
-
-  const [resumes, setResumes] = useState<Array<{ id: string; title: string }>>([]);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+  }, [
+    initialProfile, fullName, dob, location, headline, summary, phone,
+    linkedinUrl, linkedinText, githubUrl, githubText, portfolioUrl, portfolioText
+  ]);
 
   // ---- Field level dynamic error states ----
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -242,7 +244,7 @@ function ProfileInner() {
     return null;
   };
 
-  const saveProfile = useCallback(async () => {
+  const saveProfile = async () => {
     const error = validateProfileForm();
     if (error) {
       notify.error(error);
@@ -254,13 +256,8 @@ function ProfileInner() {
 
     setSaving(true);
     try {
-      if (fullName.trim() && user && fullName.trim() !== user.full_name) {
-        const updatedUser = { ...user, full_name: fullName.trim() };
-        setUser(updatedUser);
-        storeUser(updatedUser);
-      }
-      
-      await updateProfile(token, {
+      // 1. Update master profile fields via PATCH /profile/
+      const updatedProfile = await updateProfile(token, {
         dob: dob || null,
         location: location || null,
         headline: headline || null,
@@ -274,99 +271,74 @@ function ProfileInner() {
         portfolio_text: portfolioText || null,
       });
 
-      notify.success("Profile saved successfully");
-      // B4 FIX: Reset the baseline so dirty → false after saving
+      // 2. Update identity full_name via PATCH /auth/me if name changed
+      if (user && fullName.trim() !== user.full_name) {
+        const updatedUser = await apiRequest<CurrentUser>("/auth/me", {
+          method: "PATCH",
+          token,
+          body: { full_name: fullName.trim() },
+        });
+        setUser(updatedUser);
+        storeUser(updatedUser);
+      }
+
+      // Reset baseline for dirty tracking
       setInitialProfile({
         fullName, dob, location, headline, summary, phone,
-        linkedinUrl, linkedinText, githubUrl, githubText, portfolioUrl, portfolioText,
+        linkedinUrl, linkedinText, githubUrl, githubText, portfolioUrl, portfolioText
       });
+
+      notify.success("Master profile saved successfully!");
     } catch (err) {
-      notify.error(
-        err instanceof Error ? err.message : "Failed to save your profile."
-      );
+      notify.error(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
       setSaving(false);
     }
-  }, [
-    fullName,
-    user,
-    dob,
-    location,
-    headline,
-    summary,
-    phone,
-    linkedinUrl,
-    linkedinText,
-    githubUrl,
-    githubText,
-    portfolioUrl,
-    portfolioText,
-    notify,
-  ]);
-
-  const handleExportToResume = async () => {
-    const token = getToken();
-    if (!token) {
-      notify.error("Please log in to export your profile.");
-      return;
-    }
-
-    setExporting(true);
-    try {
-      // Fetch user's existing resumes to display in the modal selection
-      const list = await resumesApi.list(token);
-      setResumes(list);
-      setShowExportModal(true);
-    } catch (err) {
-      notify.error("Failed to load existing resumes list.");
-    } finally {
-      setExporting(false);
-    }
   };
 
-  const executeExport = async () => {
+  const handleExportToResume = async () => {
     const token = getToken();
     if (!token) return;
 
     setExporting(true);
-    setShowExportModal(false);
     try {
-      // Gather all loaded profile data from database endpoints
-      const [profileData, eduList, expList, skillList, projectList, certList, achList] = await Promise.all([
+      // Fetch fresh items from all master profile endpoints
+      const [prof, eduList, expList, skillList, projList, certList, achList] = await Promise.all([
         getProfile(token),
-        educationApi.list(token),
-        experienceApi.list(token),
-        skillsApi.list(token),
-        projectsApi.list(token),
-        certificationsApi.list(token),
-        achievementsApi.list(token),
+        educationApi.list(token).catch(() => []),
+        experienceApi.list(token).catch(() => []),
+        skillsApi.list(token).catch(() => []),
+        projectsApi.list(token).catch(() => []),
+        certificationsApi.list(token).catch(() => []),
+        achievementsApi.list(token).catch(() => []),
       ]);
 
-      // B12 FIX: Now using static import of mapProfileToResume
-      const exportedResume = mapProfileToResume(user, {
-        profile: profileData,
+      const currentUser = user || getStoredUser();
+      const mappedData = mapProfileToResume(currentUser, {
+        profile: prof,
         education: eduList,
         experience: expList,
         skills: skillList,
-        projects: projectList,
+        projects: projList,
         certifications: certList,
         achievements: achList,
       });
 
-      // Save to localStorage so Resume Builder can detect and load it
-      localStorage.setItem("makemycv_resume_jake_exported", JSON.stringify(exportedResume));
-      notify.success("Profile exported! Redirecting to Resume Builder...");
-      
-      // Delay navigation slightly so toast is visible
-      setTimeout(() => {
-        if (selectedResumeId === "new") {
-          router.push("/resumes?import_source=profile_export");
-        } else {
-          router.push(`/resumes?import_source=profile_export&resume_id=${selectedResumeId}`);
-        }
-      }, 1000);
+      // Store in localStorage for the editor page to pick up
+      localStorage.setItem("makemycv_resume_jake_exported", JSON.stringify(mappedData));
+
+      // Save a new cloud resume in vault directly so it appears in My Vault
+      const jsonBlob = new Blob([JSON.stringify(mappedData)], { type: "application/json" });
+      const newDoc = await resumesApi.create(
+        token,
+        `${currentUser?.full_name || "My"} Master Resume`,
+        jsonBlob
+      );
+
+      notify.success("Profile exported into a new Resume!");
+      router.push(`/resumes?import_source=profile_export&resume_id=${newDoc.id}`);
     } catch (err) {
-      notify.error(err instanceof Error ? err.message : "Failed to export profile data");
+      notify.error(err instanceof Error ? err.message : "Failed to export profile to resume");
     } finally {
       setExporting(false);
     }
@@ -397,15 +369,13 @@ function ProfileInner() {
     }
   };
 
-  // ---- Avatar: render the image only when profile_picture is a usable URL.
-  // No ui-avatars (or any other) fallback — without a picture we show a clean
-  // initials tile so there is never a broken/overlapping image.
+  // ---- Avatar: render the image when profile_picture is http(s) or data:image URL.
   const avatarUrl = useMemo(
     () => (user?.profile_picture ?? "").trim(),
     [user?.profile_picture]
   );
   const showAvatar = useMemo(
-    () => /^(https?:)?\/\//i.test(avatarUrl),
+    () => /^(https?:)?\/\//i.test(avatarUrl) || avatarUrl.startsWith("data:image/"),
     [avatarUrl]
   );
 
@@ -427,42 +397,54 @@ function ProfileInner() {
       <ToastStack toasts={toasts} onDismiss={dismiss} />
 
       {/* Top App Bar */}
-      <header className="fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-14 lg:top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))] bg-surface border-b border-outline-variant">
-        <h1 className="text-headline-md font-bold text-primary">
-          User Profile
-        </h1>
-        <div className="flex gap-2">
+      <header className="fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))] bg-surface border-b border-outline-variant">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={open}
+            className="text-on-surface hover:bg-surface-container rounded-full p-2 -ml-2 lg:hidden"
+            aria-label="Open Navigation Menu"
+          >
+            <MaterialIcon name="menu" className="text-2xl" />
+          </button>
+          <h1 className="text-headline-sm sm:text-headline-md font-bold text-primary truncate">
+            User Profile
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleExportToResume}
             disabled={exporting || loading}
-            className="btn-outline px-4 lg:px-5 py-2 rounded-full text-label-md flex items-center gap-2 disabled:opacity-50"
+            className="btn-outline px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md flex items-center gap-1.5 disabled:opacity-50"
           >
             {exporting ? (
-              <MaterialIcon name="sync" className="animate-spin text-[18px]" />
+              <MaterialIcon name="sync" className="animate-spin text-[16px] sm:text-[18px]" />
             ) : (
-              <MaterialIcon name="send" className="text-[18px]" />
+              <MaterialIcon name="send" className="text-[16px] sm:text-[18px]" />
             )}
-            {exporting ? "Exporting..." : "Export to Resume"}
+            <span className="hidden sm:inline">{exporting ? "Exporting..." : "Export to Resume"}</span>
+            <span className="sm:hidden">{exporting ? "..." : "Export"}</span>
           </button>
           <button
             type="button"
             onClick={saveProfile}
             disabled={!dirty || saving || loading}
-            className="btn-primary btn-shine px-4 lg:px-6 py-2 rounded-full text-label-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary btn-shine px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
-              <MaterialIcon name="sync" className="animate-spin text-[18px]" />
+              <MaterialIcon name="sync" className="animate-spin text-[16px] sm:text-[18px]" />
             ) : (
-              <MaterialIcon name="save" className="text-[18px]" />
+              <MaterialIcon name="save" className="text-[16px] sm:text-[18px]" />
             )}
-            {saving ? "Saving..." : "Save Profile"}
+            <span className="hidden sm:inline">{saving ? "Saving..." : "Save Profile"}</span>
+            <span className="sm:hidden">{saving ? "..." : "Save"}</span>
           </button>
         </div>
       </header>
 
       {/* Main Content Canvas */}
-      <main className="pt-28 lg:pt-24 lg:ml-[var(--sidebar-width)] pb-16 px-4 lg:px-8 min-h-screen">
+      <main className="pt-20 lg:pt-24 lg:ml-[var(--sidebar-width)] pb-16 px-4 lg:px-8 min-h-screen">
         <div className="max-w-[880px] mx-auto space-y-8">
           {/* Page Title */}
           <div>
@@ -795,62 +777,6 @@ function ProfileInner() {
           © 2026 NISB-MakeMyCV. Made by NISB.
         </p>
       </footer>
-
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-surface-container-lowest rounded-2xl p-6 max-w-md w-full border border-outline-variant space-y-6">
-            <div>
-              <h3 className="text-headline-md font-bold text-on-surface">Export to Resume</h3>
-              <p className="text-body-md text-on-surface-variant">Which resume would you like to update?</p>
-            </div>
-            
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 rounded-xl border border-outline-variant hover:bg-surface-container-low cursor-pointer">
-                <input
-                  type="radio"
-                  name="resumeSelect"
-                  value="new"
-                  checked={selectedResumeId === "new" || selectedResumeId === ""}
-                  onChange={() => setSelectedResumeId("new")}
-                  className="accent-primary"
-                />
-                <span className="text-label-md font-medium">Create New Resume</span>
-              </label>
-
-              {resumes.map((res) => (
-                <label key={res.id} className="flex items-center gap-3 p-3 rounded-xl border border-outline-variant hover:bg-surface-container-low cursor-pointer">
-                  <input
-                    type="radio"
-                    name="resumeSelect"
-                    value={res.id}
-                    checked={selectedResumeId === res.id}
-                    onChange={() => setSelectedResumeId(res.id)}
-                    className="accent-primary"
-                  />
-                  <span className="text-label-md font-medium">{res.title}</span>
-                </label>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowExportModal(false)}
-                className="btn-outline px-4 py-2 rounded-full text-label-md"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={executeExport}
-                className="btn-primary px-5 py-2 rounded-full text-label-md"
-              >
-                Export
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

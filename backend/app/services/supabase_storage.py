@@ -23,10 +23,11 @@ def upload_avatar_to_supabase(
     
     file_path = f"user_{user_id}.{clean_ext}"
 
-    # If Supabase URL / Key is not yet configured, provide a safe local mock URL for development
+    # If Supabase URL / Key is not yet configured, encode image as permanent base64 Data URI!
     if not SUPABASE_URL or not SUPABASE_KEY:
-        print("[WARNING] SUPABASE_URL or SUPABASE_KEY not set. Using fallback avatar URL.")
-        return f"https://ui-avatars.com/api/?name=User&background=random"
+        import base64
+        b64_data = base64.b64encode(file_bytes).decode("utf-8")
+        return f"data:{content_type};base64,{b64_data}"
 
     # Supabase Storage Upload Endpoint
     upload_url = f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}"

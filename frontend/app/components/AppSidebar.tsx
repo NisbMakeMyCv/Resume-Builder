@@ -101,7 +101,7 @@ export default function AppSidebar() {
 
   /** Render a real avatar only when profile_picture is a usable URL. */
   const avatarSrc = (user?.profile_picture ?? "").trim();
-  const showAvatar = /^(https?:)?\/\//i.test(avatarSrc);
+  const showAvatar = /^(https?:)?\/\//i.test(avatarSrc) || avatarSrc.startsWith("data:image/");
 
   const sidebarBody = (
     <div className="flex flex-col h-full" style={{ width }}>
