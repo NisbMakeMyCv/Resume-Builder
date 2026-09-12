@@ -2,7 +2,7 @@ import smtplib
 import os
 import secrets
 import hmac
-import hashlib
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
@@ -191,7 +191,7 @@ def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks,
                 db.commit()
                 
             # Send Login Alert Email (Existing User)
-            time_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+            time_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             subject = "New Google Login to MakeMyCV"
             body = f"Hi {full_name},\n\nWe noticed a new login to your MakeMyCV account via Google on {time_str}.\n\nIf you did not authorize this login, please check your Google account security."
             background_tasks.add_task(send_email, email, subject, body)
