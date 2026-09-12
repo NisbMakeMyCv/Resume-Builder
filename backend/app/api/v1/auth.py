@@ -215,8 +215,31 @@ def delete_current_user(db: Session = Depends(get_db), current_user: User = Depe
     db.commit()
     return None
 
+class UserUpdateSchema(BaseModel):
+    full_name: Optional[str] = None
+    profile_picture: Optional[str] = None
+
 @router.get("/me")
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "profile_picture": current_user.profile_picture
+    }
+
+@router.patch("/me")
+def update_current_user_profile(
+    payload: UserUpdateSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name.strip()
+    if payload.profile_picture is not None:
+        current_user.profile_picture = payload.profile_picture
+    db.commit()
+    db.refresh(current_user)
     return {
         "id": current_user.id,
         "email": current_user.email,

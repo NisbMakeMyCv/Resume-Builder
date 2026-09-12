@@ -136,23 +136,18 @@ export default function JakeResumeBuilder({ initialDataStr, resumeId: initialRes
       notify.error("Please log in to save your resume to the cloud.");
       return;
     }
-    if (!passphrase) {
-      notify.error("Still loading encryption key — please wait a moment and try again.");
-      return;
-    }
     
     setSaving(true);
     try {
       const title = data.header.fullName ? `${data.header.fullName}'s Resume` : "My Resume";
-      const jsonString = JSON.stringify(data);
-      // Encrypt transparently using the server-derived key (no user interaction)
-      const encryptedBlob = await encryptData(jsonString, passphrase);
+      const jsonString = JSON.stringify(data, null, 2);
+      const jsonBlob = new Blob([jsonString], { type: "application/json" });
 
       if (resumeId) {
-        await resumesApi.update(token, resumeId, title, encryptedBlob);
+        await resumesApi.update(token, resumeId, title, jsonBlob);
         notify.success("Resume updated in cloud!");
       } else {
-        const created = await resumesApi.create(token, title, encryptedBlob);
+        const created = await resumesApi.create(token, title, jsonBlob);
         setResumeId(created.id);
         notify.success("Resume saved to cloud!");
       }
@@ -164,9 +159,9 @@ export default function JakeResumeBuilder({ initialDataStr, resumeId: initialRes
   };
 
   const handleSaveAndClose = async () => {
-    // If not signed in, just close
+    // If signed in, save to cloud then close
     const token = getToken();
-    if (token && passphrase) {
+    if (token) {
       await handleCloudSave();
     }
     if (onClose) onClose();

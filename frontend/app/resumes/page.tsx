@@ -49,30 +49,31 @@ function ResumesInner() {
   const [previews, setPreviews] = useState<Record<string, ResumeData>>({});
 
   useEffect(() => {
-    if (resumes.length > 0 && passphrase) {
+    if (resumes.length > 0) {
       loadPreviews(resumes);
     }
-  }, [resumes, passphrase]);
+  }, [resumes]);
 
   const loadPreviews = async (docs: ResumeDocument[]) => {
     const token = getToken();
-    if (!token || !passphrase) return;
+    if (!token) return;
 
     for (const doc of docs) {
       if (previews[doc.id]) continue;
       try {
         const blob = await resumesApi.download(token, doc.id);
-        const isEncrypted = !doc.file_name || doc.file_name.endsWith(".enc");
-        let dataStr = "";
-        if (isEncrypted) {
-          dataStr = await decryptData(blob, passphrase);
-        } else {
-          dataStr = await blob.text();
+        let dataStr = await blob.text();
+        if (!dataStr.trim().startsWith("{") && !dataStr.trim().startsWith("[")) {
+          try {
+            dataStr = await decryptData(blob, passphrase || "");
+          } catch {
+            // fallback
+          }
         }
         const parsed: ResumeData = JSON.parse(dataStr);
         setPreviews((prev) => ({ ...prev, [doc.id]: parsed }));
       } catch (err) {
-        // Silently handle background preview load error
+        // Silently skip if thumbnail cannot be generated
       }
     }
   };
@@ -126,48 +127,20 @@ function ResumesInner() {
     setDownloadError(null);
     try {
       const blob = await resumesApi.download(token, doc.id);
-
-      // Determine if this is an encrypted resume (legacy .enc or server-encrypted)
-      const isEncrypted = !doc.file_name || doc.file_name.endsWith(".enc");
-
-      if (!isEncrypted) {
-        // Plain file — treat as direct download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = doc.file_name || `resume-${doc.id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        return;
+      let jsonString = await blob.text();
+      if (!jsonString.trim().startsWith("{") && !jsonString.trim().startsWith("[")) {
+        try {
+          jsonString = await decryptData(blob, passphrase || "");
+        } catch {
+          // fallback
+        }
       }
-
-      // Encrypted resume: decrypt transparently using the server-derived key
-      if (!passphrase) {
-        // Key not yet loaded (should be ready in < 1s normally)
-        setDownloadError("Encryption key is still loading. Please wait a moment and try again.");
-        return;
-      }
-
-      const jsonString = await decryptData(blob, passphrase);
       setSelectedResumeId(doc.id);
       setSelectedResumeJson(jsonString);
       setEditorOpen(true);
     } catch (err) {
       console.error(err);
-      const errMsg = err instanceof Error ? err.message : String(err);
-
-      if (errMsg === "Decryption failed") {
-        // This resume was saved with a different key (e.g., old user-passphrase ZK vault)
-        // Show a helpful migration message instead of a cryptic error
-        setDownloadError(
-          "This resume was saved with the old encryption system and cannot be opened. " +
-          "Please create a new resume — your profile data is safe."
-        );
-      } else {
-        setDownloadError("Failed to load resume. Please try again.");
-      }
+      setDownloadError("Failed to load resume. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -370,11 +343,11 @@ function ResumesInner() {
                       {/* Card */}
                       <div className="relative h-[360px] bg-surface-container-lowest rounded-3xl border border-outline-variant shadow-sm overflow-hidden flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-300 active:scale-[0.98]">
                         
-                        {/* Header Bar: Badge on Left, Actions on Right (No Overlap) */}
+                        {/* Header Bar: Badge on Left, Actions on Right */}
                         <div className="px-4 pt-3.5 pb-2 flex items-center justify-between gap-2 shrink-0 z-20">
-                          <div className="text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 shrink-0">
-                            <MaterialIcon name="lock" className="text-[12px]" />
-                            <span>Encrypted</span>
+                          <div className="text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 shrink-0">
+                            <MaterialIcon name="description" className="text-[12px]" />
+                            <span>Resume</span>
                           </div>
 
                           <div className="flex items-center gap-0.5 bg-surface-container-low/90 backdrop-blur-md px-1.5 py-1 rounded-full border border-outline-variant/50 shadow-xs">
