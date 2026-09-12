@@ -222,7 +222,7 @@ export default function AppSidebar() {
     <>
       {/* Desktop rail — always visible on lg+, drag-resizable */}
       <aside
-        className="hidden lg:flex bg-surface-container-lowest h-screen fixed left-0 top-0 border-r border-outline-variant flex-col z-50"
+        className="hidden lg:flex bg-surface-container-lowest h-screen fixed left-0 top-0 border-r border-outline-variant flex-col z-50 no-print"
         style={{ width }}
       >
         {sidebarBody}
@@ -240,14 +240,14 @@ export default function AppSidebar() {
       {/* Mobile overlay backdrop */}
       {open && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/40"
+          className="lg:hidden fixed inset-0 z-50 bg-black/40 no-print"
           onClick={() => setOpen(false)}
         />
       )}
 
       {/* Mobile drawer */}
       <aside
-        className={`lg:hidden bg-surface-container-lowest w-64 fixed left-0 top-0 h-screen z-50 border-r border-outline-variant flex-col transition-transform duration-300 ${
+        className={`lg:hidden bg-surface-container-lowest w-64 fixed left-0 top-0 h-screen z-50 border-r border-outline-variant flex-col transition-transform duration-300 no-print ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -265,7 +265,7 @@ export default function AppSidebar() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 px-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant z-40">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 px-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant z-40 no-print">
         <span className="text-label-md font-bold text-primary">NISB-MakeMyCV</span>
         <button
           type="button"

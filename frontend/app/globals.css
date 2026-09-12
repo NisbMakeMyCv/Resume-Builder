@@ -766,83 +766,143 @@ body {
 }
 
 @media print {
-  /* Hide the app chrome — sidebar nav, page topbar, page footer, and builder controls */
+  /* ── Step 1: Hide all app chrome and UI using standard display:none ── */
   .no-print,
   nav,
   aside,
+  header,
   footer:not(#resume-pdf-content footer) {
     display: none !important;
   }
 
-  /* Also hide the fixed topbar header (the app header, not the resume header) */
-  body > div header,
-  main > div > header,
-  .page-enter > header {
+  /* Hide Next.js dev overlays if any */
+  #nextjs-build-indicator,
+  nextjs-portal {
     display: none !important;
   }
 
-  /* A4 page */
-  @page {
-    size: A4;
-    margin: 12mm 15mm;
-  }
-
-  body, html {
-    background: white !important;
+  /* ── Step 2: Reset the page background, margins, and main layout offsets ── */
+  html, body, main {
+    background: #ffffff !important;
+    color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-
-  /* Remove padding/margins of parent containers */
-  main, .page-enter, #resume-preview-container, body, html {
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
-    overflow: visible !important;
-    max-height: none !important;
-    background: white !important;
-  }
-
-  /* Force only the specific outer layout containers to be transparent so we don't accidentally remove borders from inside the resume */
-  .dark #resume-preview-container,
-  .dark body,
-  .dark html,
-  .dark main,
-  .dark .page-enter {
-    background-color: white !important;
-    border: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Collapse the two-column editor/preview grid to single column */
-  /* Only target the top-level builder grid, not grids inside the resume content */
-  .xl\:sticky {
-    position: static !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-
-  /* The editor left panel and toolbar are hidden; the preview fills the page */
-  .space-y-8.no-print {
-    display: none !important;
-  }
-
-  /* Reset the builder grid wrapper */
-  .grid.grid-cols-1 {
-    display: block !important;
-  }
-
-  /* Resume content: preserve padding for proper A4 margins within the page */
-  #resume-pdf-content {
     width: 100% !important;
-    max-width: 100% !important;
-    padding: 24px 32px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    float: none !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  /* Strip flex / grid / transforms / hidden states from parent containers */
+  .page-enter,
+  main,
+  [data-framer-name],
+  div:has(#resume-preview-container) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    position: static !important;
     margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  /* ── Step 3: Remove scale and positioning from top wrapper layers ── */
+  #resume-preview-container,
+  #resume-preview-container > div,
+  #resume-preview-container > div > div {
+    display: block !important;
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  /* Force internal flex rows to remain horizontal flexbox rows in print mode */
+  #resume-pdf-content .resume-flex-row {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+    width: 100% !important;
+  }
+
+  #resume-pdf-content .resume-contact-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  /* ── Step 4: A4 page setup ── */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* ── Step 5: The resume document itself — full A4 ── */
+  #resume-pdf-content {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
     box-shadow: none !important;
     border: none !important;
-    background: white !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    padding: 12mm 15mm !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* ── Step 6: Ensure crisp dark text in print ── */
+  #resume-pdf-content,
+  #resume-pdf-content * {
+    color-scheme: light !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #resume-pdf-content h1,
+  #resume-pdf-content h2,
+  #resume-pdf-content h3,
+  #resume-pdf-content p,
+  #resume-pdf-content span,
+  #resume-pdf-content li,
+  #resume-pdf-content div,
+  #resume-pdf-content strong,
+  #resume-pdf-content em {
+    color: #111827 !important;
+  }
+
+  #resume-pdf-content a {
+    color: #000000 !important;
+    text-decoration: underline !important;
   }
 }
+
 
 /* =========================================================
    ACCESSIBILITY
@@ -1033,15 +1093,35 @@ body {
   color: #f8fafc;
 }
 
-/* Ensure resume paper document stays white for accurate preview & print */
+/* Ensure resume paper document stays crisp black text on white paper in all themes & print */
+#resume-pdf-content {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  color-scheme: light !important;
+}
+
 #resume-pdf-content,
 #resume-pdf-content * {
   color-scheme: light !important;
 }
+
 .dark #resume-pdf-content {
   background-color: #ffffff !important;
-  color: #000000 !important;
+  color: #111827 !important;
 }
-.dark #resume-pdf-content * {
-  color: initial;
+
+.dark #resume-pdf-content h1,
+.dark #resume-pdf-content h2,
+.dark #resume-pdf-content h3,
+.dark #resume-pdf-content p,
+.dark #resume-pdf-content span,
+.dark #resume-pdf-content li,
+.dark #resume-pdf-content div,
+.dark #resume-pdf-content strong,
+.dark #resume-pdf-content em {
+  color: #111827 !important;
+}
+
+.dark #resume-pdf-content a {
+  color: #000000 !important;
 }

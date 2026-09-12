@@ -19,22 +19,20 @@ DRIVE_AVAILABLE = bool(os.environ.get("GOOGLE_DRIVE_REFRESH_TOKEN") and os.envir
 
 
 def _try_drive_upload(file_bytes: bytes, filename: str, user_id: str, mime_type: str = 'application/octet-stream') -> Optional[str]:
-    """Upload to Google Drive; return file ID or None if Drive isn't configured."""
+    """Upload to Google Drive; return file ID or None if Drive isn't configured or upload fails."""
     if not DRIVE_AVAILABLE:
         return None
     try:
         from app.services.drive_service import upload_encrypted_file
         return upload_encrypted_file(file_bytes, filename=filename, user_id=user_id, mime_type=mime_type)
     except Exception as exc:
-        # Drive is configured but the call failed — surface the error
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Google Drive upload failed: {exc}",
-        )
+        # Drive is configured but the call failed — log and fall back to DB storage
+        print(f"[Drive] Upload failed for user {user_id}, falling back to DB: {exc}")
+        return None
 
 
 def _try_drive_update(old_file_id: str, file_bytes: bytes, filename: str, user_id: str, mime_type: str = 'application/octet-stream') -> Optional[str]:
-    """Delete old Drive file and upload new one; return new file ID or None."""
+    """Delete old Drive file and upload new one; return new file ID or None on failure."""
     if not DRIVE_AVAILABLE:
         return None
     try:
@@ -44,13 +42,10 @@ def _try_drive_update(old_file_id: str, file_bytes: bytes, filename: str, user_i
         except Exception:
             pass  # Non-fatal if old deletion fails
         return upload_encrypted_file(file_bytes, filename=filename, user_id=user_id, mime_type=mime_type)
-    except HTTPException:
-        raise
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Google Drive update failed: {exc}",
-        )
+        # Fall back to DB storage on Drive failure
+        print(f"[Drive] Update failed for user {user_id}, falling back to DB: {exc}")
+        return None
 
 
 def _try_drive_delete(file_id: str):

@@ -158,39 +158,6 @@ function DashboardInner() {
               link={{ label: "Create Resume", href: "/resumes" }}
             />
           </motion.div>
-
-          {/* Action Hero Card */}
-          {/* (Hero Card Removed - Profile Completion is now a clean metric card above) */}
-
-          {/* U5 FIX: Quick Actions — replaces always-empty Recent Activity */}
-          <Reveal>
-            <div className="space-y-4">
-              <h4 className="text-headline-md text-primary">Quick Actions</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <QuickActionCard
-                  icon="add_circle"
-                  title="Create New Resume"
-                  description="Start building a tailored resume from scratch"
-                  href="/resumes"
-                  accent="bg-primary-container text-primary"
-                />
-                <QuickActionCard
-                  icon="person_book"
-                  title="Update Master Profile"
-                  description="Keep your education, skills & experience up to date"
-                  href="/profile"
-                  accent="bg-secondary-container text-secondary"
-                />
-                <QuickActionCard
-                  icon="smart_toy"
-                  title="Analyze a GitHub Repo"
-                  description="Let AI write your project bullets from any public repo"
-                  href="/resumes"
-                  accent="bg-primary-fixed text-on-primary-fixed-variant"
-                />
-              </div>
-            </div>
-          </Reveal>
         </div>
       </main>
 

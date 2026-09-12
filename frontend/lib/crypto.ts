@@ -100,7 +100,6 @@ export async function decryptData(blob: Blob, passphrase: string): Promise<strin
     const dec = new TextDecoder();
     return dec.decode(decryptedBuffer);
   } catch (error) {
-    console.error("Decryption failed. Invalid passphrase or corrupted data.", error);
     throw new Error("Decryption failed");
   }
 }

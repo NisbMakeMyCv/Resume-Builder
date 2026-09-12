@@ -13,8 +13,6 @@ import ResumeDataSection from "../components/ResumeDataSection";
 import { mapProfileToResume } from "../../utils/resumeMapper"; // B12 FIX: static import
 import {
   apiRequest,
-  clearSession,
-  deleteAccount,
   getProfile,
   getStoredUser,
   getToken,
@@ -33,19 +31,19 @@ import {
 } from "../../lib/api";
 
 const EDUCATION_FIELDS = [
-  { name: "institution", label: "Institution", placeholder: "e.g. UC Berkeley", required: true },
-  { name: "degree", label: "Degree", placeholder: "e.g. B.S. Computer Science", required: true },
-  { name: "branch", label: "Branch", placeholder: "e.g. Computer Science", required: true },
-  { name: "start_date", label: "Start Date", kind: "date" as const, required: true },
+  { name: "institution", label: "Institution / School", placeholder: "e.g. UC Berkeley or SSLC High School", required: true },
+  { name: "degree", label: "Degree / Course", placeholder: "e.g. B.S. Computer Science or 10th SSLC / 12th PUC", required: true },
+  { name: "branch", label: "Branch / Stream", placeholder: "e.g. Computer Science or Science (optional for 10th/12th)" },
+  { name: "start_date", label: "Start Date", kind: "date" as const },
   { name: "end_date", label: "End Date", kind: "date" as const },
-  { name: "cgpa", label: "CGPA (0-10)", kind: "number" as const, placeholder: "e.g. 9.5" }
+  { name: "cgpa", label: "CGPA / Percentage", kind: "number" as const, placeholder: "e.g. 9.5 (CGPA) or 85 (Percentage)" }
 ] as const;
 
 const EXPERIENCE_FIELDS = [
   { name: "company", label: "Company", placeholder: "e.g. Northwind Systems", required: true },
   { name: "designation", label: "Designation/Role", placeholder: "e.g. Full-Stack Engineer", required: true },
   { name: "description", label: "Description (Actions/Impact)", kind: "textarea" as const, placeholder: "Describe responsibilities..." },
-  { name: "start_date", label: "Start Date", kind: "date" as const, required: true },
+  { name: "start_date", label: "Start Date", kind: "date" as const },
   { name: "end_date", label: "End Date", kind: "date" as const }
 ] as const;
 
@@ -118,11 +116,6 @@ function ProfileInner() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
-
-  // ---- Delete account modal ----
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
 
   const { toasts, dismiss, notify } = useToasts();
 
@@ -376,26 +369,6 @@ function ProfileInner() {
       notify.error(err instanceof Error ? err.message : "Failed to export profile data");
     } finally {
       setExporting(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    const token = getToken();
-    if (!token) return;
-
-    setDeleting(true);
-    setDeleteError("");
-    try {
-      await deleteAccount(token);
-      clearSession();
-      window.location.href = "/signup";
-    } catch (err) {
-      setDeleteError(
-        err instanceof Error
-          ? err.message
-          : "Failed to delete your account. Please try again."
-      );
-      setDeleting(false);
     }
   };
 
@@ -794,25 +767,6 @@ function ProfileInner() {
             />
           </div>
 
-          {/* Danger Zone */}
-          <div className="pt-12">
-            <div className="ambient-card bg-error-container/10 border-2 border-error/20 rounded-2xl p-6 sm:p-8 space-y-4">
-              <h3 className="text-headline-sm font-bold text-error">Danger Zone</h3>
-              <p className="text-body-md text-on-surface-variant">
-                Permanently delete your account and all associated resumes. This action cannot be undone.
-              </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmOpen(true)}
-                  className="btn-outline px-6 py-2.5 rounded-full text-label-md text-error border-error hover:bg-error-container/30 transition-colors flex items-center gap-2"
-                >
-                  <MaterialIcon name="delete_forever" className="text-[18px]" />
-                  Delete Account
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 
@@ -841,26 +795,6 @@ function ProfileInner() {
           © 2026 NISB-MakeMyCV. Made by NISB.
         </p>
       </footer>
-
-      {/* Delete confirmation modal */}
-      <ConfirmModal
-        open={confirmOpen}
-        title="Delete your account?"
-        message={
-          <>
-            This will permanently erase your account, profile, and all resume
-            data.{" "}
-            <span className="font-semibold text-on-surface">
-              This cannot be undone.
-            </span>
-          </>
-        }
-        confirmLabel="Delete Account"
-        loading={deleting}
-        error={deleteError}
-        onConfirm={handleDeleteAccount}
-        onCancel={() => setConfirmOpen(false)}
-      />
 
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

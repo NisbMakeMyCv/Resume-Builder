@@ -11,6 +11,24 @@ export const API_URL =
 export const ACCESS_TOKEN_KEY = "makemycv_access_token";
 export const USER_KEY = "makemycv_user";
 
+/**
+ * Fetches the deterministic per-user AES-256 key from the backend.
+ * Called automatically by CryptoProvider — never called by user code.
+ */
+export async function fetchEncryptionKey(token: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/auth/encryption-key`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.encryption_key as string;
+  } catch {
+    return null;
+  }
+}
+
+
 /** Shape returned by GET /api/v1/auth/me. */
 export type CurrentUser = {
   id: string;
@@ -307,10 +325,12 @@ export const resumesApi = {
       body: formData,
     });
     
+    const data = await res.json().catch(() => null);
     if (!res.ok) {
-      throw new Error("Failed to create resume");
+      const detail = typeof data?.detail === "string" ? data.detail : "Failed to create resume";
+      throw new Error(detail);
     }
-    return res.json();
+    return data;
   },
   
   async update(token: string, id: string, title?: string, fileBlob?: Blob): Promise<ResumeDocument> {
@@ -324,10 +344,12 @@ export const resumesApi = {
       body: formData,
     });
     
+    const data = await res.json().catch(() => null);
     if (!res.ok) {
-      throw new Error("Failed to update resume");
+      const detail = typeof data?.detail === "string" ? data.detail : "Failed to update resume";
+      throw new Error(detail);
     }
-    return res.json();
+    return data;
   },
   
   rename(token: string, id: string, title: string): Promise<ResumeDocument> {

@@ -42,10 +42,10 @@ class ProfileResponse(ProfileBase):
 class EducationBase(BaseModel):
     institution: str
     degree: str
-    branch: str
-    start_date: date
+    branch: Optional[str] = ""
+    start_date: Optional[date] = None
     end_date: Optional[date] = None
-    cgpa: Optional[float] = Field(None, ge=0.0, le=10.0)
+    cgpa: Optional[float] = Field(None, ge=0.0, le=100.0)
     display_order: Optional[int] = 0
 
 class EducationCreate(EducationBase):
@@ -57,7 +57,7 @@ class EducationUpdate(BaseModel):
     branch: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    cgpa: Optional[float] = Field(None, ge=0.0, le=10.0)
+    cgpa: Optional[float] = Field(None, ge=0.0, le=100.0)
     display_order: Optional[int] = None
 
 class EducationResponse(EducationBase):
@@ -74,7 +74,7 @@ class ExperienceBase(BaseModel):
     company: str
     designation: str
     description: Optional[str] = None
-    start_date: date
+    start_date: Optional[date] = None
     end_date: Optional[date] = None
     display_order: Optional[int] = 0
 

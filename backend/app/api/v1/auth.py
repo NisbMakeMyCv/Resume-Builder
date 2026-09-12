@@ -1,6 +1,8 @@
 import smtplib
 import os
 import secrets
+import hmac
+import hashlib
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
@@ -11,7 +13,7 @@ from google.auth.transport import requests
 from app.schemas.user import UserLoginRequest, UserRegisterRequest, GoogleLoginRequest, OTPRequest, ResetPasswordRequest
 from app.core.database import get_db
 from app.models.user import User, UserAuthMethod, EmailOTP
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, SECRET_KEY
 from app.api.dependencies import get_current_user
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -221,6 +223,27 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         "full_name": current_user.full_name,
         "profile_picture": current_user.profile_picture
     }
+
+@router.get("/encryption-key")
+def get_encryption_key(current_user: User = Depends(get_current_user)):
+    """
+    Returns a deterministic per-user AES-256 encryption key derived from the
+    user's ID using HMAC-SHA256 keyed with the server's JWT secret.
+
+    Because the derivation is purely deterministic (no salt, no randomness),
+    the same user always gets the same 32-byte (256-bit) key — meaning resumes
+    saved today can be decrypted months later with zero user interaction.
+
+    The key never leaves the server's memory during derivation and is only
+    transmitted over HTTPS to an authenticated user.
+    """
+    raw_key = hmac.new(
+        SECRET_KEY.encode("utf-8"),
+        str(current_user.id).encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()  # 64-char hex = 32 bytes = AES-256 key
+    return {"encryption_key": raw_key}
+
 
 from fastapi import UploadFile, File
 from app.services.supabase_storage import upload_avatar_to_supabase

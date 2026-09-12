@@ -73,27 +73,43 @@ export default function JakeResumePreview({
   ].filter(item => item.value || item.url);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [contentHeight, setContentHeight] = useState(1123);
 
   useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width } = entry.contentRect;
-        // A4 size in pixels at 96 DPI: 794 x 1123
-        const a4Width = 794;
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const cWidth = containerRef.current.clientWidth;
+        const cHeight = containerRef.current.clientHeight;
+        const a4Width = 794; // 210mm at 96 DPI
+        const a4Height = contentRef.current?.offsetHeight || 1123;
         
-        // B10 FIX: Only use width-based scale — height is variable on mobile so
-        // scaleY was near-zero, collapsing the preview. Scale down only (never up).
-        const scaleX = (width - 32) / a4Width;
-        setScale(Math.min(scaleX, 1));
+        if (cWidth > 0) {
+          const scaleX = (cWidth - 16) / a4Width;
+          // If container has height (non-zero fixed flex item), also fit height
+          const scaleY = cHeight > 100 ? (cHeight - 16) / a4Height : scaleX;
+          const fitScale = Math.min(scaleX, scaleY, 1);
+          setScale(Math.max(fitScale, 0.25));
+        }
       }
+      if (contentRef.current) {
+        const h = contentRef.current.offsetHeight;
+        if (h > 0) setContentHeight(h);
+      }
+    };
+
+    updateDimensions();
+
+    const observer = new ResizeObserver(() => {
+      updateDimensions();
     });
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
+    if (containerRef.current) observer.observe(containerRef.current);
+    if (contentRef.current) observer.observe(contentRef.current);
+
     return () => observer.disconnect();
-  }, []);
+  }, [data]);
 
   return (
     <>
@@ -113,42 +129,49 @@ export default function JakeResumePreview({
       <div
         ref={containerRef}
         id="resume-preview-container"
-        className={`bg-slate-100/80 dark:bg-slate-950/40 rounded-2xl border border-slate-200/80 dark:border-slate-800/60 p-4 flex justify-center items-start text-gray-900 w-full overflow-hidden ${className} print:!block print:!h-auto print:!overflow-visible print:!bg-transparent print:!border-none print:!p-0`}
-        style={{
-          fontFamily:
-            "'Baskerville', 'Palatino Linotype', Georgia, serif",
-          // B10 FIX: min-height instead of fixed height to avoid collapse on short/mobile screens
-          minHeight: `calc(${scale} * 1123px + 32px)`,
-        }}
+        className={`print-area w-full h-full flex justify-center items-center print:!block print:!h-auto print:!bg-transparent ${className}`}
       >
-      <div 
-        className="print:!transform-none origin-center"
-        style={{ transform: `scale(${scale})` }}
-      >
+        {/* Exact bounding box wrapper so parent flex container fits the scaled A4 document perfectly */}
         <div
-          id="resume-pdf-content"
-          className="bg-white shadow-2xl rounded-sm shrink-0 print:shadow-none print:m-0 print:p-0 print:rounded-none"
-          style={{ 
-            width: "210mm", 
-            height: "297mm", 
-            overflow: "hidden", 
-            boxSizing: "border-box",
-            padding: "12mm 15mm", // Thinner margins matching Jake's template (approx 0.5" top/bottom, 0.6" sides)
+          className="relative print:!static print:!w-full print:!h-auto flex items-center justify-center shrink-0"
+          style={{
+            width: `${scale * 794}px`,
+            height: `${scale * contentHeight}px`,
           }}
         >
+          <div
+            className="absolute top-0 left-0 origin-top-left print:!relative print:!transform-none print:!w-full"
+            style={{ 
+              transform: `scale(${scale})`, 
+              width: '210mm' 
+            }}
+          >
+            <div
+              ref={contentRef}
+              id="resume-pdf-content"
+              className="bg-white shrink-0 print:shadow-none print:m-0 print:p-0 print:rounded-none"
+              style={{ 
+                width: "210mm", 
+                minHeight: "297mm",
+                overflow: "visible", 
+                boxSizing: "border-box",
+                padding: "12mm 15mm",
+                boxShadow: "0 4px 32px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)",
+              }}
+            >
         {/* =========================================================
             NAME / HEADER
         ========================================================= */}
-        <div style={{ textAlign: "center", marginBottom: "4px" }}>
+        <div style={{ textAlign: "center", marginBottom: "8px" }}>
           <h1
             style={{
-              fontFamily:
-                "'Baskerville', 'Palatino Linotype', Georgia, serif",
-              fontSize: "28px",
+              fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+              fontSize: "26px",
               fontWeight: "700",
-              lineHeight: "1.2",
-              color: "#111827",
-              margin: 0,
+              lineHeight: "1.1",
+              color: "#000000",
+              margin: "0 0 2px 0",
+              letterSpacing: "0.02em",
             }}
           >
             {header?.fullName || "Your Name"}
@@ -156,10 +179,11 @@ export default function JakeResumePreview({
           {header?.position && (
             <p
               style={{
-                fontSize: "14px",
+                fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                fontSize: "12px",
                 fontStyle: "italic",
-                color: "#111827",
-                margin: "4px 0 0 0",
+                color: "#000000",
+                margin: "0 0 4px 0",
               }}
             >
               {header.position}
@@ -168,29 +192,23 @@ export default function JakeResumePreview({
 
           {contactItems.length > 0 && (
             <div
+              className="resume-contact-row"
               style={{
+                fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                 fontSize: "11px",
-                marginTop: "6px",
-                color: "#1f2937",
+                marginTop: "4px",
+                color: "#000000",
                 display: "flex",
                 flexWrap: "wrap",
                 justifyContent: "center",
                 alignItems: "center",
-                columnGap: "8px",
-                rowGap: "2px"
+                gap: "4px",
               }}
             >
               {contactItems.map((item, i) => (
-                <span key={`contact-${i}`} style={{ display: "flex", alignItems: "center" }}>
+                <span key={`contact-${i}`} style={{ display: "inline-flex", alignItems: "center" }}>
                   {i > 0 && (
-                    <span
-                      style={{
-                        marginRight: "8px",
-                        color: "#6b7280",
-                      }}
-                    >
-                      |
-                    </span>
+                    <span style={{ margin: "0 6px", color: "#000000" }}>|</span>
                   )}
 
                   {item.type === "link" && item.url ? (
@@ -206,7 +224,7 @@ export default function JakeResumePreview({
                       {item.text}
                     </a>
                   ) : (
-                    <span>{item.value}</span>
+                    <span style={{ color: "#000000" }}>{item.value}</span>
                   )}
                 </span>
               ))}
@@ -222,9 +240,10 @@ export default function JakeResumePreview({
             <SectionHeading title="Professional Summary" />
             <p
               style={{
+                fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                 fontSize: "11px",
-                color: "#1f2937",
-                lineHeight: "1.5",
+                color: "#000000",
+                lineHeight: "1.4",
                 margin: "4px 0 0 0",
                 textAlign: "justify",
               }}
@@ -247,80 +266,84 @@ export default function JakeResumePreview({
                   key={`education-${index}-${ed.id || "item"}`}
                   style={{ marginBottom: "6px" }}
                 >
-                  {/* Row 1: School + Location */}
+                  {/* Row 1: Institution (Bold) + Location (Right) */}
                   <div
+                    className="resume-flex-row"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "baseline",
-                      gap: "8px",
+                      width: "100%",
                     }}
                   >
-                    <p
+                    <span
                       style={{
-                        fontSize: "12px",
+                        fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                        fontSize: "11.5px",
                         fontWeight: "700",
-                        color: "#111827",
-                        margin: 0,
+                        color: "#000000",
                       }}
                     >
                       {ed.school || "Institution"}
-                    </p>
+                    </span>
 
-                    <p
+                    <span
                       style={{
-                        fontSize: "11px",
-                        color: "#374151",
-                        margin: 0,
+                        fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                        fontSize: "11.5px",
+                        color: "#000000",
                         whiteSpace: "nowrap",
                       }}
                     >
                       {ed.location}
-                    </p>
+                    </span>
                   </div>
 
-                  {/* Row 2: Degree + Dates */}
+                  {/* Row 2: Degree (Italic) + Dates (Italic, Right) */}
                   <div
+                    className="resume-flex-row"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "baseline",
-                      gap: "8px",
+                      width: "100%",
                     }}
                   >
-                    <p
+                    <span
                       style={{
+                        fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                         fontSize: "11px",
                         fontStyle: "italic",
-                        color: "#374151",
-                        margin: 0,
+                        color: "#000000",
                       }}
                     >
                       {ed.degree}
-                    </p>
+                    </span>
 
-                    <p
+                    <span
                       style={{
+                        fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                         fontSize: "11px",
-                        color: "#374151",
-                        margin: 0,
+                        fontStyle: "italic",
+                        color: "#000000",
                         whiteSpace: "nowrap",
                       }}
                     >
                       {ed.dates}
-                    </p>
+                    </span>
                   </div>
 
                   {/* Coursework */}
                   {ed.coursework && (
                     <p
                       style={{
-                        fontSize: "11px",
-                        color: "#374151",
+                        fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                        fontSize: "10.5px",
+                        color: "#000000",
                         margin: "2px 0 0 0",
                       }}
                     >
-                      <em>Coursework: </em>
+                      <em>Relevant Coursework: </em>
                       {ed.coursework}
                     </p>
                   )}
@@ -350,85 +373,90 @@ export default function JakeResumePreview({
                     key={`experience-${index}-${ex.id || "item"}`}
                     style={{ marginBottom: "8px" }}
                   >
-                    {/* Row 1 */}
+                    {/* Row 1: Job Title (Bold) + Dates (Right) */}
                     <div
+                      className="resume-flex-row"
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "baseline",
-                        gap: "8px",
+                        width: "100%",
                       }}
                     >
-                      <p
+                      <span
                         style={{
-                          fontSize: "12px",
+                          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                          fontSize: "11.5px",
                           fontWeight: "700",
-                          color: "#111827",
-                          margin: 0,
+                          color: "#000000",
                         }}
                       >
                         {ex.title || "Job Title"}
-                      </p>
+                      </span>
 
-                      <p
+                      <span
                         style={{
-                          fontSize: "11px",
-                          color: "#374151",
-                          margin: 0,
+                          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                          fontSize: "11.5px",
+                          color: "#000000",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {ex.dates}
-                      </p>
+                      </span>
                     </div>
 
-                    {/* Row 2 */}
+                    {/* Row 2: Company (Italic) + Location (Italic, Right) */}
                     <div
+                      className="resume-flex-row"
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "baseline",
-                        gap: "8px",
+                        width: "100%",
                       }}
                     >
-                      <p
+                      <span
                         style={{
+                          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                           fontSize: "11px",
                           fontStyle: "italic",
-                          color: "#374151",
-                          margin: 0,
+                          color: "#000000",
                         }}
                       >
                         {ex.company}
-                      </p>
+                      </span>
 
-                      <p
+                      <span
                         style={{
+                          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                           fontSize: "11px",
-                          color: "#374151",
-                          margin: 0,
+                          fontStyle: "italic",
+                          color: "#000000",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {ex.location}
-                      </p>
+                      </span>
                     </div>
 
                     {/* Bullets */}
                     {nonEmptyBullets.length > 0 && (
                       <ul
                         style={{
-                          margin: "3px 0 0 0",
+                          margin: "2px 0 0 0",
                           paddingLeft: "18px",
+                          listStyleType: "disc",
                         }}
                       >
                         {nonEmptyBullets.map((bullet, bulletIndex) => (
                           <li
                             key={`experience-${index}-bullet-${bulletIndex}`}
                             style={{
-                              fontSize: "11px",
-                              color: "#1f2937",
-                              lineHeight: "1.5",
+                              fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                              fontSize: "10.5px",
+                              color: "#000000",
+                              lineHeight: "1.35",
                               marginBottom: "1px",
                             }}
                           >
@@ -464,31 +492,31 @@ export default function JakeResumePreview({
                     key={`project-${index}-${proj.id || "item"}`}
                     style={{ marginBottom: "8px" }}
                   >
-                    {/* Project title + technologies + dates */}
+                    {/* Row 1: Title (Bold) | Tech (Italic) + Dates (Right) */}
                     <div
+                      className="resume-flex-row"
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "baseline",
-                        gap: "8px",
+                        width: "100%",
                       }}
                     >
-                      <p
+                      <div
                         style={{
-                          fontSize: "12px",
-                          margin: 0,
-                          color: "#111827",
-                          wordBreak: "break-word",
+                          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                          fontSize: "11.5px",
+                          color: "#000000",
                         }}
                       >
-                        <strong>{proj.title || "Project"}</strong>
+                        <strong style={{ fontWeight: "700" }}>{proj.title || "Project"}</strong>
 
                         {proj.technologies && (
                           <span
                             style={{
                               fontWeight: "400",
                               fontStyle: "italic",
-                              color: "#374151",
+                              color: "#000000",
                             }}
                           >
                             {" "}
@@ -504,7 +532,7 @@ export default function JakeResumePreview({
                               target="_blank"
                               rel="noreferrer"
                               style={{
-                                fontSize: "11px",
+                                fontSize: "10.5px",
                                 color: "#000000",
                                 textDecoration: "underline",
                                 fontWeight: "400",
@@ -515,35 +543,37 @@ export default function JakeResumePreview({
                             </a>
                           </>
                         )}
-                      </p>
+                      </div>
 
-                      <p
+                      <span
                         style={{
+                          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
                           fontSize: "11px",
-                          color: "#374151",
-                          margin: 0,
+                          color: "#000000",
                           whiteSpace: "nowrap",
                         }}
                       >
                         {proj.dates}
-                      </p>
+                      </span>
                     </div>
 
                     {/* Project bullets */}
                     {nonEmptyBullets.length > 0 && (
                       <ul
                         style={{
-                          margin: "3px 0 0 0",
+                          margin: "2px 0 0 0",
                           paddingLeft: "18px",
+                          listStyleType: "disc",
                         }}
                       >
                         {nonEmptyBullets.map((bullet, bulletIndex) => (
                           <li
                             key={`project-${index}-bullet-${bulletIndex}`}
                             style={{
-                              fontSize: "11px",
-                              color: "#1f2937",
-                              lineHeight: "1.5",
+                              fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                              fontSize: "10.5px",
+                              color: "#000000",
+                              lineHeight: "1.35",
                               marginBottom: "1px",
                             }}
                           >
@@ -575,14 +605,15 @@ export default function JakeResumePreview({
                     <p
                       key={`skill-${index}-${s.id || "item"}`}
                       style={{
-                        fontSize: "11px",
-                        color: "#1f2937",
-                        margin: "1px 0",
-                        lineHeight: "1.5",
+                        fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                        fontSize: "10.5px",
+                        color: "#000000",
+                        margin: "2px 0",
+                        lineHeight: "1.4",
                       }}
                     >
                       {s.category && (
-                        <strong style={{ color: "#111827" }}>
+                        <strong style={{ fontWeight: "700", color: "#000000" }}>
                           {s.category}:{" "}
                         </strong>
                       )}
@@ -606,13 +637,14 @@ export default function JakeResumePreview({
                 <div
                   key={`certification-${index}-${cert.id || "item"}`}
                   style={{
-                    fontSize: "11px",
-                    color: "#1f2937",
+                    fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                    fontSize: "10.5px",
+                    color: "#000000",
                     margin: "2px 0",
-                    lineHeight: "1.5",
+                    lineHeight: "1.4",
                   }}
                 >
-                  <strong style={{ color: "#111827" }}>
+                  <strong style={{ fontWeight: "700", color: "#000000" }}>
                     {cert.name}
                   </strong>
 
@@ -660,21 +692,23 @@ export default function JakeResumePreview({
 
             <ul
               style={{
-                margin: "3px 0 0 0",
+                margin: "2px 0 0 0",
                 paddingLeft: "18px",
+                listStyleType: "disc",
               }}
             >
               {achievements.map((achievement, index) => (
                 <li
                   key={`achievement-${index}-${achievement.id || "item"}`}
                   style={{
-                    fontSize: "11px",
-                    color: "#1f2937",
-                    lineHeight: "1.5",
+                    fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                    fontSize: "10.5px",
+                    color: "#000000",
+                    lineHeight: "1.35",
                     marginBottom: "1px",
                   }}
                 >
-                  <strong style={{ color: "#111827" }}>
+                  <strong style={{ fontWeight: "700", color: "#000000" }}>
                     {achievement.title}
                   </strong>
 
@@ -718,18 +752,17 @@ export default function JakeResumePreview({
                         <div
                           key={`custom-field-${sectionIndex}-${fieldIndex}-${field.id || "field"}`}
                           style={{
-                            fontSize: "11px",
-                            color: "#1f2937",
+                            fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+                            fontSize: "10.5px",
+                            color: "#000000",
                             margin: "2px 0",
-                            lineHeight: "1.5",
+                            lineHeight: "1.4",
                           }}
                         >
                           {/* Text */}
                           {field.type === "text" && (
                             <p style={{ margin: 0 }}>
-                              <strong
-                                style={{ color: "#111827" }}
-                              >
+                              <strong style={{ fontWeight: "700", color: "#000000" }}>
                                 {field.label}:{" "}
                               </strong>
                               {field.value}
@@ -739,9 +772,7 @@ export default function JakeResumePreview({
                           {/* Textarea */}
                           {field.type === "textarea" && (
                             <div style={{ margin: "2px 0" }}>
-                              <strong
-                                style={{ color: "#111827" }}
-                              >
+                              <strong style={{ fontWeight: "700", color: "#000000" }}>
                                 {field.label}
                               </strong>
 
@@ -759,9 +790,7 @@ export default function JakeResumePreview({
                           {/* Link */}
                           {field.type === "link" && (
                             <p style={{ margin: 0 }}>
-                              <strong
-                                style={{ color: "#111827" }}
-                              >
+                              <strong style={{ fontWeight: "700", color: "#000000" }}>
                                 {field.label}:{" "}
                               </strong>
 
@@ -791,6 +820,7 @@ export default function JakeResumePreview({
         )}
       </div>
       </div>
+      </div>
     </div>
     </>
   );
@@ -818,32 +848,33 @@ type Achievement = {
 };
 
 /* =========================================================
-   SECTION HEADING
+   SECTION HEADING (Jake Ryan Overleaf style: UPPERCASE + full width line rule)
 ========================================================= */
 
 function SectionHeading({ title }: { title: string }) {
   return (
-    <div style={{ marginTop: "12px" }}>
+    <div style={{ marginTop: "10px", marginBottom: "4px" }}>
       <h2
         style={{
-          fontFamily:
-            "'Baskerville', 'Palatino Linotype', Georgia, serif",
-          fontSize: "13px",
-          fontVariant: "small-caps",
+          fontFamily: "'Times New Roman', Times, 'Georgia', serif",
+          fontSize: "11.5px",
           fontWeight: "700",
+          textTransform: "uppercase",
           color: "#000000",
-          letterSpacing: "0.04em",
+          letterSpacing: "0.05em",
           margin: "0 0 2px 0",
+          padding: 0,
         }}
       >
         {title}
       </h2>
-
-      <hr
+      <div
         style={{
-          border: "none",
-          borderTop: "1px solid #000000",
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#000000",
           margin: "0 0 4px 0",
+          padding: 0,
         }}
       />
     </div>

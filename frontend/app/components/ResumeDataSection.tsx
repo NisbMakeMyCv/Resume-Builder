@@ -251,12 +251,13 @@ export default function ResumeDataSection<
             )}
 
             {/* Rows */}
-            {items.map((item) => {
+            {items.map((item, index) => {
               const id = getId(item);
+              const uniqueKey = `${id || "item"}_${index}`;
               if (editId === id) {
                 return (
                   <FormCard
-                    key={id}
+                    key={uniqueKey}
                     title={`Edit ${singular}`}
                     fields={fields}
                     form={form}
@@ -271,7 +272,7 @@ export default function ResumeDataSection<
               }
               return (
                 <RowCard
-                  key={id}
+                  key={uniqueKey}
                   item={item}
                   fields={fields}
                   onEdit={() => openEdit(item)}

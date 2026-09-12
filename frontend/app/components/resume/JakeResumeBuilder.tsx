@@ -48,7 +48,7 @@ import { ToastStack, useToasts } from "../Toast";
  * "sign in to use AI" fallback is shown otherwise). The document persists
  * to localStorage — no resume endpoints exist on the backend yet.
  */
-export default function JakeResumeBuilder({ initialDataStr, onClose }: { initialDataStr?: string | null, onClose?: () => void }) {
+export default function JakeResumeBuilder({ initialDataStr, resumeId: initialResumeId, onClose }: { initialDataStr?: string | null, resumeId?: string, onClose?: () => void }) {
   const { passphrase, isUnlocked } = useCrypto();
   
   const [data, setData] = useState<ResumeData>(() => {
@@ -62,7 +62,7 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
     return loadResume();
   });
   const [saving, setSaving] = useState(false);
-  const [resumeId, setResumeId] = useState<string | null>(null);
+  const [resumeId, setResumeId] = useState<string | null>(initialResumeId ?? null);
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(["Header"]));
   const [showGitHubAnalyzer, setShowGitHubAnalyzer] = useState(false);
   /** U7: Mobile tab switcher state — "editor" | "preview" */
@@ -125,7 +125,7 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
   };
 
   const handleCloudSave = async () => {
-    // B15 FIX: Validate before saving to cloud
+    // Validate before saving to cloud
     const validationError = validateForm(data);
     if (validationError) {
       notify.error(validationError);
@@ -137,7 +137,7 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
       return;
     }
     if (!passphrase) {
-      notify.error("Encryption passphrase is required to save.");
+      notify.error("Still loading encryption key — please wait a moment and try again.");
       return;
     }
     
@@ -145,6 +145,7 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
     try {
       const title = data.header.fullName ? `${data.header.fullName}'s Resume` : "My Resume";
       const jsonString = JSON.stringify(data);
+      // Encrypt transparently using the server-derived key (no user interaction)
       const encryptedBlob = await encryptData(jsonString, passphrase);
 
       if (resumeId) {
@@ -226,6 +227,8 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
         { id: uid(), school: "", degree: "", location: "", dates: "", coursework: "" },
       ],
     }));
+    // Auto-open so the new card is immediately visible
+    setOpenSections(prev => new Set([...prev, "Education"]));
   }
   function addExperience() {
     setData((d) => ({
@@ -235,6 +238,7 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
         { id: uid(), company: "", title: "", location: "", dates: "", bullets: [""] },
       ],
     }));
+    setOpenSections(prev => new Set([...prev, "Experience"]));
   }
   function addProject() {
     setData((d) => ({
@@ -244,12 +248,15 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
         { id: uid(), title: "", technologies: "", dates: "", links: "", bullets: [""] },
       ],
     }));
+    setOpenSections(prev => new Set([...prev, "Projects"]));
   }
   function addSkillGroup() {
     setData((d) => ({
       ...d,
       skills: [...d.skills, { id: uid(), category: "", items: "" }],
     }));
+    // Auto-open the Skills section so the user immediately sees the new card
+    setOpenSections(prev => new Set([...prev, "Skills"]));
   }
 
   function addCustomSection() {
@@ -260,6 +267,7 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
         { id: uid(), title: "Custom Section", fields: [] },
       ],
     }));
+    setOpenSections(prev => new Set([...prev, "Custom"]));
   }
 
   function addCustomField(sectionId: string, type: CustomSectionFieldType) {
@@ -408,8 +416,9 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
 
   return (
     <>
-      <PassphraseModal />
-      <ToastStack toasts={toasts} onDismiss={dismiss} />
+      <div className="no-print">
+        <ToastStack toasts={toasts} onDismiss={dismiss} />
+      </div>
 
       {/* U1/U10 FIX: Sticky editor header — back link is now subtle; Save + Export are the primary CTAs */}
       <div className="h-16 border-b border-outline-variant bg-surface-container-lowest shadow-sm sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 xl:px-16 no-print">
@@ -487,10 +496,10 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
         </div>
       </div>
 
-      {/* U7 FIX: grid hidden behind mobile tab switcher */}
-      <div className="p-4 sm:p-8 xl:px-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start relative">
-        {/* ============ LEFT: EDITOR & TOOLS PANEL ============ */}
-        <div className={`space-y-6 no-print animate-in fade-in duration-300 ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
+      {/* Two-column grid: editor left, live preview right */}
+      <div className="flex flex-col lg:flex-row gap-0 items-start relative min-h-[calc(100vh-4rem)]">
+        {/* ============ LEFT: EDITOR PANEL ============ */}
+        <div className={`flex-1 min-w-0 p-4 sm:p-6 xl:p-8 space-y-6 no-print animate-in fade-in duration-300 overflow-y-auto ${mobileTab === 'preview' ? 'hidden lg:block' : 'block'}`}>
           {/* Header */}
           <Section
             icon="badge"
@@ -1025,36 +1034,20 @@ export default function JakeResumeBuilder({ initialDataStr, onClose }: { initial
         </div>
 
         {/* ============ RIGHT: LIVE PREVIEW ============ */}
-        <div className={`lg:sticky lg:top-6 lg:h-max pb-8 print:!static print:!w-full print:!h-auto print:!pb-0 ${mobileTab === 'editor' ? 'hidden lg:block' : 'block'}`}>
-          <div className="mb-3 flex flex-wrap gap-3 items-center justify-between no-print">
-            <div>
-              <p className="text-label-md font-semibold text-on-surface">
-                Live Preview
-              </p>
-              <span className="text-label-sm text-on-surface-variant">
-                Jake&apos;s Resume Template
-              </span>
+        <div className={`lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:w-[480px] xl:w-[560px] shrink-0 bg-surface-container-low border-l border-outline-variant/60 print:!block print:!static print:!w-full print:!h-auto print:!bg-transparent print:!border-none ${mobileTab === 'editor' ? 'hidden lg:flex' : 'flex'} flex-col overflow-hidden`}>
+          {/* Preview header */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-outline-variant/60 bg-surface-container-lowest/80 shrink-0 no-print">
+            <div className="flex items-center gap-2">
+              <MaterialIcon name="visibility" className="text-primary text-[18px]" />
+              <p className="text-label-md font-semibold text-on-surface">Live Preview</p>
             </div>
-            
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={handleCloudSave}
-                disabled={saving}
-                className="btn-outline px-4 py-2 rounded-full text-label-sm flex items-center gap-1.5"
-              >
-                <MaterialIcon name="cloud_upload" className="text-[18px]" />
-                {saving ? "Saving..." : "Save to Cloud"}
-              </button>
-              <button
-                onClick={handleExportPDF}
-                className="btn-primary px-4 py-2 rounded-full text-label-sm flex items-center gap-1.5"
-              >
-                <MaterialIcon name="picture_as_pdf" className="text-[18px]" />
-                Export PDF
-              </button>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[11px] text-on-surface-variant font-medium">Live</span>
             </div>
           </div>
-          <div className="relative">
+          {/* Preview canvas — fixed to screen, non-scrollable */}
+          <div className="flex-1 p-2 sm:p-3 flex justify-center items-center overflow-hidden print:!block print:!p-0 print:!overflow-visible">
             <JakeResumePreview data={data} />
           </div>
         </div>
