@@ -3,8 +3,8 @@ import os
 import secrets
 import hmac
 import hashlib
-from datetime import datetime, timedelta
-from email.message import EmailMessage
+from typing import Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token
