@@ -81,9 +81,11 @@ function ResumesInner() {
   useEffect(() => {
     fetchResumes();
 
-    // Check if redirecting from Profile Export
+    // Check URL parameters for active resume state or Profile Export
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
+      const urlId = params.get("id");
+
       if (params.get("import_source") === "profile_export") {
         const exported = localStorage.getItem("makemycv_resume_jake_exported");
         const targetId = params.get("resume_id");
@@ -95,12 +97,47 @@ function ResumesInner() {
         if (exported) {
           setSelectedResumeJson(exported);
           setEditorOpen(true);
-          // Clean URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } else if (urlId) {
+        if (urlId === "new") {
+          setSelectedResumeJson(JSON.stringify(emptyResume()));
+          setSelectedResumeId(undefined);
+          setEditorOpen(true);
+        } else {
+          // Load resume by URL id
+          loadResumeById(urlId);
         }
       }
     }
   }, []);
+
+  const loadResumeById = async (id: string) => {
+    const token = getToken();
+    if (!token) return;
+
+    setIsDownloading(true);
+    setDownloadError(null);
+    try {
+      const blob = await resumesApi.download(token, id);
+      let jsonString = await blob.text();
+      if (!jsonString.trim().startsWith("{") && !jsonString.trim().startsWith("[")) {
+        try {
+          jsonString = await decryptData(blob, passphrase || "");
+        } catch {
+          // fallback
+        }
+      }
+      setSelectedResumeId(id);
+      setSelectedResumeJson(jsonString);
+      setEditorOpen(true);
+    } catch (err) {
+      console.error(err);
+      setDownloadError("Failed to load resume. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const fetchResumes = async () => {
     setLoading(true);
@@ -120,30 +157,10 @@ function ResumesInner() {
   };
 
   const handleOpenResume = async (doc: ResumeDocument) => {
-    const token = getToken();
-    if (!token) return;
-
-    setIsDownloading(true);
-    setDownloadError(null);
-    try {
-      const blob = await resumesApi.download(token, doc.id);
-      let jsonString = await blob.text();
-      if (!jsonString.trim().startsWith("{") && !jsonString.trim().startsWith("[")) {
-        try {
-          jsonString = await decryptData(blob, passphrase || "");
-        } catch {
-          // fallback
-        }
-      }
-      setSelectedResumeId(doc.id);
-      setSelectedResumeJson(jsonString);
-      setEditorOpen(true);
-    } catch (err) {
-      console.error(err);
-      setDownloadError("Failed to load resume. Please try again.");
-    } finally {
-      setIsDownloading(false);
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", `?id=${doc.id}`);
     }
+    await loadResumeById(doc.id);
   };
 
   const handleDeleteResume = async (e: React.MouseEvent, id: string) => {
@@ -156,6 +173,12 @@ function ResumesInner() {
     try {
       await resumesApi.remove(token, id);
       setResumes((prev) => prev.filter((r) => r.id !== id));
+      if (selectedResumeId === id) {
+        setEditorOpen(false);
+        if (typeof window !== "undefined") {
+          window.history.pushState(null, "", window.location.pathname);
+        }
+      }
     } catch (err) {
       alert("Failed to delete resume.");
     }
@@ -201,6 +224,9 @@ function ResumesInner() {
   };
 
   const handleCreateNew = () => {
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", "?id=new");
+    }
     setSelectedResumeJson(JSON.stringify(emptyResume()));
     setSelectedResumeId(undefined);
     setEditorOpen(true);
@@ -212,7 +238,7 @@ function ResumesInner() {
       <main className="flex-1 lg:ml-[var(--sidebar-width)] transition-all duration-300 relative min-h-screen">
 
       {/* Mobile Top Bar */}
-      <div className="lg:hidden h-14 border-b border-outline-variant bg-surface flex items-center px-4 sticky top-0 z-40 no-print">
+      <div className="lg:hidden h-14 navbar-glass flex items-center px-4 sticky top-0 z-40 no-print">
         <button
           onClick={open}
           className="text-on-surface hover:bg-surface-container rounded-full p-2 -ml-2"
@@ -281,11 +307,11 @@ function ResumesInner() {
           >
             <div className="max-w-[1400px] mx-auto">
               {/* Header Section */}
-              <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-200/60 pb-6 no-print">
+              <div className="mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-outline-variant pb-6 no-print">
               <div className="space-y-2">
                 <div className="flex items-center gap-3 text-primary">
                   <MaterialIcon name="folder_open" className="text-4xl" />
-                  <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
+                  <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-on-surface">
                     My Vault
                   </h2>
                 </div>
@@ -380,9 +406,9 @@ function ResumesInner() {
                         </div>
 
                         {/* Miniature live paper preview thumbnail */}
-                        <div className="mx-4 flex-1 rounded-2xl bg-white dark:bg-zinc-950 border border-outline-variant/40 shadow-inner overflow-hidden relative pointer-events-none group-hover:border-primary/40 transition-all duration-300">
+                        <div className="mx-4 flex-1 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-outline-variant/40 shadow-inner overflow-hidden relative pointer-events-none group-hover:border-primary/40 transition-all duration-300 flex justify-center items-start pt-2">
                           {previews[doc.id] ? (
-                            <div className="w-[794px] h-[1123px] origin-top-left scale-[0.25] pointer-events-none select-none bg-white text-black p-6">
+                            <div className="w-[794px] h-[1123px] origin-top center scale-[0.27] shrink-0 pointer-events-none select-none bg-white text-black p-6 shadow-md rounded-lg">
                               <JakeResumePreview data={previews[doc.id]} />
                             </div>
                           ) : (
@@ -481,6 +507,9 @@ function ResumesInner() {
                 resumeId={selectedResumeId}
                 initialDataStr={selectedResumeJson}
                 onClose={() => {
+                  if (typeof window !== "undefined") {
+                    window.history.pushState(null, "", window.location.pathname);
+                  }
                   setEditorOpen(false);
                   fetchResumes(); // Refresh list after editing
                 }}

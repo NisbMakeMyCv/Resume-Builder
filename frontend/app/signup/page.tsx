@@ -85,7 +85,7 @@ export default function SignUp() {
   return (
     <main className="page-enter bg-background text-on-background min-h-[100dvh] flex flex-col justify-between">
       {/* Top Nav Bar (transactional — brand only) */}
-      <header className="w-full shrink-0 bg-white border-b border-outline-variant h-14 sm:h-16 flex items-center">
+      <header className="w-full shrink-0 navbar-glass h-14 sm:h-16 flex items-center">
         <div className="w-full px-4 sm:px-8 flex justify-between items-center">
           <Logo />
           <Link
@@ -106,7 +106,7 @@ export default function SignUp() {
             style={{ backgroundImage: "url('/images/signup-team.jpg')" }}
           />
           {/* Dark blue overlay for readability */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-[#0a1428]/90 to-slate-900/85" />
           <div className="absolute inset-0 opacity-20 hero-gradient" />
 
           {/* Floating ambient orbs */}
@@ -154,7 +154,7 @@ export default function SignUp() {
         </section>
 
         {/* ============ RIGHT: SIGN UP FORM ============ */}
-        <section className="auth-panel lg:w-1/2 w-full flex flex-col justify-center relative bg-slate-50 overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
+        <section className="auth-panel lg:w-1/2 w-full flex flex-col justify-center relative bg-surface overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
           {/* Subtle grid pattern background */}
           <div 
             className="absolute inset-0 opacity-40 pointer-events-none" 
@@ -169,7 +169,7 @@ export default function SignUp() {
           <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none animate-drift-slow" />
 
           <div className="w-full flex items-center justify-center p-3 sm:p-6 md:p-10 relative z-10 my-auto">
-            <div className="ambient-card relative z-10 w-full max-w-md bg-white/90 backdrop-blur-sm border border-gray-100 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl ring-1 ring-black/5 space-y-3 sm:space-y-4 lg:space-y-6">
+            <div className="ambient-card relative z-10 w-full max-w-md bg-surface-container-lowest/95 backdrop-blur-sm border border-outline-variant rounded-2xl p-4 sm:p-6 lg:p-8 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 space-y-3 sm:space-y-4 lg:space-y-6">
               <div className="mb-3 lg:mb-4 text-center lg:text-left">
                 <h2 className="text-2xl sm:text-headline-md text-primary font-semibold mb-1">
                   Create your account
@@ -190,7 +190,7 @@ export default function SignUp() {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="input-field w-full h-10 sm:h-12 px-4 rounded-lg text-body-md transition-all"
                     id="full_name"
                     placeholder="John Doe"
                     type="text"
@@ -212,7 +212,7 @@ export default function SignUp() {
                 </label>
                 <div className="relative">
                   <input
-                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="input-field w-full h-10 sm:h-12 px-4 rounded-lg text-body-md transition-all"
                     id="email"
                     placeholder="name@company.com"
                     type="email"
@@ -235,7 +235,7 @@ export default function SignUp() {
                     Password
                   </label>
                   <input
-                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="input-field w-full h-10 sm:h-12 px-4 rounded-lg text-body-md transition-all"
                     id="password"
                     placeholder="••••••••"
                     type="password"
@@ -254,7 +254,7 @@ export default function SignUp() {
                     Confirm Password
                   </label>
                   <input
-                    className="w-full h-10 sm:h-12 px-4 rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all outline-none bg-white text-body-md"
+                    className="input-field w-full h-10 sm:h-12 px-4 rounded-lg text-body-md transition-all"
                     id="confirm_password"
                     placeholder="••••••••"
                     type="password"

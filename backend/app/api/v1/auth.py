@@ -2,6 +2,7 @@ import smtplib
 import os
 import secrets
 import hmac
+from email.message import EmailMessage
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from pydantic import BaseModel

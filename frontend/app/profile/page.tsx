@@ -397,7 +397,7 @@ function ProfileInner() {
       <ToastStack toasts={toasts} onDismiss={dismiss} />
 
       {/* Top App Bar */}
-      <header className="fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))] bg-surface border-b border-outline-variant">
+      <header className="navbar-glass fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))]">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -407,7 +407,7 @@ function ProfileInner() {
           >
             <MaterialIcon name="menu" className="text-2xl" />
           </button>
-          <h1 className="text-headline-sm sm:text-headline-md font-bold text-primary truncate">
+          <h1 className="text-headline-sm sm:text-headline-md font-extrabold text-on-surface truncate">
             User Profile
           </h1>
         </div>
@@ -416,7 +416,7 @@ function ProfileInner() {
             type="button"
             onClick={handleExportToResume}
             disabled={exporting || loading}
-            className="btn-outline px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md flex items-center gap-1.5 disabled:opacity-50"
+            className="btn-outline px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md font-semibold flex items-center gap-1.5 disabled:opacity-50 transition-all"
           >
             {exporting ? (
               <MaterialIcon name="sync" className="animate-spin text-[16px] sm:text-[18px]" />
@@ -430,7 +430,7 @@ function ProfileInner() {
             type="button"
             onClick={saveProfile}
             disabled={!dirty || saving || loading}
-            className="btn-primary btn-shine px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary btn-shine px-3 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-label-md font-semibold flex items-center gap-1.5 bg-primary hover:brightness-110 text-on-primary shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {saving ? (
               <MaterialIcon name="sync" className="animate-spin text-[16px] sm:text-[18px]" />
@@ -448,7 +448,7 @@ function ProfileInner() {
         <div className="max-w-[880px] mx-auto space-y-8">
           {/* Page Title */}
           <div>
-            <h2 className="text-headline-md text-on-surface">Master Profile Settings</h2>
+            <h2 className="text-headline-md font-bold text-on-surface">Master Profile Settings</h2>
             <p className="text-body-md text-on-surface-variant">
               Your identity and the details our AI uses to tailor your resumes.
             </p>
@@ -468,7 +468,7 @@ function ProfileInner() {
                   ref={fileInputRef}
                   onChange={handlePhotoUpload}
                 />
-                <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-primary-fixed relative">
+                <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-[#002a58] relative">
                   {showAvatar && !imgError ? (
                     <img
                       src={avatarUrl}
@@ -477,7 +477,7 @@ function ProfileInner() {
                       onError={() => setImgError(true)}
                     />
                   ) : (
-                    <div className="w-full h-full bg-primary-fixed flex items-center justify-center text-primary text-headline-lg font-bold">
+                    <div className="w-full h-full bg-[#002a58] flex items-center justify-center text-white text-headline-lg font-bold">
                       {initial}
                     </div>
                   )}
@@ -498,7 +498,7 @@ function ProfileInner() {
                 <p className="text-label-md text-on-surface-variant truncate">
                   {user?.email ?? ""}
                 </p>
-                <p className="text-label-sm text-secondary mt-1 flex items-center justify-center sm:justify-start gap-1">
+                <p className="text-label-sm text-primary mt-1 flex items-center justify-center sm:justify-start gap-1 font-medium">
                   <MaterialIcon name="verified_user" className="text-[14px]" filled />
                   {user?.profile_picture
                     ? "Profile picture synced from your account"

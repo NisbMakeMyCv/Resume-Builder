@@ -476,3 +476,20 @@ export function improveGitHubBullets(
     }
   );
 }
+
+/* =========================================================
+   ANONYMOUS FEEDBACK & CONTACT
+   ========================================================= */
+
+export type FeedbackPayload = {
+  message: string;
+  category?: string;
+  email?: string | null;
+};
+
+export function sendFeedback(payload: FeedbackPayload): Promise<{ status: string; message: string }> {
+  return apiRequest<{ status: string; message: string }>("/feedback/", {
+    method: "POST",
+    body: payload,
+  });
+}

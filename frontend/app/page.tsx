@@ -13,6 +13,8 @@ import { getStoredUser, CurrentUser } from "@/lib/api";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import { useEffect } from "react";
 
+import FeedbackModal from "./components/FeedbackModal";
+
 /**
  * Landing page — `refined_landing_page` stitch frame.
  * Enhanced with: mobile nav, countdown timer, staggered entrance animations,
@@ -20,6 +22,7 @@ import { useEffect } from "react";
  */
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [user, setUser] = useState<CurrentUser | null>(null);
   const { theme, setTheme } = useTheme();
 
@@ -30,7 +33,7 @@ export default function Home() {
   return (
     <main className="page-enter bg-background text-on-background font-body-md min-h-screen flex flex-col overflow-x-hidden">
       {/* ================= TOP NAV BAR ================= */}
-      <header className="fixed top-0 w-full z-50 bg-white border-b border-outline-variant shadow-sm">
+      <header className="fixed top-0 w-full z-50 navbar-glass shadow-sm">
         <Container className="h-16 flex justify-between items-center">
           <Logo />
 
@@ -48,9 +51,9 @@ export default function Home() {
             {user ? (
               <Link href="/resumes" className="flex items-center gap-2 hover:opacity-80 transition-opacity ml-2">
                 {user.profile_picture ? (
-                  <img src={user.profile_picture} alt="Profile" className="w-10 h-10 rounded-full object-cover ring-2 ring-primary-fixed" />
+                  <img src={user.profile_picture} alt="Profile" className="w-10 h-10 rounded-full object-cover ring-2 ring-[#002a58]" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold">
+                  <div className="w-10 h-10 rounded-full bg-[#002a58] flex items-center justify-center text-white font-bold">
                     {user.full_name?.[0]?.toUpperCase() || "U"}
                   </div>
                 )}
@@ -142,7 +145,7 @@ export default function Home() {
             style={{ backgroundImage: "url('/images/hero-office.jpg')" }}
           />
           {/* Dark blue overlay for readability + brand tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#001838]/95 via-[#002a58]/90 to-[#004080]/80 dark:from-[#060b14] dark:via-[#0b1329]/95 dark:to-[#172554]/90" />
           <div className="absolute inset-0 hero-gradient opacity-40 mix-blend-overlay" />
 
           <Container className="w-full grid grid-cols-12 gap-6 items-center relative z-10">
@@ -221,15 +224,7 @@ export default function Home() {
             </Reveal>
 
             <div className="grid grid-cols-12 gap-6 items-stretch">
-              <Reveal delay={0} className="col-span-12 md:col-span-4">
-                <FeatureCard
-                  icon="psychology"
-                  iconClass="bg-primary-container"
-                  title="AI Resume Assistant"
-                  text="Our intelligent AI analyzes job descriptions and suggests powerful action verbs and skills to highlight your expertise."
-                />
-              </Reveal>
-              <Reveal delay={120} className="col-span-12 md:col-span-4">
+              <Reveal delay={0} className="col-span-12 md:col-span-6">
                 <FeatureCard
                   icon="smart_toy"
                   iconClass="bg-secondary"
@@ -237,7 +232,7 @@ export default function Home() {
                   text="Paste a link to any public GitHub repository and let our AI automatically write your project bullet points and tech stack."
                 />
               </Reveal>
-              <Reveal delay={240} className="col-span-12 md:col-span-4">
+              <Reveal delay={120} className="col-span-12 md:col-span-6">
                 <FeatureCard
                   icon="web_stories"
                   iconClass="bg-primary"
@@ -285,7 +280,7 @@ export default function Home() {
                 <Step
                   number="3"
                   title="Download & Apply"
-                  text="Get your CV in PDF or DOCX format and start landing interviews."
+                  text="Get your CV in PDF format and start landing interviews."
                 />
               </Reveal>
             </div>
@@ -296,26 +291,26 @@ export default function Home() {
         <section id="pricing" className="py-20 md:py-32">
           <Container>
             <Reveal>
-            <div className="bg-primary-container rounded-[48px] p-12 md:p-24 text-center relative overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-br from-slate-900 via-[#0a1936] to-slate-900 border border-slate-800 rounded-[48px] p-10 md:p-20 text-center relative overflow-hidden shadow-2xl">
               
-              <div className="relative z-10 space-y-10">
-                <h2 className="text-white font-headline-lg text-2xl sm:text-4xl md:text-[56px] leading-tight">
+              <div className="relative z-10 space-y-8">
+                <h2 className="text-white font-headline-lg text-2xl sm:text-4xl md:text-[52px] leading-tight font-bold">
                   Ready to Build Your Resume?
                 </h2>
-                <p className="text-on-primary-container/90 text-body-lg max-w-2xl mx-auto leading-relaxed">
+                <p className="text-slate-300 text-body-lg max-w-2xl mx-auto leading-relaxed">
                   Your future employer shouldn&apos;t be the first to see your
                   resume. Make it shine with NISB-MakeMyCV&apos;s professional tools.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-2">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-3">
                   <Link
                     href="/signup"
-                    className="btn-shine btn-magnetic inline-flex items-center gap-2 px-12 py-5 rounded-full font-bold text-xl bg-white text-primary hover:bg-white/90 shadow-2xl shadow-black/20"
+                    className="btn-primary btn-shine btn-magnetic inline-flex items-center gap-2 px-10 py-4 rounded-full font-bold text-lg"
                   >
                     Get Started Now
                   </Link>
                   <Link
                     href="#features"
-                    className="btn-magnetic inline-flex items-center gap-2 bg-transparent text-white border-2 border-white/30 px-12 py-5 rounded-full font-bold text-xl hover:bg-white/10 hover:border-white/50 transition-all btn-press"
+                    className="btn-magnetic inline-flex items-center gap-2 bg-transparent text-white border border-white/30 px-10 py-4 rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/50 transition-all"
                   >
                     See Features
                   </Link>
@@ -323,8 +318,8 @@ export default function Home() {
               </div>
 
               {/* Abstract Background Shapes */}
-              <div className="absolute -bottom-20 -right-20 w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[100px] animate-drift" />
-              <div className="absolute -top-20 -left-20 w-[400px] h-[400px] bg-on-primary-container/10 rounded-full blur-[100px] animate-drift-slow" />
+              <div className="absolute -bottom-20 -right-20 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] animate-drift" />
+              <div className="absolute -top-20 -left-20 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] animate-drift-slow" />
             </div>
             </Reveal>
           </Container>
@@ -332,7 +327,13 @@ export default function Home() {
       </div>
 
       {/* ================= FOOTER ================= */}
-      <Footer />
+      <Footer onOpenFeedback={() => setFeedbackModalOpen(true)} />
+
+      {/* ================= ANONYMOUS FEEDBACK MODAL ================= */}
+      <FeedbackModal
+        open={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+      />
     </main>
   );
 }
@@ -353,7 +354,7 @@ function FeatureCard({
   text: string;
 }) {
   return (
-    <div className="group col-span-12 md:col-span-4 tilt-card ambient-card h-full p-8 bg-surface-bright border border-outline-variant rounded-[24px] flex flex-col items-center text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 hover:border-primary/40 relative overflow-hidden">
+    <Link href="/signup" className="block group col-span-12 md:col-span-4 tilt-card ambient-card h-full p-8 bg-surface-bright border border-outline-variant rounded-[24px] flex flex-col items-center text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 hover:border-primary/40 relative overflow-hidden cursor-pointer">
       {/* Hover glow accent */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 group-hover:scale-125 transition-all duration-500" />
       <div className="space-y-6 relative">
@@ -369,7 +370,7 @@ function FeatureCard({
         <h3 className="font-headline-md text-primary text-2xl">{title}</h3>
         <p className="text-on-surface-variant leading-relaxed">{text}</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -383,8 +384,8 @@ function Step({
   text: string;
 }) {
   return (
-    <div className="flex flex-col items-center text-center space-y-6">
-      <div className="w-20 h-20 rounded-full bg-surface-container-lowest border-4 border-primary-fixed text-primary font-bold text-2xl flex items-center justify-center shadow-xl">
+    <Link href="/signup" className="block flex flex-col items-center text-center space-y-6 group cursor-pointer hover:opacity-80 transition-opacity">
+      <div className="w-20 h-20 rounded-full bg-surface-container-lowest border-4 border-primary-fixed text-primary font-bold text-2xl flex items-center justify-center shadow-xl group-hover:scale-105 transition-transform">
         {number}
       </div>
       <div className="space-y-3">
@@ -393,11 +394,11 @@ function Step({
           {text}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
 
-function Footer() {
+function Footer({ onOpenFeedback }: { onOpenFeedback: () => void }) {
   return (
     <footer className="bg-surface-container border-t border-outline-variant mt-auto">
       <Container className="py-12 sm:py-16">
@@ -428,16 +429,20 @@ function Footer() {
           <p className="text-label-sm text-on-surface-variant">
             © 2026 NISB-MakeMyCV. Made by NISB.
           </p>
-          <div className="flex gap-6 text-label-sm font-semibold text-on-surface-variant">
+          <div className="flex gap-6 text-label-sm font-semibold text-on-surface-variant items-center">
             <a className="hover:text-primary transition-colors hover:underline" href="#features">
               Privacy Policy
             </a>
             <a className="hover:text-primary transition-colors hover:underline" href="#how-it-works">
               Terms and Conditions
             </a>
-            <a className="hover:text-primary transition-colors hover:underline" href="mailto:support@nisb.org">
-              Contact Us
-            </a>
+            <button
+              type="button"
+              onClick={onOpenFeedback}
+              className="hover:text-primary transition-colors hover:underline cursor-pointer font-semibold text-label-sm"
+            >
+              Contact & Feedback
+            </button>
           </div>
         </div>
       </Container>

@@ -18,6 +18,7 @@ from app.api.v1.ai.resume import router as ai_resume_router
 from app.api.v1.resumes import router as resumes_router
 from app.api.v1.certifications import router as cert_router
 from app.api.v1.achievements import router as ach_router
+from app.api.v1.feedback import router as feedback_router
 
 from app.core.database import engine
 from app.models import user, resume
@@ -187,6 +188,17 @@ app.include_router(
     ach_router,
     prefix="/api/v1/achievements",
     tags=["Achievements"],
+)
+
+
+# ============================================================
+# FEEDBACK
+# ============================================================
+
+app.include_router(
+    feedback_router,
+    prefix="/api/v1/feedback",
+    tags=["Feedback"],
 )
 
 

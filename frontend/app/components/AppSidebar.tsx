@@ -31,8 +31,8 @@ const NAV_ITEMS: SidebarItem[] = [
 
 /** Shared link treatment — larger text, soft rounded hover states. */
 const LINK_BASE =
-  "flex items-center gap-3 px-4 py-2 rounded-lg text-lg font-medium text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-all duration-200 ease-in-out";
-const LINK_ACTIVE = "text-primary bg-surface-container-high font-semibold";
+  "flex items-center gap-3 px-4 py-2.5 rounded-xl text-base font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all duration-200 ease-in-out group";
+const LINK_ACTIVE = "!text-on-primary bg-primary font-semibold shadow-md shadow-primary/25";
 
 /**
  * Responsive sidebar. On desktop it is a fixed left rail that the user can
@@ -116,7 +116,7 @@ export default function AppSidebar() {
             <>
               <MaterialIcon
                 name={item.icon}
-                className={active ? "text-primary" : "text-on-surface-variant"}
+                className={active ? "!text-white" : "text-on-surface-variant group-hover:text-on-surface"}
                 filled={active}
               />
               <span className="truncate">{item.label}</span>
@@ -168,7 +168,7 @@ export default function AppSidebar() {
             onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
               resolved === "dark"
-                ? "bg-primary text-on-primary"
+                ? "bg-primary text-on-primary shadow-md shadow-primary/30"
                 : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container"
             }`}
             aria-label={resolved === "dark" ? "Switch to light mode" : "Switch to dark mode"}
@@ -186,7 +186,7 @@ export default function AppSidebar() {
         onClick={handleLogout}
       >
         <MaterialIcon name="logout" />
-        <span className="text-label-md">Log Out</span>
+        <span className="text-label-md font-medium">Log Out</span>
       </button>
 
       <Link
@@ -198,19 +198,19 @@ export default function AppSidebar() {
           <img
             src={avatarSrc}
             alt={user?.full_name ?? "User"}
-            className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-primary-fixed"
+            className="w-10 h-10 rounded-full object-cover shrink-0 ring-2 ring-[#002a58]"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold shrink-0">
+          <div className="w-10 h-10 rounded-full bg-[#002a58] flex items-center justify-center text-white font-bold shrink-0">
             {initial}
           </div>
         )}
         <div className="overflow-hidden flex-1 flex flex-col">
-          <p className="text-label-md truncate">
+          <p className="text-label-md truncate font-semibold">
             {user?.full_name ?? "User"}
           </p>
-          <p className="text-xs text-primary hover:underline cursor-pointer mt-1">
+          <p className="text-xs text-primary hover:underline cursor-pointer mt-0.5 font-medium">
             View Profile
           </p>
         </div>
@@ -265,7 +265,7 @@ export default function AppSidebar() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 px-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant z-40 no-print">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 px-4 flex items-center justify-between navbar-glass z-40 no-print">
         <span className="text-label-md font-bold text-primary">NISB-MakeMyCV</span>
         <button
           type="button"

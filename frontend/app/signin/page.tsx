@@ -9,6 +9,7 @@ import MaterialIcon from "../components/MaterialIcon";
 import GoogleAuthButton from "../components/GoogleAuthButton";
 import SuccessBurst from "../components/SuccessBurst";
 import { useToast } from "../components/ui/Toast";
+import FeedbackModal from "../components/FeedbackModal";
 import { apiRequest, saveSession } from "../../lib/api";
 
 /**
@@ -25,6 +26,7 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -75,7 +77,7 @@ export default function SignIn() {
   return (
     <main className="page-enter flex min-h-[100dvh] bg-surface-bright text-on-surface antialiased flex-col">
       {/* Top Nav Bar (transactional — brand only) */}
-      <header className="shrink-0 bg-white border-b border-outline-variant h-14 sm:h-16 flex items-center relative z-50">
+      <header className="shrink-0 navbar-glass h-14 sm:h-16 flex items-center relative z-50">
         <div className="w-full px-4 sm:px-8 flex justify-between items-center">
           <Logo />
           <Link
@@ -96,7 +98,7 @@ export default function SignIn() {
           style={{ backgroundImage: "url('/images/signin-desk.jpg')" }}
         />
         {/* Dark blue overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/70" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-[#0a1428]/90 to-slate-900/85" />
         <div className="absolute inset-0 opacity-40 mix-blend-overlay hero-gradient" />
 
         {/* Floating decorative orbs */}
@@ -179,7 +181,7 @@ export default function SignIn() {
       </section>
 
       {/* ============ RIGHT: SIGN IN FORM ============ */}
-      <section className="auth-panel w-full lg:w-1/2 flex flex-col justify-center relative bg-slate-50 overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
+      <section className="auth-panel w-full lg:w-1/2 flex flex-col justify-center relative bg-surface overflow-y-auto lg:overflow-hidden min-h-[calc(100dvh-4rem)]">
         {/* Subtle grid pattern background */}
         <div 
           className="absolute inset-0 opacity-40 pointer-events-none" 
@@ -212,7 +214,7 @@ export default function SignIn() {
 
           {/* B9 FIX: Single <form> wraps EVERYTHING so Enter-key submission works */}
           <form onSubmit={handleSubmit}>
-          <div className="ambient-card bg-white/90 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl border border-gray-100 space-y-3 sm:space-y-4 lg:space-y-6 shadow-2xl ring-1 ring-black/5">
+          <div className="ambient-card bg-surface-container-lowest/95 backdrop-blur-sm p-4 sm:p-6 lg:p-8 rounded-2xl border border-outline-variant space-y-3 sm:space-y-4 lg:space-y-6 shadow-2xl ring-1 ring-black/5 dark:ring-white/10">
             {/* Email Field */}
             <div className="space-y-1 sm:space-y-2">
               <label
@@ -227,7 +229,7 @@ export default function SignIn() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
                 />
                 <input
-                  className="w-full pl-12 pr-4 py-2.5 sm:py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all duration-200"
+                  className="input-field w-full pl-12 pr-4 py-2.5 sm:py-3.5 rounded-brand font-body-md text-on-surface transition-all duration-200"
                   id="email"
                   placeholder="name@company.com"
                   type="email"
@@ -254,7 +256,7 @@ export default function SignIn() {
               </div>
               <div className="relative">
                 <input
-                  className="w-full pl-12 pr-12 py-2.5 sm:py-3.5 bg-white border border-outline-variant rounded-brand font-body-md text-on-surface input-focus-ring placeholder:text-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 transition-all duration-200"
+                  className="input-field w-full pl-12 pr-12 py-2.5 sm:py-3.5 rounded-brand font-body-md text-on-surface transition-all duration-200"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? "text" : "password"}
@@ -343,15 +345,21 @@ export default function SignIn() {
           >
             Terms of Service
           </a>
-          <a
-            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors"
-            href="mailto:support@nisb.org"
+          <button
+            type="button"
+            onClick={() => setFeedbackModalOpen(true)}
+            className="text-label-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-semibold"
           >
-            Contact
-          </a>
+            Contact & Feedback
+          </button>
         </footer>
       </section>
       </div>
+
+      <FeedbackModal
+        open={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+      />
 
       {celebrate && <SuccessBurst message="Welcome back!" />}
     </main>

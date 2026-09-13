@@ -91,7 +91,7 @@ function DashboardInner() {
       <AppSidebar />
 
       {/* Top App Bar */}
-      <header className="bg-surface border-b border-outline-variant fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))]">
+      <header className="navbar-glass fixed z-40 flex justify-between items-center px-4 lg:px-8 h-14 lg:h-16 top-0 left-0 lg:left-[var(--sidebar-width)] w-full lg:w-[calc(100%-var(--sidebar-width))]">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -237,12 +237,12 @@ function MetricCard({
 
   return (
     <motion.div
-      className="ambient-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant hover:border-primary transition-colors flex flex-col gap-2"
+      className="ambient-card tilt-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant hover:border-primary transition-all flex flex-col gap-2"
       variants={{
         hidden: { opacity: 0, y: 26 },
         visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 110, damping: 18 } },
       }}
-      whileHover={{ y: -5, boxShadow: "0 18px 40px rgba(0, 42, 88, 0.12)" }}
+      whileHover={{ y: -5 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
     >
       <div className="flex justify-between items-center">
@@ -287,8 +287,8 @@ function QuickActionCard({
   return (
     <Link href={href}>
       <motion.div
-        className="ambient-card bg-surface-container-lowest p-5 rounded-xl border border-outline-variant hover:border-primary transition-all flex items-start gap-4 cursor-pointer group"
-        whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(0, 42, 88, 0.10)" }}
+        className="ambient-card tilt-card bg-surface-container-lowest p-5 rounded-xl border border-outline-variant hover:border-primary transition-all flex items-start gap-4 cursor-pointer group"
+        whileHover={{ y: -4 }}
         transition={{ type: "spring", stiffness: 260, damping: 22 }}
       >
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${accent} group-hover:scale-110 transition-transform`}>

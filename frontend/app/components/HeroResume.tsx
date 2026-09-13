@@ -239,7 +239,7 @@ export default function HeroResume() {
     <>
       {/* ============ RESUME CARD ============ */}
       <motion.div
-        className="glass-card p-2 sm:p-4 rounded-[32px] border border-outline-variant shadow-2xl relative z-10 w-full max-w-[480px]"
+        className="glass-card p-2 sm:p-4 rounded-[32px] border border-outline-variant shadow-2xl relative z-10 w-full max-w-[380px] sm:max-w-[420px]"
         initial={{ opacity: 0, y: 40, rotate: 2 }}
         animate={{ opacity: 1, y: 0, rotate: 0 }}
         transition={{ delay: 0.2, duration: 0.9, ease: EASE }}
@@ -268,7 +268,7 @@ export default function HeroResume() {
         )}
 
         <motion.div
-          className="bg-white rounded-[24px] overflow-hidden border border-outline-variant aspect-[3/4] flex flex-col relative"
+          className="bg-white rounded-[24px] overflow-hidden border border-outline-variant aspect-[3/4] flex flex-col relative w-full"
           initial={false}
           animate={float.animate}
           transition={float.transition}
@@ -283,7 +283,7 @@ export default function HeroResume() {
               className="flex-1 flex"
             >
               {/* ================= LEFT SIDEBAR — dark navy ================= */}
-              <div className="w-[36%] bg-primary text-white p-2 sm:p-3.5 flex flex-col gap-1 sm:gap-2 overflow-hidden">
+              <div className="w-[36%] bg-[#002a58] text-white p-2 sm:p-3.5 flex flex-col gap-1 sm:gap-2 overflow-hidden">
                 {/* Avatar */}
                 <Print delay={0.15} y={14}>
                   <motion.div
@@ -335,23 +335,23 @@ export default function HeroResume() {
                 </div>
               </div>
 
-              {/* ================= RIGHT MAIN — white ================= */}
-              <div className="flex-1 p-2 sm:p-3.5 space-y-1.5 sm:space-y-2 relative overflow-hidden">
+              {/* ================= RIGHT MAIN — authentic white paper ================= */}
+              <div className="flex-1 bg-white p-2 sm:p-3.5 space-y-1.5 sm:space-y-2 relative overflow-hidden text-slate-900">
                 {/* SUMMARY */}
                 <Print delay={0.25}>
-                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-primary border-b border-primary/15 pb-0.5">
+                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-[#002a58] border-b border-[#002a58]/15 pb-0.5">
                     SUMMARY
                   </div>
                 </Print>
                 <Print delay={0.3}>
-                  <div className="text-[5px] sm:text-[6.5px] text-on-surface-variant leading-snug">
+                  <div className="text-[5px] sm:text-[6.5px] text-slate-700 leading-snug">
                     {p.summary}
                   </div>
                 </Print>
 
                 {/* EXPERIENCE */}
                 <Print delay={0.35}>
-                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-primary border-b border-primary/15 pb-0.5 pt-0.5">
+                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-[#002a58] border-b border-[#002a58]/15 pb-0.5 pt-0.5">
                     EXPERIENCE
                   </div>
                 </Print>
@@ -359,17 +359,17 @@ export default function HeroResume() {
                 {p.jobs.map((job, j) => (
                   <div key={job.title} className="space-y-0.5">
                     <Print delay={0.42 + j * 0.2}>
-                      <div className="text-[6.5px] sm:text-[8.5px] font-semibold text-on-surface leading-tight">{job.title}</div>
+                      <div className="text-[6.5px] sm:text-[8.5px] font-bold text-slate-900 leading-tight">{job.title}</div>
                     </Print>
                     <Print delay={0.46 + j * 0.2}>
-                      <div className="text-[5px] sm:text-[6.5px] text-on-surface-variant/80">{job.meta}</div>
+                      <div className="text-[5px] sm:text-[6.5px] text-slate-500 font-medium">{job.meta}</div>
                     </Print>
                     <div className="space-y-0.5 pt-0.5">
                       {job.bullets.map((b, i) => (
                         <Print key={b} delay={0.5 + j * 0.2 + i * 0.05}>
                           <div className="flex items-start gap-1">
-                            <span className="mt-[2px] sm:mt-[3px] w-[2px] h-[2px] sm:w-[3px] sm:h-[3px] rounded-full bg-primary shrink-0" />
-                            <span className="text-[5px] sm:text-[6.5px] text-on-surface-variant leading-snug">{b}</span>
+                            <span className="mt-[2px] sm:mt-[3px] w-[2px] h-[2px] sm:w-[3px] sm:h-[3px] rounded-full bg-[#002a58] shrink-0" />
+                            <span className="text-[5px] sm:text-[6.5px] text-slate-700 leading-snug">{b}</span>
                           </div>
                         </Print>
                       ))}
@@ -379,7 +379,7 @@ export default function HeroResume() {
 
                 {/* PROJECTS */}
                 <Print delay={0.9}>
-                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-primary border-b border-primary/15 pb-0.5 pt-0.5">
+                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-[#002a58] border-b border-[#002a58]/15 pb-0.5 pt-0.5">
                     PROJECTS
                   </div>
                 </Print>
@@ -387,8 +387,8 @@ export default function HeroResume() {
                   {p.projects.map((proj, i) => (
                     <Print key={proj.name} delay={0.95 + i * 0.07}>
                       <div className="space-y-[1px]">
-                        <div className="text-[6px] sm:text-[7.5px] font-semibold text-on-surface leading-tight">{proj.name}</div>
-                        <div className="text-[5px] sm:text-[6.5px] text-on-surface-variant leading-snug">{proj.desc}</div>
+                        <div className="text-[6px] sm:text-[7.5px] font-bold text-slate-900 leading-tight">{proj.name}</div>
+                        <div className="text-[5px] sm:text-[6.5px] text-slate-700 leading-snug">{proj.desc}</div>
                       </div>
                     </Print>
                   ))}
@@ -396,15 +396,15 @@ export default function HeroResume() {
 
                 {/* EDUCATION */}
                 <Print delay={1.12}>
-                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-primary border-b border-primary/15 pb-0.5 pt-0.5">
+                  <div className="text-[5.5px] sm:text-[7.5px] font-bold tracking-[0.14em] text-[#002a58] border-b border-[#002a58]/15 pb-0.5 pt-0.5">
                     EDUCATION
                   </div>
                 </Print>
                 <Print delay={1.18}>
-                  <div className="text-[6.5px] sm:text-[8.5px] font-semibold text-on-surface leading-tight">{p.edu[0]}</div>
+                  <div className="text-[6.5px] sm:text-[8.5px] font-bold text-slate-900 leading-tight">{p.edu[0]}</div>
                 </Print>
                 <Print delay={1.22}>
-                  <div className="text-[5px] sm:text-[6.5px] text-on-surface-variant/80">{p.edu[1]}</div>
+                  <div className="text-[5px] sm:text-[6.5px] text-slate-500 font-medium">{p.edu[1]}</div>
                 </Print>
 
                 {/* Blinking caret */}

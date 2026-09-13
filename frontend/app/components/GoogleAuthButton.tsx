@@ -102,7 +102,7 @@ export default function GoogleAuthButton() {
       <button
         type="button"
         onClick={() => login()}
-        className="group flex w-full items-center justify-center gap-3 px-6 py-2.5 sm:py-3.5 rounded-lg border border-gray-300 bg-white text-label-md font-semibold text-on-surface transition-all duration-200 hover:bg-gray-50 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm hover:shadow"
+        className="group flex w-full items-center justify-center gap-3 px-6 py-2.5 sm:py-3.5 rounded-lg border border-outline-variant bg-surface-container-lowest dark:bg-surface-container hover:bg-surface-container dark:hover:bg-surface-container-high text-label-md font-semibold text-on-surface transition-all duration-200 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm hover:shadow"
       >
         <GoogleIcon className="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:rotate-[-6deg] group-hover:scale-105" />
         <span>Continue with Google</span>

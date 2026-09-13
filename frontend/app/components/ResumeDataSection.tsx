@@ -175,7 +175,7 @@ export default function ResumeDataSection<
   const singular = title.endsWith("s") ? title.slice(0, -1) : title;
 
   return (
-    <div className={`rounded-2xl border ${accent} bg-white overflow-hidden`}>
+    <div className={`rounded-2xl border ${accent} bg-surface-container-lowest overflow-hidden`}>
       {/* Section header — title, count, add button */}
       <div className={`flex items-center justify-between gap-3 px-5 py-4 ${tint}`}>
         <div className="flex items-center gap-3">
@@ -429,7 +429,7 @@ function FormCard({
                 value={form[field.name]}
                 onChange={(e) => setField(field.name, e.target.value)}
                 disabled={busy}
-                className="w-full px-4 py-3 rounded-lg border border-outline-variant bg-white text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-60 resize-y"
+                className="input-field w-full text-body-md placeholder:text-outline-variant transition-all disabled:opacity-60 resize-y"
               />
             ) : field.kind === "select" ? (
               <select
@@ -437,7 +437,7 @@ function FormCard({
                 value={form[field.name]}
                 onChange={(e) => setField(field.name, e.target.value)}
                 disabled={busy}
-                className="w-full px-4 py-3 rounded-lg border border-outline-variant bg-white text-body-md text-on-surface input-focus-ring transition-all disabled:opacity-60"
+                className="input-field w-full text-body-md transition-all disabled:opacity-60"
               >
                 <option value="">Select proficiency</option>
                 {(field.options ?? []).map((opt) => (
@@ -457,7 +457,7 @@ function FormCard({
                 value={form[field.name]}
                 onChange={(e) => setField(field.name, e.target.value)}
                 disabled={busy}
-                className="w-full px-4 py-3 rounded-lg border border-outline-variant bg-white text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-60"
+                className="input-field w-full text-body-md placeholder:text-outline-variant transition-all disabled:opacity-60"
               />
             )}
           </div>
@@ -530,7 +530,7 @@ function RowCard<Item>({
       : "";
 
   return (
-    <div className="rounded-xl border border-outline-variant bg-white shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
+    <div className="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h5 className="text-body-md font-semibold text-on-surface leading-snug">

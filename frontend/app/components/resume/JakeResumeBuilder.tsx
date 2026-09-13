@@ -1073,16 +1073,16 @@ function Section({
   onToggle?: () => void;
 }) {
   return (
-    <section className="bg-white rounded-2xl border border-outline-variant overflow-hidden transition-all duration-200">
+    <section className="bg-surface-container-lowest dark:bg-slate-900/90 rounded-2xl border border-outline-variant/70 shadow-sm overflow-hidden transition-all duration-200">
       <div 
-        className={`p-5 flex flex-wrap items-center gap-3 ${isOpen ? 'border-b border-outline-variant' : ''} ${onToggle ? 'cursor-pointer hover:bg-surface-container-lowest transition-colors' : ''}`}
+        className={`p-5 flex flex-wrap items-center gap-3 ${isOpen ? 'border-b border-outline-variant/70' : ''} ${onToggle ? 'cursor-pointer hover:bg-surface-container-low/60 dark:hover:bg-slate-800/60 transition-colors' : ''}`}
         onClick={onToggle}
       >
-        <div className="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-primary-container/40 dark:bg-primary-container/60 flex items-center justify-center shrink-0">
           <MaterialIcon name={icon} className="text-primary text-[20px]" filled />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-headline-md text-on-surface">{title}</h3>
+          <h3 className="text-headline-md text-on-surface font-bold">{title}</h3>
           <p className="text-label-sm text-on-surface-variant truncate">{subtitle}</p>
         </div>
         {action && (
@@ -1123,7 +1123,7 @@ function EmptyRow({ onAdd }: { onAdd: () => void }) {
     <button
       type="button"
       onClick={onAdd}
-      className="w-full border border-dashed border-outline-variant rounded-xl py-6 text-label-sm text-on-surface-variant hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+      className="w-full border border-dashed border-outline-variant/70 rounded-xl py-6 text-label-sm text-on-surface-variant hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2 bg-surface-container-lowest/40 dark:bg-slate-950/30"
     >
       <MaterialIcon name="add" className="text-[18px]" />
       Add your first entry
@@ -1141,7 +1141,7 @@ function EditableCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-outline-variant rounded-xl p-4 space-y-4 relative">
+    <div className="bg-surface-container-lowest/50 dark:bg-slate-950/50 border border-outline-variant/70 rounded-xl p-4 space-y-4 relative shadow-xs">
       <div className="flex items-center justify-between gap-3">
         <p className="text-label-md font-semibold text-on-surface truncate" title={title}>
           {title}
@@ -1188,8 +1188,8 @@ function TextInput({
     <div>
       <input
         type={type}
-        className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all ${
-          error ? "border-error focus:ring-error" : "border-outline-variant"
+        className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface-container-low dark:bg-slate-900/90 text-body-md text-on-surface input-focus-ring placeholder:text-on-surface-variant/50 transition-all ${
+          error ? "border-error focus:ring-error" : "border-outline-variant/80"
         }`}
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
@@ -1264,7 +1264,7 @@ function DateRangeInput({
       <div className="flex gap-2">
         <input
           type="text"
-          className="w-1/2 px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all"
+          className="w-1/2 px-3.5 py-2.5 rounded-lg border border-outline-variant/80 bg-surface-container-low dark:bg-slate-900/90 text-body-md text-on-surface input-focus-ring placeholder:text-on-surface-variant/50 transition-all"
           placeholder="Start (e.g. Jan 2024)"
           value={start}
           onChange={(e) => {
@@ -1275,7 +1275,7 @@ function DateRangeInput({
         <input
           type="text"
           disabled={isPresent}
-          className="w-1/2 px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all disabled:opacity-50 disabled:bg-surface-container-low"
+          className="w-1/2 px-3.5 py-2.5 rounded-lg border border-outline-variant/80 bg-surface-container-low dark:bg-slate-900/90 text-body-md text-on-surface input-focus-ring placeholder:text-on-surface-variant/50 transition-all disabled:opacity-50 disabled:bg-surface-container-low/50"
           placeholder="End (e.g. Mar 2024)"
           value={isPresent ? "Present" : end}
           onChange={(e) => {
@@ -1317,7 +1317,7 @@ function TextAreaInput({
   return (
     <div className="relative">
       <textarea
-        className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all resize-y"
+        className="w-full px-3.5 py-2.5 rounded-lg border border-outline-variant/80 bg-surface-container-low dark:bg-slate-900/90 text-body-md text-on-surface input-focus-ring placeholder:text-on-surface-variant/50 transition-all resize-y"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -1434,7 +1434,7 @@ function BulletList({
         <div key={i} className="flex items-start gap-2">
           <span className="mt-3 text-label-sm text-on-surface-variant">•</span>
           <textarea
-            className="flex-1 min-h-[64px] px-3 py-2 rounded-lg border border-outline-variant bg-surface text-body-md text-on-surface input-focus-ring placeholder:text-outline-variant transition-all resize-y"
+            className="flex-1 min-h-[64px] px-3 py-2 rounded-lg border border-outline-variant/80 bg-surface-container-low dark:bg-slate-900/90 text-body-md text-on-surface input-focus-ring placeholder:text-on-surface-variant/50 transition-all resize-y"
             value={b}
             onChange={(e) => onChange(i, e.target.value)}
             placeholder="Achieved strong action-verb statement…"
