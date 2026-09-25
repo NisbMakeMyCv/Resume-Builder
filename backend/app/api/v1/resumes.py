@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Response
+from app.core.security import limiter
+from fastapi import APIRouter, Request, Depends, HTTPException, status, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
@@ -89,8 +90,10 @@ def get_resumes(
     )
 
 
-@router.post("/", response_model=ResumeDocumentResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit('20/minute')
+@router.post('/', response_model=ResumeDocumentResponse, status_code=status.HTTP_201_CREATED)
 async def create_resume(
+    http_request: Request,
     title: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),

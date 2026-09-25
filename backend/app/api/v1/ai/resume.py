@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Response
+from app.core.security import limiter
+from fastapi import APIRouter, Request, Response
 from app.ai.resume.renderer import render_resume_latex
 from app.ai.resume.pdf_generator import PDFGenerationError, generate_pdf
 from app.schemas.resume_ai import ResumeData

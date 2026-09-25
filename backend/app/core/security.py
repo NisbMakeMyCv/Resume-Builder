@@ -24,3 +24,9 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+# In-memory rate limiter for the MVP
+limiter = Limiter(key_func=get_remote_address)

@@ -1,3 +1,4 @@
+from app.core.security import limiter
 import smtplib
 import os
 import secrets
@@ -6,7 +7,7 @@ from email.message import EmailMessage
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, Request, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token
 from google.auth.transport import requests
@@ -62,8 +63,9 @@ def verify_and_delete_otp(db: Session, email: str, otp_code: str):
     db.delete(otp_record)
     db.commit()
 
-@router.post("/request-otp")
-def request_otp(request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit('5/minute')
+@router.post('/request-otp')
+def request_otp(http_request: Request, request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Invalidate any old OTPs for this email
     db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
     
@@ -82,7 +84,9 @@ def request_otp(request: OTPRequest, background_tasks: BackgroundTasks, db: Sess
     return {"message": f"OTP has been sent to {request.email}"}
 
 @router.post("/register", status_code=201)
-def register_user(request: UserRegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit('5/minute')
+@router.post('/register', response_model=Token)
+def register_user(http_request: Request, request: UserRegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     verify_and_delete_otp(db, request.email, request.otp_code)
 
     existing_user = db.query(User).filter(User.email == request.email).first()
@@ -122,7 +126,9 @@ def register_user(request: UserRegisterRequest, background_tasks: BackgroundTask
     return {"access_token": access_token, "token_type": "bearer", "message": "User registered successfully"}
 
 @router.post("/login")
-def login_user(request: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit('10/minute')
+@router.post('/login', response_model=Token)
+def login_user(http_request: Request, request: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
@@ -143,7 +149,9 @@ def login_user(request: UserLoginRequest, background_tasks: BackgroundTasks, db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/google")
-def google_login(request: GoogleLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit('10/minute')
+@router.post('/google', response_model=Token)
+def google_login(http_request: Request, request: GoogleLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     import requests as http_requests
     try:
         # The frontend's useGoogleLogin implicit flow yields an access_token, not a JWT id_token.
@@ -322,8 +330,9 @@ async def upload_profile_photo(
 
     return {"message": "Photo uploaded successfully", "profile_picture": photo_url}
 
-@router.post("/forgot-password")
-def forgot_password(request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit('3/minute')
+@router.post('/forgot-password')
+def forgot_password(http_request: Request, request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
         # We still return success to prevent email enumeration attacks

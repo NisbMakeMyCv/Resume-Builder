@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from app.core.security import limiter
+from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, Field
 
 from app.ai.github.analyzer import (

@@ -23,6 +23,11 @@ from app.api.v1.feedback import router as feedback_router
 from app.core.database import engine
 from app.models import user, resume
 
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+from app.core.security import limiter
+
+
 
 # ============================================================
 # ENVIRONMENT
@@ -42,11 +47,16 @@ user.Base.metadata.create_all(bind=engine)
 # FASTAPI APPLICATION
 # ============================================================
 
+
 app = FastAPI(
     title="MakeMyCV Backend API",
     description="RESTful API for the Resume Builder MVP",
     version="1.0.0",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 
 # ============================================================
