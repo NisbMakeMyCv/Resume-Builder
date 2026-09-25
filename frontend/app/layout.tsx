@@ -5,6 +5,8 @@ import SplashScreen from "./components/SplashScreen";
 import { CryptoProvider } from "./providers/CryptoProvider";
 import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
+import { TutorialProvider } from "./components/TutorialContext";
+import Tutorial from "./components/Tutorial";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -54,13 +56,17 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col theme-transition">
-  <ThemeProvider>
-    <SplashScreen />
-    <GoogleProvider>
-      <CryptoProvider>{children}</CryptoProvider>
-    </GoogleProvider>
-  </ThemeProvider>
-</body>
+        <ThemeProvider>
+          <TutorialProvider>
+            <SplashScreen />
+            <GoogleProvider>
+              <CryptoProvider>{children}</CryptoProvider>
+            </GoogleProvider>
+            {/* Tutorial overlay — rendered via portal, always available globally */}
+            <Tutorial />
+          </TutorialProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -153,10 +153,11 @@ function SettingsInner() {
       🌙 Dark
     </button>
   </div>
-</div>
+                </div>
               </div>
             </div>
           </Reveal>
+
 
           <Reveal delay={100}>
             <div className="ambient-card bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">

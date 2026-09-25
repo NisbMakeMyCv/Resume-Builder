@@ -137,6 +137,7 @@ function DashboardInner() {
 
           {/* Metrics Bento Row */}
           <motion.div
+            id="dashboard-metrics"
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
             initial="hidden"
             animate="visible"

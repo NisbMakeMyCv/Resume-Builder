@@ -229,7 +229,7 @@ export default function SignIn() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[20px]"
                 />
                 <input
-                  className="input-field w-full pl-12 pr-4 py-2.5 sm:py-3.5 rounded-brand font-body-md text-on-surface transition-all duration-200"
+                  className="input-field w-full !pl-12 !pr-4 py-2.5 sm:py-3.5 rounded-brand font-body-md text-on-surface transition-all duration-200"
                   id="email"
                   placeholder="name@company.com"
                   type="email"
@@ -256,7 +256,7 @@ export default function SignIn() {
               </div>
               <div className="relative">
                 <input
-                  className="input-field w-full pl-12 pr-12 py-2.5 sm:py-3.5 rounded-brand font-body-md text-on-surface transition-all duration-200"
+                  className="input-field w-full !pl-12 !pr-12 py-2.5 sm:py-3.5 rounded-brand font-body-md text-on-surface transition-all duration-200"
                   id="password"
                   placeholder="••••••••"
                   type={showPassword ? "text" : "password"}

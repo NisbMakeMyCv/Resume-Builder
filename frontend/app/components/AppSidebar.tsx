@@ -6,10 +6,11 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "./Logo";
 import MaterialIcon from "./MaterialIcon";
-import { clearSession, getStoredUser } from "@/lib/api";
+import { clearSession, getStoredUser, getToken } from "@/lib/api";
 import { useSidebar } from "./SidebarContext";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import { cn } from "@/lib/utils";
+import { useTutorial } from "./TutorialContext";
 
 const SIDEBAR_MIN = 256; // 16rem — current optimal width
 const SIDEBAR_MAX = 420; // 26.25rem — comfortable maximum
@@ -48,6 +49,7 @@ export default function AppSidebar() {
   const [width, setWidth] = useState(SIDEBAR_MIN);
   const [imgError, setImgError] = useState(false);
   const draggingRef = useRef(false);
+  const { startTutorial } = useTutorial();
 
   // B11 FIX: Load user after mount to avoid SSR hydration mismatch
   useEffect(() => {
@@ -112,6 +114,14 @@ export default function AppSidebar() {
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const active = Boolean(item.href && pathname?.startsWith(item.href));
+          // Map href to tutorial target IDs
+          const navIdMap: Record<string, string> = {
+            "/profile": "sidebar-nav-profile",
+            "/resumes": "sidebar-nav-resumes",
+            "/settings": "sidebar-nav-settings",
+            "/dashboard": "sidebar-nav-dashboard",
+          };
+          const navId = item.href ? navIdMap[item.href] : undefined;
           const content = (
             <>
               <MaterialIcon
@@ -127,6 +137,7 @@ export default function AppSidebar() {
             return (
               <div
                 key={item.label}
+                id={navId}
                 className={`${LINK_BASE} opacity-50 cursor-not-allowed`}
                 title="Coming soon"
               >
@@ -141,6 +152,7 @@ export default function AppSidebar() {
           return (
             <Link
               key={item.label}
+              id={navId}
               href={item.href!}
               onClick={() => setOpen(false)}
               className={`${LINK_BASE} ${active ? LINK_ACTIVE : ""}`}
@@ -149,6 +161,24 @@ export default function AppSidebar() {
             </Link>
           );
         })}
+
+        {/* Tutorial trigger — permanent fixture below Settings */}
+        <div className="pt-2 mt-2 border-t border-outline-variant">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              startTutorial();
+            }}
+            className={`${LINK_BASE} w-full text-left`}
+          >
+            <MaterialIcon
+              name="school"
+              className="text-on-surface-variant group-hover:text-on-surface"
+            />
+            <span className="truncate">App Tutorial</span>
+          </button>
+        </div>
       </nav>
 
       {/* U24 FIX: Dark mode toggle at bottom of sidebar */}
@@ -222,6 +252,7 @@ export default function AppSidebar() {
     <>
       {/* Desktop rail — always visible on lg+, drag-resizable */}
       <aside
+        id="app-sidebar"
         className="hidden lg:flex bg-surface-container-lowest h-screen fixed left-0 top-0 border-r border-outline-variant flex-col z-50 no-print"
         style={{ width }}
       >

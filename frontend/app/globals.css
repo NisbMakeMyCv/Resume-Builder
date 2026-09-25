@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* =========================================================
    NISB-MakeMyCV — "Standard Professional" Design System
@@ -1106,4 +1107,56 @@ body {
 
 .dark #resume-pdf-content a {
   color: #000000 !important;
+}
+
+/* =========================================================
+   TUTORIAL OVERLAY
+   ========================================================= */
+
+/* Pulsing ring around the highlighted element */
+@keyframes tutorial-ring-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 42, 88, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 42, 88, 0);
+  }
+}
+.dark .tutorial-ring,
+.tutorial-ring {
+  animation: tutorial-ring-pulse 1.8s ease-in-out infinite;
+}
+.dark .tutorial-ring {
+  animation-name: tutorial-ring-pulse-dark;
+}
+@keyframes tutorial-ring-pulse-dark {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Tooltip card entrance */
+@keyframes tutorial-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.tutorial-tooltip {
+  animation: tutorial-tooltip-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Root overlay — sits above everything */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: all;
 }
