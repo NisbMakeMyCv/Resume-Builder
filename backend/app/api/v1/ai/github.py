@@ -33,7 +33,9 @@ class GitHubAnalyzeResponse(BaseModel):
     "/analyze",
     response_model=GitHubAnalyzeResponse,
 )
+@limiter.limit('10/minute')
 def analyze_github_repository(
+    request: Request,
     payload: GitHubAnalyzeRequest,
 ):
     try:
@@ -74,8 +76,10 @@ def analyze_github_repository(
     "/improve-bullets",
     response_model=ImproveBulletsResponse,
 )
+@limiter.limit('10/minute')
 def improve_github_resume_bullets(
-    request: ImproveBulletsRequest,
+    request: Request,
+    payload: ImproveBulletsRequest,
 ):
     try:
         bullets = improve_resume_bullets(

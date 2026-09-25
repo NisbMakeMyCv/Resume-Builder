@@ -12,7 +12,8 @@ router = APIRouter()
 # =========================================================
 
 @router.post("/generate")
-def generate_resume(resume: ResumeData):
+@limiter.limit('10/minute')
+def generate_resume(request: Request, resume: ResumeData):
     try:
         latex_content = render_resume_latex(resume)
         pdf_content = generate_pdf(latex_content)
