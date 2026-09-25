@@ -65,62 +65,62 @@ def verify_and_delete_otp(db: Session, email: str, otp_code: str):
 
 @limiter.limit('5/minute')
 @router.post('/request-otp')
-def request_otp(http_request: Request, request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def request_otp(request: Request, payload: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Invalidate any old OTPs for this email
-    db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
+    db.query(EmailOTP).filter(EmailOTP.email == payload.email).delete()
     
     otp = str(secrets.randbelow(900000) + 100000)
     expiration = datetime.utcnow() + timedelta(minutes=5)
     
-    new_otp = EmailOTP(email=request.email, otp_code=otp, expires_at=expiration)
+    new_otp = EmailOTP(email=payload.email, otp_code=otp, expires_at=expiration)
     db.add(new_otp)
     db.commit()
     
     subject = "MakeMyCV Verification Code"
     body = f"Your MakeMyCV Login Code is: {otp}\nThis code will expire in 5 minutes."
     
-    background_tasks.add_task(send_email, request.email, subject, body)
+    background_tasks.add_task(send_email, payload.email, subject, body)
     
-    return {"message": f"OTP has been sent to {request.email}"}
+    return {"message": f"OTP has been sent to {payload.email}"}
 
 @router.post("/register", status_code=201)
 @limiter.limit('5/minute')
 @router.post('/register')
-def register_user(http_request: Request, request: UserRegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    verify_and_delete_otp(db, request.email, request.otp_code)
+def register_user(request: Request, payload: UserRegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    verify_and_delete_otp(db, payload.email, payload.otp_code)
 
-    existing_user = db.query(User).filter(User.email == request.email).first()
+    existing_user = db.query(User).filter(User.email == payload.email).first()
     
     if existing_user:
         email_auth = next((auth for auth in existing_user.auth_methods if auth.provider == "EMAIL"), None)
         if email_auth:
             raise HTTPException(status_code=400, detail="Email already registered with a password")
         
-        new_auth = UserAuthMethod(user_id=existing_user.id, provider="EMAIL", hashed_password=get_password_hash(request.password))
+        new_auth = UserAuthMethod(user_id=existing_user.id, provider="EMAIL", hashed_password=get_password_hash(payload.password))
         db.add(new_auth)
         
         if existing_user.full_name in ["New User", "New OTP User"]:
-            existing_user.full_name = request.full_name
+            existing_user.full_name = payload.full_name
             
         db.commit()
         
         access_token = create_access_token(data={"sub": str(existing_user.id)})
         return {"access_token": access_token, "token_type": "bearer", "message": "Password successfully linked to your existing account!"}
 
-    avatar_url = f"https://ui-avatars.com/api/?name={request.full_name.replace(' ', '+')}&background=random"
-    new_user = User(email=request.email, full_name=request.full_name, profile_picture=avatar_url)
+    avatar_url = f"https://ui-avatars.com/api/?name={payload.full_name.replace(' ', '+')}&background=random"
+    new_user = User(email=payload.email, full_name=payload.full_name, profile_picture=avatar_url)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    auth_method = UserAuthMethod(user_id=new_user.id, provider="EMAIL", hashed_password=get_password_hash(request.password))
+    auth_method = UserAuthMethod(user_id=new_user.id, provider="EMAIL", hashed_password=get_password_hash(payload.password))
     db.add(auth_method)
     db.commit()
 
     # Send Welcome Email!
     subject = "Welcome to MakeMyCV!"
-    body = f"Hi {request.full_name},\n\nThank you for registering with MakeMyCV! You have successfully created your account. We are excited to help you build the perfect resume.\n\nBest,\nThe MakeMyCV Team"
-    background_tasks.add_task(send_email, request.email, subject, body)
+    body = f"Hi {payload.full_name},\n\nThank you for registering with MakeMyCV! You have successfully created your account. We are excited to help you build the perfect resume.\n\nBest,\nThe MakeMyCV Team"
+    background_tasks.add_task(send_email, payload.email, subject, body)
 
     access_token = create_access_token(data={"sub": str(new_user.id)})
     return {"access_token": access_token, "token_type": "bearer", "message": "User registered successfully"}
@@ -128,15 +128,15 @@ def register_user(http_request: Request, request: UserRegisterRequest, backgroun
 @router.post("/login")
 @limiter.limit('10/minute')
 @router.post('/login')
-def login_user(http_request: Request, request: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def login_user(request: Request, payload: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
 
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     email_auth = next((auth for auth in user.auth_methods if auth.provider == "EMAIL"), None)
     
-    if not email_auth or not verify_password(request.password, email_auth.hashed_password):
+    if not email_auth or not verify_password(payload.password, email_auth.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     # Send Login Alert Email!
@@ -151,7 +151,7 @@ def login_user(http_request: Request, request: UserLoginRequest, background_task
 @router.post("/google")
 @limiter.limit('10/minute')
 @router.post('/google')
-def google_login(http_request: Request, request: GoogleLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def google_login(request: Request, payload: GoogleLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     import requests as http_requests
     try:
         # The frontend's useGoogleLogin implicit flow yields an access_token, not a JWT id_token.
@@ -159,7 +159,7 @@ def google_login(http_request: Request, request: GoogleLoginRequest, background_
         idinfo = None
         google_response = http_requests.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
-            headers={"Authorization": f"Bearer {request.token}"},
+            headers={"Authorization": f"Bearer {payload.token}"},
             timeout=10
         )
         if google_response.status_code == 200:
@@ -167,7 +167,7 @@ def google_login(http_request: Request, request: GoogleLoginRequest, background_
         else:
             # Fallback: verify as OAuth2 ID Token
             try:
-                idinfo = id_token.verify_oauth2_token(request.token, requests.Request(), GOOGLE_CLIENT_ID)
+                idinfo = id_token.verify_oauth2_token(payload.token, requests.Request(), GOOGLE_CLIENT_ID)
             except Exception:
                 raise HTTPException(status_code=401, detail="Invalid Google Token")
 
@@ -332,38 +332,38 @@ async def upload_profile_photo(
 
 @limiter.limit('3/minute')
 @router.post('/forgot-password')
-def forgot_password(http_request: Request, request: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
+def forgot_password(request: Request, payload: OTPRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         # We still return success to prevent email enumeration attacks
-        return {"message": f"If an account exists, a password reset code has been sent to {request.email}"}
+        return {"message": f"If an account exists, a password reset code has been sent to {payload.email}"}
         
     email_auth = next((auth for auth in user.auth_methods if auth.provider == "EMAIL"), None)
     if not email_auth:
         raise HTTPException(status_code=400, detail="This account uses Google Login. You cannot reset a password for it.")
 
     # Invalidate any old OTPs for this email
-    db.query(EmailOTP).filter(EmailOTP.email == request.email).delete()
+    db.query(EmailOTP).filter(EmailOTP.email == payload.email).delete()
 
     otp = str(secrets.randbelow(900000) + 100000)
     expiration = datetime.utcnow() + timedelta(minutes=10)
     
-    new_otp = EmailOTP(email=request.email, otp_code=otp, expires_at=expiration)
+    new_otp = EmailOTP(email=payload.email, otp_code=otp, expires_at=expiration)
     db.add(new_otp)
     db.commit()
     
     subject = "MakeMyCV Password Reset"
     body = f"Hi {user.full_name},\n\nSomeone requested a password reset for your account. Your reset code is: {otp}\n\nThis code will expire in 10 minutes. If you did not request this, please ignore this email."
     
-    background_tasks.add_task(send_email, request.email, subject, body)
+    background_tasks.add_task(send_email, payload.email, subject, body)
     
-    return {"message": f"If an account exists, a password reset code has been sent to {request.email}"}
+    return {"message": f"If an account exists, a password reset code has been sent to {payload.email}"}
 
 @router.post("/reset-password")
-def reset_password(request: ResetPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    verify_and_delete_otp(db, request.email, request.otp_code)
+def reset_password(payload: ResetPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    verify_and_delete_otp(db, payload.email, payload.otp_code)
     
-    user = db.query(User).filter(User.email == request.email).first()
+    user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
@@ -371,13 +371,13 @@ def reset_password(request: ResetPasswordRequest, background_tasks: BackgroundTa
     if not email_auth:
         raise HTTPException(status_code=400, detail="This account uses Google Login.")
         
-    email_auth.hashed_password = get_password_hash(request.new_password)
+    email_auth.hashed_password = get_password_hash(payload.new_password)
     db.commit()
     
     # Send confirmation email
     time_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
     subject = "Your MakeMyCV Password Has Been Reset"
     body = f"Hi {user.full_name},\n\nYour password was successfully changed on {time_str}.\n\nIf you did not perform this action, please contact support immediately."
-    background_tasks.add_task(send_email, request.email, subject, body)
+    background_tasks.add_task(send_email, payload.email, subject, body)
     
     return {"message": "Password has been successfully reset. You can now login."}

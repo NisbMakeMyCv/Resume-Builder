@@ -34,12 +34,12 @@ class GitHubAnalyzeResponse(BaseModel):
     response_model=GitHubAnalyzeResponse,
 )
 def analyze_github_repository(
-    request: GitHubAnalyzeRequest,
+    payload: GitHubAnalyzeRequest,
 ):
     try:
         analysis = analyze_repository(
-            request.owner,
-            request.repo,
+            payload.owner,
+            payload.repo,
         )
 
         # The analyzer returns a Pydantic model.
@@ -79,13 +79,13 @@ def improve_github_resume_bullets(
 ):
     try:
         bullets = improve_resume_bullets(
-            project_name=request.project_name,
-            description=request.description,
-            technologies=request.technologies,
-            current_bullets=request.current_bullets,
+            project_name=payload.project_name,
+            description=payload.description,
+            technologies=payload.technologies,
+            current_bullets=payload.current_bullets,
         )
 
-        if len(bullets) != len(request.current_bullets):
+        if len(bullets) != len(payload.current_bullets):
             raise HTTPException(
                 status_code=500,
                 detail=(

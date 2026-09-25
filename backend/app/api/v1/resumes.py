@@ -93,7 +93,7 @@ def get_resumes(
 @limiter.limit('20/minute')
 @router.post('/', response_model=ResumeDocumentResponse, status_code=status.HTTP_201_CREATED)
 async def create_resume(
-    http_request: Request,
+    request: Request,
     title: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
