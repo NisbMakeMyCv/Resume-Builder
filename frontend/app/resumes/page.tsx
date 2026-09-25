@@ -408,7 +408,7 @@ function ResumesInner() {
                         {/* Miniature live paper preview thumbnail */}
                         <div className="mx-4 flex-1 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-outline-variant/40 shadow-inner overflow-hidden relative pointer-events-none group-hover:border-primary/40 transition-all duration-300 flex justify-center items-start pt-2">
                           {previews[doc.id] ? (
-                            <div className="w-[794px] h-[1123px] origin-top center scale-[0.27] shrink-0 pointer-events-none select-none bg-white text-black p-6 shadow-md rounded-lg">
+                            <div className="w-[794px] h-[1123px] origin-top scale-[0.27] shrink-0 pointer-events-none select-none bg-white text-black shadow-md rounded-lg overflow-hidden">
                               <JakeResumePreview data={previews[doc.id]} />
                             </div>
                           ) : (

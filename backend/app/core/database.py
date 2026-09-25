@@ -14,6 +14,8 @@ DATABASE_URL = os.getenv(
     "postgresql://makemycv_user:supersecretpassword@127.0.0.1:5432/makemycv_db",
 )
 
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 engine = create_engine(DATABASE_URL)
 
