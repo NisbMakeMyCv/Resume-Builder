@@ -85,7 +85,7 @@ def request_otp(http_request: Request, request: OTPRequest, background_tasks: Ba
 
 @router.post("/register", status_code=201)
 @limiter.limit('5/minute')
-@router.post('/register', response_model=Token)
+@router.post('/register')
 def register_user(http_request: Request, request: UserRegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     verify_and_delete_otp(db, request.email, request.otp_code)
 
@@ -127,7 +127,7 @@ def register_user(http_request: Request, request: UserRegisterRequest, backgroun
 
 @router.post("/login")
 @limiter.limit('10/minute')
-@router.post('/login', response_model=Token)
+@router.post('/login')
 def login_user(http_request: Request, request: UserLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == request.email).first()
@@ -150,7 +150,7 @@ def login_user(http_request: Request, request: UserLoginRequest, background_task
 
 @router.post("/google")
 @limiter.limit('10/minute')
-@router.post('/google', response_model=Token)
+@router.post('/google')
 def google_login(http_request: Request, request: GoogleLoginRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     import requests as http_requests
     try:
