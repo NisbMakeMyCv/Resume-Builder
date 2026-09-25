@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import MaterialIcon from "./MaterialIcon";
 
 type ToastKind = "success" | "error" | "info";
@@ -21,20 +21,20 @@ export function useToasts() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const nextId = useRef(0);
 
-  function push(kind: ToastKind, text: string) {
+  const push = useCallback((kind: ToastKind, text: string) => {
     const id = ++nextId.current;
     // Replace any existing toasts with the latest one to prevent stacking / spam
     setToasts([{ id, kind, text }]);
     return id;
-  }
-  function dismiss(id: number) {
+  }, []);
+  const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
-  const notify = {
+  }, []);
+  const notify = useMemo(() => ({
     success: (text: string) => push("success", text),
     error: (text: string) => push("error", text),
     info: (text: string) => push("info", text),
-  };
+  }), [push]);
 
   return { toasts, push, dismiss, notify };
 }
